@@ -17,9 +17,15 @@ __framework_declare_constants_vars() {
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
   declare -gxr gr_framework_root_path="$pwd"/../..
+  if [[ ! -f "$gr_framework_root_path"/bootstrap.sh ]];then
+    # 确保框架根目录正确
+    local msg="框架初始化错误, 框架文件缺失或者框架根目录错误"
+    echo -e "Error: $msg" >&2
+    return 1
+  fi
+
   declare -gxr gr_framework_context_path="$gr_framework_root_path"/context
   declare -gxr gr_framework_context_vars_path="$gr_framework_context_path"/vars
-  declare -gxr gr_framework_context_config_path="$gr_framework_root_path"/config
   declare -gxr gr_framework_context_libs_path="$gr_framework_context_path"/libs
 
   # shellcheck source=./constants/constants.sh
