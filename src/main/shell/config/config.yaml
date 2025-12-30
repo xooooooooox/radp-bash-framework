@@ -1,5 +1,6 @@
 radp:
   env: dev
+  auto: true
   framework:
     config:
       filename: framework_config.yaml

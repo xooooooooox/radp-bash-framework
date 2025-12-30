@@ -1,5 +1,6 @@
 radp:
   env: default
+  auto: false
   framework:
     config:
       path: #todo
