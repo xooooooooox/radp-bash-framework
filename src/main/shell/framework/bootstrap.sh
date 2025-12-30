@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eux
+set -euo pipefail
 
 #######################################
 # 导入指定目录下的脚本(.sh 后缀)
