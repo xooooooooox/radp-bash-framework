@@ -2,59 +2,60 @@
 set -e
 
 #######################################
-# 导入指定目录下的脚本(.sh 后缀)
-# 如果是目录, 默认按文件名排序后导入
+# 声明全局变量 - 常量
 # Globals:
-#   gxa_framework_sourced_scripts - 记录框架导入的脚本文件
+#   gr_framework_context_vars_path - 全局变量脚本根目录
 # Arguments:
-#   1 - 目标目录或文件
+#   @ - 命令行所有参数
 # Outputs:
 #   None
 # Returns:
-#   0 - Success
+#   None
 #######################################
-__framework_source_scripts() {
-  local targets=${1:?}
-  shift || true # the remaining "$@" will be forwarded to sourced scripts
-
-  local target
-  for target in $targets; do
-    if [[ -e "$target" ]]; then
-      local -a sorted_scripts
-      if [[ -d "$target" ]]; then
-        # 如果目标是目录, 查找该目录下的所有 .sh 文件
-        mapfile -t sorted_scripts < <(find "$target" -type f -name "*.sh" | sort -t '_' -k 1,1n)
-      elif [[ -f "$target" && "${target: -3}" == ".sh" ]]; then
-        sorted_scripts=("$target")
-      else
-        continue
-      fi
-
-      local script
-      for script in "${sorted_scripts[@]}"; do
-        # shellcheck disable=SC1090
-        source "$script" "$@" || {
-          radp_log_error "Failed to source $script" || echo "Failed to source $script" >&2
-          return 1
-        }
-        gwxa_framework_sourced_scripts+=("$script")
-      done
-    fi
-  done
-}
-
 __framework_declare_constants_vars() {
-  # shellcheck source=constants/1_framework_constants.sh
-  __framework_source_scripts "$gr_framework_context_path"/vars/constants "$@" || return 1
+  local pwd
+  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+  declare -gxr gr_framework_root_path="$pwd"/../..
+  declare -gxr gr_framework_context_path="$gr_framework_root_path"/context
+  declare -gxr gr_framework_context_vars_path="$gr_framework_context_path"/vars
+  declare -gxr gr_framework_context_config_path="$gr_framework_root_path"/config
+  declare -gxr gr_framework_context_libs_path="$gr_framework_context_path"/libs
+
+  # shellcheck source=./constants/constants.sh
+  __framework_source_scripts "$gr_framework_context_vars_path"/constants/constants.sh "$@" || return 1
 }
 
+#######################################
+# 声明全局变量 - 可配置的全局变量
+# Globals:
+#   gr_framework_context_vars_path - 全局变量脚本根目录
+# Arguments:
+#   @ - 命令行所有参数
+# Outputs:
+#   None
+# Returns:
+#   None
+#######################################
 __framework_declare_configurable_vars() {
-  :
+  # shellcheck source=./configurable/configurable.sh
+  __framework_source_scripts "$gr_framework_context_vars_path"/configurable/configurable.sh "$@" || return 1
 }
 
+#######################################
+# 声明全局变量 - 运行时动态变量
+# Globals:
+#   gr_framework_context_vars_path - 全局变量脚本根目录
+# Arguments:
+#   @ - 命令行所有参数
+# Outputs:
+#   None
+# Returns:
+#   None
+#######################################
 __framework_declare_dynamic_vars() {
-  # shellcheck source=dynamic/1_framework_dynamic.sh
-  __framework_source_scripts "$gr_framework_context_path"/vars/dynamic "$@" || return 1
+  # shellcheck source=./dynamic/dynamic.sh
+  __framework_source_scripts "$gr_framework_context_vars_path"/dynamic/dynamic.sh "$@" || return 1
 }
 
 #######################################
@@ -71,6 +72,7 @@ __framework_declare_dynamic_vars() {
 # 注意事项
 #   1) 脚本业务逻辑中不允许使用大写的全局变量!
 #   2) 大写的全局变量表示环境变量, 仅可出现在配置文件中
+#   3) 全局变量尽量就近定义, 除非该全局变量需要脚本文件之间共享使用(这种情况就按照前文的分类定义到具体的文件中)
 # Globals:
 #   None
 # Arguments:
@@ -81,14 +83,8 @@ __framework_declare_dynamic_vars() {
 #   None
 #######################################
 __main() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
-  declare -gxr gr_framework_root_path="$pwd"/../..
-  declare -gxr gr_framework_context_path="$gr_framework_root_path"/context
-
   __framework_declare_constants_vars "$@"
-  __framework_declare_configurable_vars
+  __framework_declare_configurable_vars "$@"
   __framework_declare_dynamic_vars "$@"
 }
 

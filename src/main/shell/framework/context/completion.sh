@@ -13,7 +13,6 @@
 #   None
 #######################################
 __framework_completion_vars() {
-  # shellcheck source=vars/global_vars.sh
   :
 }
 

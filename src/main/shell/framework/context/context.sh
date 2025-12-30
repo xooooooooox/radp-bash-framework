@@ -37,15 +37,19 @@ __framework_context_autoconfigure() {
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
   # shellcheck source=./autoconfigure.sh
-  source "$pwd"/context/autoconfigure.sh "$@"
+  __framework_source_scripts "$pwd"/context/autoconfigure.sh "$@"
 }
 
-
 __main() {
-  # TODO v1.0-2025/12/28: 记得解决重复构建 context 的问题
+  # 幂等控制, 避免重复加载上下文
+  if [[ "${gw_framework_context_initialized:-0}" == "1" ]]; then
+    return 0
+  fi
+  declare -g gw_framework_context_initialized="1"
 
   __framework_context_code_completion
   __framework_context_autoconfigure "$@"
 }
 
+declare -g gw_framework_context_initialized="0"
 __main "$@"
