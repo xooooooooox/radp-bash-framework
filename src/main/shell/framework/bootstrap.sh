@@ -73,9 +73,11 @@ __fw_bootstrap_context() {
 __main() {
   local pwd
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  # bootstrap 根目录
-  gr_fw_bootstrap_root="$pwd"
-  readonly gr_fw_bootstrap_root
+  # bootstrap 根目录(幂等：避免重复 source 时修改只读变量)
+  if [[ -z "${gr_fw_bootstrap_root:-}" ]]; then
+    gr_fw_bootstrap_root="$pwd"
+    readonly gr_fw_bootstrap_root
+  fi
 
   # 构建上下文
   __fw_bootstrap_context "$@" || {

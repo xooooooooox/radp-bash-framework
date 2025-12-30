@@ -39,7 +39,7 @@ __fw_declare_constants_vars() {
 #######################################
 __fw_declare_configurable_vars() {
   # shellcheck source=./configurable/auto_configurable.sh
-  __framework_source_scripts "$gr_fw_context_vars_path"/configurable/auto_configurable.sh "$@" || return 1
+  __fw_source_scripts "$gr_fw_context_vars_path"/configurable/auto_configurable.sh "$@" || return 1
 }
 
 #######################################
@@ -55,7 +55,7 @@ __fw_declare_configurable_vars() {
 #######################################
 __fw_declare_dynamic_vars() {
   # shellcheck source=./dynamic/dynamic.sh
-  __framework_source_scripts "$gr_fw_context_vars_path"/dynamic/dynamic.sh "$@" || return 1
+  __fw_source_scripts "$gr_fw_context_vars_path"/dynamic/dynamic.sh "$@" || return 1
 }
 
 #######################################
@@ -88,7 +88,7 @@ __main() {
   __fw_declare_dynamic_vars "$@"
 }
 
-declare -gr gr_fw_root_path="${gr_fw_root_path:?}"
+declare -gr gr_fw_root_path="${gr_fw_root_path:-${gr_fw_bootstrap_root:?}}"
 declare -gr gr_fw_context_path="$gr_fw_root_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
