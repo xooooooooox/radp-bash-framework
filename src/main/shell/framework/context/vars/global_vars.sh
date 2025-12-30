@@ -11,7 +11,7 @@ set -e
 # Outputs:
 #   None
 # Returns:
-#   None
+#   1 - failed
 #######################################
 __fw_declare_constants_vars() {
   if [[ ! -f "$gr_fw_root_path"/bootstrap.sh ]];then
@@ -35,7 +35,7 @@ __fw_declare_constants_vars() {
 # Outputs:
 #   None
 # Returns:
-#   None
+#   1 - failed
 #######################################
 __fw_declare_configurable_vars() {
   # shellcheck source=./configurable/auto_configurable.sh
@@ -51,7 +51,7 @@ __fw_declare_configurable_vars() {
 # Outputs:
 #   None
 # Returns:
-#   None
+#   1 - failed
 #######################################
 __fw_declare_dynamic_vars() {
   # shellcheck source=./dynamic/dynamic.sh
