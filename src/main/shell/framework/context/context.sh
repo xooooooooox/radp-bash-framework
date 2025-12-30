@@ -15,7 +15,7 @@ set -e
 # Returns:
 #   0 - Success
 #######################################
-__framework_context_code_completion() {
+__fw_context_setup_code_completion() {
   # shellcheck source=./completion.sh
   # shellcheck source=../../extend/completion.sh
   :
@@ -32,12 +32,12 @@ __framework_context_code_completion() {
 # Returns:
 #   None
 #######################################
-__framework_context_autoconfigure_global_vars() {
+__fw_context_setup_global_vars() {
   local pwd
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
   # shellcheck source=./vars/global_vars.sh
-  __framework_source_scripts "$pwd"/vars/global_vars.sh "$@" || {
+  __fw_source_scripts "$pwd"/vars/global_vars.sh "$@" || {
     local context_err_msg='Pre defined vars contains invalid value, please check your code.'
     radp_log_error "$context_err_msg" || echo "Warn: $context_err_msg" 2>&1
     return 1
@@ -55,9 +55,9 @@ __framework_context_autoconfigure_global_vars() {
 # Returns:
 #   1 - failed
 #######################################
-__framework_context_autoconfigure_libs() {
+__fw_context_setup_libs() {
   # shellcheck source=./libs/libs.sh
-  __framework_source_scripts "$gr_framework_context_libs_path"/libs/libs.sh || {
+  __fw_source_scripts "$gr_fw_context_libs_path"/libs/libs.sh || {
     echo "Failed to setup logging, please check your code and config file" >&1
     return 1
   }
@@ -74,10 +74,10 @@ __framework_context_autoconfigure_libs() {
 # Returns:
 #   None
 #######################################
-__framework_context_setup() {
-  __framework_context_code_completion
-  __framework_context_autoconfigure_global_vars "$@"
-  __framework_context_autoconfigure_libs
+__fw_context_setup() {
+  __fw_context_setup_code_completion
+  __fw_context_setup_global_vars "$@"
+  __fw_context_setup_libs
 }
 
 __main() {
@@ -85,9 +85,9 @@ __main() {
   if [[ "${gw_framework_context_initialized:-0}" == "1" ]]; then
     return 0
   fi
-  declare -g gw_framework_context_initialized="1"
+  gw_framework_context_initialized="1"
 
-  __framework_context_setup "$@"
+  __fw_context_setup "$@"
 }
 
 declare -g gw_framework_context_initialized="0"

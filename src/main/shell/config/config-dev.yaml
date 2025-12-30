@@ -1,20 +1,18 @@
 radp:
-  framework:
-    config:
-      filename: framework_config.yaml
-    log:
-      debug: false
-      level: info
-      file: $HOME/logs/radp_bash.log
-      rolling-policy:
-        enabled: true
-        max-history: 7
-        total-size-cap: 5GB
-        max-file-size: 10MB
-      pattern:
-        console: #todo 控制台日志支持颜色
-        file: #todo
+  log:
+    debug: false
+    level: info
+    file: $HOME/logs/radp_bash.log
+    rolling-policy:
+      enabled: true
+      max-history: 7
+      total-size-cap: 5GB
+      max-file-size: 10MB
+    pattern:
+      console: #todo 控制台日志支持颜色
+      file: #todo
   user:
     config:
       path: # todo 需要支持相对路径
       filename: config.yaml
+      automap: true

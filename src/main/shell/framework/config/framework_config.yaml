@@ -1,23 +1,26 @@
 radp:
   env: default
-  auto: false
+  # radp.framework 下的配置不会被 user config 覆盖
   framework:
     config:
       path: #todo
       filename: framework_config.yaml
-    log:
-      debug: false
-      level: info
-      file: $HOME/logs/radp_bash.log
-      rolling-policy:
-        enabled: true
-        max-history: 7
-        total-size-cap: 5GB
-        max-file-size: 10MB
-      pattern:
-        console: #todo 控制台日志支持颜色
-        file: #todo
+  log:
+    debug: false
+    level: info
+    file: $HOME/logs/radp_bash.log
+    rolling-policy:
+      enabled: true
+      max-history: 7
+      total-size-cap: 5GB
+      max-file-size: 10MB
+    pattern:
+      console: #todo 控制台日志支持颜色
+      file: #todo
   user:
     config:
+      automap: true
       path: ${radp.framework.config.path}/../config
+      # config.yaml automap to config.sh,
+      # if filename is user_config.yaml then automap to user_config.sh
       filename: config.yaml

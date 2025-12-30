@@ -13,31 +13,31 @@ set -eux
 # Returns:
 #   0 - Success
 #######################################
-__framework_source_scripts() {
+__fw_source_scripts() {
   local targets=${1:?}
   shift || true # the remaining "$@" will be forwarded to sourced scripts
 
-  local target
-  for target in $targets; do
-    if [[ -e "$target" ]]; then
+  local tgt
+  for tgt in $targets; do
+    if [[ -e "$tgt" ]]; then
       local -a sorted_scripts
-      if [[ -d "$target" ]]; then
+      if [[ -d "$tgt" ]]; then
         # 如果目标是目录, 查找该目录下的所有 .sh 文件
-        mapfile -t sorted_scripts < <(find "$target" -type f -name "*.sh" | sort -t '_' -k 1,1n)
-      elif [[ -f "$target" && "${target: -3}" == ".sh" ]]; then
-        sorted_scripts=("$target")
+        mapfile -t sorted_scripts < <(find "$tgt" -type f -name "*.sh" | sort -t '_' -k 1,1n)
+      elif [[ -f "$tgt" && "${tgt: -3}" == ".sh" ]]; then
+        sorted_scripts=("$tgt")
       else
         continue
       fi
 
-      local script
-      for script in "${sorted_scripts[@]}"; do
+      local script_to_source
+      for script_to_source in "${sorted_scripts[@]}"; do
         # shellcheck disable=SC1090
-        source "$script" "$@" || {
-          radp_log_error "Failed to source $script" || echo "Failed to source $script" >&2
+        source "$script_to_source" "$@" || {
+          radp_log_error "Failed to source $script_to_source" || echo "Failed to source $script_to_source" >&2
           return 1
         }
-        gwxa_framework_sourced_scripts+=("$script")
+        gwxa_fw_sourced_scripts+=("$script_to_source")
       done
     fi
   done
@@ -54,12 +54,9 @@ __framework_source_scripts() {
 # Returns:
 #   0 or 1
 #######################################
-__framework_bootstrap_context() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
+__fw_bootstrap_context() {
   # shellcheck source=./context/context.sh
-  __framework_source_scripts "$pwd"/context/context.sh "$@"
+  __fw_source_scripts "$gr_fw_bootstrap_root"/context/context.sh "$@"
 }
 
 #######################################
@@ -74,14 +71,20 @@ __framework_bootstrap_context() {
 #   None
 #######################################
 __main() {
+  local pwd
+  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  # bootstrap 根目录
+  gr_fw_bootstrap_root="$pwd"
+  readonly gr_fw_bootstrap_root
+
   # 构建上下文
-  __framework_bootstrap_context "$@" || {
+  __fw_bootstrap_context "$@" || {
     local msg='Failed to build framework context, please check your code and config_file.'
     radp_log_error "$msg" || echo -e "Error: $msg" >&2
     return 1
   }
 }
 
-# 记录 sourced local scripts
-declare -ga gwxa_framework_sourced_scripts
+declare -g gr_fw_bootstrap_root
+declare -gxa gwxa_fw_sourced_scripts  # 记录 sourced local scripts
 __main "$@"

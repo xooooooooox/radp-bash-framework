@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+# shellcheck source=../../bootstrap.sh
 
 #######################################
 # 声明全局变量 - 常量
@@ -12,24 +13,17 @@ set -e
 # Returns:
 #   None
 #######################################
-__framework_declare_constants_vars() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
-  declare -gxr gr_framework_root_path="$pwd"/../..
-  if [[ ! -f "$gr_framework_root_path"/bootstrap.sh ]];then
+__fw_declare_constants_vars() {
+  if [[ ! -f "$gr_fw_root_path"/bootstrap.sh ]];then
     # 确保框架根目录正确
     local msg="框架初始化错误, 框架文件缺失或者框架根目录错误"
     echo -e "Error: $msg" >&2
     return 1
   fi
 
-  declare -gxr gr_framework_context_path="$gr_framework_root_path"/context
-  declare -gxr gr_framework_context_vars_path="$gr_framework_context_path"/vars
-  declare -gxr gr_framework_context_libs_path="$gr_framework_context_path"/libs
-
   # shellcheck source=./constants/constants.sh
-  __framework_source_scripts "$gr_framework_context_vars_path"/constants/constants.sh "$@" || return 1
+  __fw_source_scripts "$gr_fw_context_vars_path"/constants/constants.sh "$@" || return 1
+
 }
 
 #######################################
@@ -43,9 +37,9 @@ __framework_declare_constants_vars() {
 # Returns:
 #   None
 #######################################
-__framework_declare_configurable_vars() {
-  # shellcheck source=./configurable/configurable.sh
-  __framework_source_scripts "$gr_framework_context_vars_path"/configurable/configurable.sh "$@" || return 1
+__fw_declare_configurable_vars() {
+  # shellcheck source=./configurable/auto_configurable.sh
+  __framework_source_scripts "$gr_fw_context_vars_path"/configurable/auto_configurable.sh "$@" || return 1
 }
 
 #######################################
@@ -59,9 +53,9 @@ __framework_declare_configurable_vars() {
 # Returns:
 #   None
 #######################################
-__framework_declare_dynamic_vars() {
+__fw_declare_dynamic_vars() {
   # shellcheck source=./dynamic/dynamic.sh
-  __framework_source_scripts "$gr_framework_context_vars_path"/dynamic/dynamic.sh "$@" || return 1
+  __framework_source_scripts "$gr_fw_context_vars_path"/dynamic/dynamic.sh "$@" || return 1
 }
 
 #######################################
@@ -89,9 +83,13 @@ __framework_declare_dynamic_vars() {
 #   None
 #######################################
 __main() {
-  __framework_declare_constants_vars "$@"
-  __framework_declare_configurable_vars "$@"
-  __framework_declare_dynamic_vars "$@"
+  __fw_declare_constants_vars "$@"
+  __fw_declare_configurable_vars "$@"
+  __fw_declare_dynamic_vars "$@"
 }
 
+declare -gr gr_fw_root_path="${gr_fw_root_path:?}"
+declare -gr gr_fw_context_path="$gr_fw_root_path"/context
+declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
+declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
 __main "$@"
