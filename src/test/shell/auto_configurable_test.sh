@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TODO v1.0-2025/12/31: del 
+# TODO v1.0-2025/12/31: del
 
 set -euo pipefail
 
