@@ -54,12 +54,12 @@ __framework_source_scripts() {
 # Returns:
 #   0 or 1
 #######################################
-__framework_build_context() {
+__framework_bootstrap_context() {
   local pwd
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
   # shellcheck source=./context/context.sh
-  __framework_source_scripts "$pwd"/context.sh "$@"
+  __framework_source_scripts "$pwd"/context/context.sh "$@"
 }
 
 #######################################
@@ -75,7 +75,7 @@ __framework_build_context() {
 #######################################
 __main() {
   # 构建上下文
-  __framework_build_context "$@" || {
+  __framework_bootstrap_context "$@" || {
     local msg='Failed to build framework context, please check your code and config_file.'
     radp_log_error "$msg" || echo -e "Error: $msg" >&2
     return 1
