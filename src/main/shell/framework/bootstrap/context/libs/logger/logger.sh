@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
 set -e
-# TODO v1.0-2025/12/31: del line bellow
-#shellcheck source=../../../../config/framework_config.sh
+
+radp_log_debug() {
+  :
+}
+
+radp_log_info() {
+  :
+}
+
+radp_log_warn() {
+  :
+}
+
+radp_log_error() {
+  :
+}
 
 #######################################
 # 初始化日志框架.
@@ -10,6 +24,7 @@ set -e
 # 2) 将 fd4 重定向到控制台输出
 #
 # Globals:
+#   gr_radp_log_debug - 是否为 debug 模式
 #   gr_radp_log_file - 日志文件绝对路径
 # Arguments:
 #   None
