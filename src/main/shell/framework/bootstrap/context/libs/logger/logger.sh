@@ -522,7 +522,9 @@ __fw_transfer_filesize() {
 #######################################
 # 日志文件滚动归档
 # 根据 rolling policy 配置，将日志文件归档到指定目录
-# 归档路径格式: ${gr_log_rolling_path}/yyyyMMdd/${basename}.yyyyMMdd.i.log.gz
+# 归档路径格式:
+#   - 支持 gzip 时: ${gr_log_rolling_path}/yyyyMMdd/${basename}.yyyyMMdd.i.log.gz
+#   - 不支持 gzip 时: ${gr_log_rolling_path}/yyyyMMdd/${basename}.yyyyMMdd.i.log
 # Globals:
 #   gr_radp_log_rolling_policy_enabled - 是否启用滚动策略
 #   gr_radp_log_rolling_policy_max_history - 最大保留天数
@@ -594,11 +596,24 @@ __fw_logger_rolling() {
     count=$(find "$archive_dir" -maxdepth 1 -type f -name "${log_basename}.${current_date}.*" 2>/dev/null | wc -l | tr -d ' ')
     ((count++)) || true
 
-    # 归档文件名: basename.yyyyMMdd.i.log.gz
-    local archive_file="${archive_dir}/${log_basename}.${current_date}.${count}.${log_ext}.gz"
+    # 检查 gzip 是否可用，决定是否压缩归档
+    local archive_file archive_success=false
+    if command -v gzip &>/dev/null; then
+      # gzip 可用，压缩归档
+      archive_file="${archive_dir}/${log_basename}.${current_date}.${count}.${log_ext}.gz"
+      if gzip -c "$log_file" >"$archive_file" 2>/dev/null; then
+        archive_success=true
+      fi
+    else
+      # gzip 不可用，直接移动文件（不压缩）
+      archive_file="${archive_dir}/${log_basename}.${current_date}.${count}.${log_ext}"
+      if cp "$log_file" "$archive_file" 2>/dev/null; then
+        archive_success=true
+      fi
+    fi
 
-    # 压缩并归档当前日志文件
-    if gzip -c "$log_file" >"$archive_file" 2>/dev/null; then
+    # 归档成功后清空当前日志文件
+    if [[ "$archive_success" == true ]]; then
       # 清空当前日志文件而不删除，保持文件描述符有效
       truncate -s 0 "$log_file" 2>/dev/null || : >"$log_file"
     fi
@@ -650,6 +665,7 @@ __fw_cleanup_old_archives() {
 #######################################
 # 根据总大小上限清理旧归档日志
 # 从最旧的日志开始删除，直到总大小低于上限
+# 支持清理压缩 (.gz) 和非压缩 (.log) 的归档文件
 # Arguments:
 #   1 - rolling_path: 归档根目录
 #   2 - total_size_cap: 总大小上限 (如 5GB)
@@ -683,8 +699,9 @@ __fw_cleanup_by_size_cap() {
   fi
 
   # 获取所有归档文件，按修改时间排序（最旧的在前）
+  # 同时匹配压缩 (.gz) 和非压缩 (.log) 的归档文件
   local -a old_files
-  mapfile -t old_files < <(find "$rolling_path" -type f -name "*.gz" -print0 2>/dev/null | xargs -0 ls -1tr 2>/dev/null)
+  mapfile -t old_files < <(find "$rolling_path" -type f \( -name "*.gz" -o -name "*.log" \) -print0 2>/dev/null | xargs -0 ls -1tr 2>/dev/null)
 
   # 从最旧的文件开始删除，直到总大小低于上限
   local file
