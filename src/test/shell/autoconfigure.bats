@@ -55,7 +55,7 @@ source_autoconfigure_functions() {
   source_autoconfigure_functions
 
   # Create a test YAML file
-  cat > "$TEST_TEMP_DIR/test.yaml" << 'EOF'
+  cat >"$TEST_TEMP_DIR/test.yaml" <<'EOF'
 radp:
   env: dev
   log:
@@ -73,7 +73,7 @@ EOF
 @test "__fw_yaml_to_env_vars: handles nested YAML structures" {
   source_autoconfigure_functions
 
-  cat > "$TEST_TEMP_DIR/test.yaml" << 'EOF'
+  cat >"$TEST_TEMP_DIR/test.yaml" <<'EOF'
 radp:
   log:
     rolling-policy:
@@ -115,7 +115,7 @@ EOF
 @test "__fw_yaml_to_env_vars: converts lowercase to uppercase" {
   source_autoconfigure_functions
 
-  cat > "$TEST_TEMP_DIR/test.yaml" << 'EOF'
+  cat >"$TEST_TEMP_DIR/test.yaml" <<'EOF'
 myapp:
   setting: value
 EOF
@@ -335,9 +335,9 @@ EOF
   __fw_merge_env_vars merged1 env_vars final
 
   # Verify priority chain
-  [[ "${final[YAML_RADP_ENV]}" == "dev" ]]           # from user
-  [[ "${final[YAML_RADP_LOG_LEVEL]}" == "info" ]]    # from framework (not overridden)
-  [[ "${final[YAML_RADP_LOG_DEBUG]}" == "true" ]]    # from env-specific
+  [[ "${final[YAML_RADP_ENV]}" == "dev" ]]        # from user
+  [[ "${final[YAML_RADP_LOG_LEVEL]}" == "info" ]] # from framework (not overridden)
+  [[ "${final[YAML_RADP_LOG_DEBUG]}" == "true" ]] # from env-specific
 }
 
 # =============================================================================

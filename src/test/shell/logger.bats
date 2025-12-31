@@ -80,25 +80,25 @@ run_logger_to_file() {
 }
 
 @test "__fw_get_log_level_color uses custom color for DEBUG" {
-  gr_radp_log_color_debug="35"  # 紫色
+  gr_radp_log_color_debug="35" # 紫色
   result=$(__fw_get_log_level_color "DEBUG")
   [[ "$result" == $'\033[35m' ]]
 }
 
 @test "__fw_get_log_level_color uses custom color for INFO" {
-  gr_radp_log_color_info="34"  # 蓝色
+  gr_radp_log_color_info="34" # 蓝色
   result=$(__fw_get_log_level_color "INFO")
   [[ "$result" == $'\033[34m' ]]
 }
 
 @test "__fw_get_log_level_color uses custom color for WARN" {
-  gr_radp_log_color_warn="31"  # 红色
+  gr_radp_log_color_warn="31" # 红色
   result=$(__fw_get_log_level_color "WARN")
   [[ "$result" == $'\033[31m' ]]
 }
 
 @test "__fw_get_log_level_color uses custom color for ERROR" {
-  gr_radp_log_color_error="35"  # 紫色
+  gr_radp_log_color_error="35" # 紫色
   result=$(__fw_get_log_level_color "ERROR")
   [[ "$result" == $'\033[35m' ]]
 }
@@ -474,7 +474,7 @@ run_logger_to_file() {
   export gr_log_file_path="$TEST_TEMP_DIR"
   export gr_log_filename="test.log"
 
-  echo "test log content" > "$TEST_LOG_FILE"
+  echo "test log content" >"$TEST_LOG_FILE"
 
   __fw_logger_rolling
 
@@ -505,12 +505,12 @@ run_logger_to_file() {
   export gr_radp_log_rolling_policy_total_size_cap="5GB"
 
   # 创建一个超过 100 字节的日志文件
-  dd if=/dev/zero bs=150 count=1 2>/dev/null | tr '\0' 'x' > "$TEST_LOG_FILE"
+  dd if=/dev/zero bs=150 count=1 2>/dev/null | tr '\0' 'x' >"$TEST_LOG_FILE"
 
   __fw_logger_rolling
 
   # 日志文件应该被清空
-  file_size=$(wc -c < "$TEST_LOG_FILE" | tr -d ' ')
+  file_size=$(wc -c <"$TEST_LOG_FILE" | tr -d ' ')
   [[ "$file_size" == "0" ]]
 
   # 应该创建归档目录和文件
@@ -534,7 +534,7 @@ run_logger_to_file() {
   export gr_radp_log_rolling_policy_total_size_cap="5GB"
 
   # 创建一个超过 50 字节的日志文件
-  dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'x' > "$TEST_LOG_FILE"
+  dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'x' >"$TEST_LOG_FILE"
 
   __fw_logger_rolling
 
@@ -560,11 +560,11 @@ run_logger_to_file() {
   current_date=$(date '+%Y%m%d')
 
   # 第一次归档
-  dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'a' > "$TEST_LOG_FILE"
+  dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'a' >"$TEST_LOG_FILE"
   __fw_logger_rolling
 
   # 第二次归档
-  dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'b' > "$TEST_LOG_FILE"
+  dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'b' >"$TEST_LOG_FILE"
   __fw_logger_rolling
 
   # 应该有两个归档文件
@@ -642,7 +642,7 @@ run_logger_to_file() {
   mkdir -p "$rolling_path/$current_date"
 
   # 创建一个小文件
-  echo "small content" | gzip > "$rolling_path/$current_date/test.log.gz"
+  echo "small content" | gzip >"$rolling_path/$current_date/test.log.gz"
 
   __fw_cleanup_by_size_cap "$rolling_path" "1MB"
 
@@ -658,11 +658,11 @@ run_logger_to_file() {
 
   # 创建多个较大的文件（使用随机数据避免 gzip 压缩太多）
   # 每个文件约 1KB
-  dd if=/dev/urandom bs=1024 count=1 2>/dev/null > "$rolling_path/$current_date/test1.log.gz"
-  sleep 1  # 确保文件有不同的修改时间
-  dd if=/dev/urandom bs=1024 count=1 2>/dev/null > "$rolling_path/$current_date/test2.log.gz"
+  dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test1.log.gz"
+  sleep 1 # 确保文件有不同的修改时间
+  dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test2.log.gz"
   sleep 1
-  dd if=/dev/urandom bs=1024 count=1 2>/dev/null > "$rolling_path/$current_date/test3.log.gz"
+  dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test3.log.gz"
 
   # 设置一个较小的大小上限 (1.5KB，应该只能保留 1-2 个文件)
   __fw_cleanup_by_size_cap "$rolling_path" "1536B"
