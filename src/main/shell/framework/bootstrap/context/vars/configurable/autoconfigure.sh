@@ -173,9 +173,21 @@ set -e
     fi
   done
 
-  # 只有存在 extend 变量时才写入文件
+  # 写入文件：有 extend 变量时写入完整内容，否则写入空模板
   if [[ "$has_extend_vars" == true ]]; then
     echo "$config_content" >"$gr_user_config_file"
+  else
+    # 没有 extend 变量时，重置为空模板（清空之前可能存在的内容）
+    cat >"$gr_user_config_file" << 'EOF'
+#!/usr/bin/env bash
+set -e
+########################################################################################################################
+###
+# User configurable vars (auto-generated from YAML)
+# 优先级: 环境变量（GX_*） > YAML（YAML_*） > 默认值
+# 此文件由 automap 功能自动生成，请勿手动编辑
+########################################################################################################################
+EOF
   fi
 }
 
