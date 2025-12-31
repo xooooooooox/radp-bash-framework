@@ -269,6 +269,7 @@ declare -gr gr_fw_config_path="$gr_fw_root_path"/config
 declare -gr gr_fw_config_filename=framework_config
 declare -gr gr_fw_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".sh
 declare -gr gr_fw_yaml_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".yaml
+declare -gr gr_fw_banner_file="$gr_fw_config_path"/banner.txt
 
 declare -gr gr_user_config_path="${GX_RADP_USER_CONFIG_PATH:-"$(dirname "${gr_fw_root_path}")/config"}"
 declare -gr gr_user_config_filename="${GX_RADP_USER_CONFIG_FILENAME:-config}"

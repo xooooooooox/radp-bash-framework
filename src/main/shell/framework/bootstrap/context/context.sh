@@ -80,6 +80,12 @@ __fw_context_setup() {
   __fw_context_setup_libs
 }
 
+__fw_context_finished() {
+  # print banner
+  cat "$gr_fw_banner_file"
+  radp_log_info "${gra_command_line[*]}"
+}
+
 __main() {
   # 进一步幂等控制, 避免重复加载上下文
   if [[ "${gw_fw_context_initialized:-0}" == "1" ]]; then
@@ -89,6 +95,7 @@ __main() {
   readonly gw_fw_context_initialized
 
   __fw_context_setup "$@"
+  __fw_context_finished
 }
 
 declare -g gw_fw_context_initialized="0"
