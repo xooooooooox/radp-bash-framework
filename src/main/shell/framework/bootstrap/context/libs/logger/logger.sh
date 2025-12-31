@@ -19,11 +19,14 @@ __fw_get_log_level_color() {
   local -u log_level=${1:-}
   local color_config color_code
   case "$log_level" in
-    DEBUG) color_config="${gr_radp_log_color_debug:-faint}" ;;
-    INFO)  color_config="${gr_radp_log_color_info:-green}" ;;
-    WARN)  color_config="${gr_radp_log_color_warn:-yellow}" ;;
-    ERROR) color_config="${gr_radp_log_color_error:-red}" ;;
-    *)     echo -e "\033[0m"; return ;;  # 默认/重置
+  DEBUG) color_config="${gr_radp_log_color_debug:-faint}" ;;
+  INFO) color_config="${gr_radp_log_color_info:-green}" ;;
+  WARN) color_config="${gr_radp_log_color_warn:-yellow}" ;;
+  ERROR) color_config="${gr_radp_log_color_error:-red}" ;;
+  *)
+    echo -e "\033[0m"
+    return
+    ;; # 默认/重置
   esac
   # 转换颜色名称或直接使用数字代码
   color_code=$(__fw_color_name_to_code "$color_config")
@@ -44,19 +47,19 @@ __fw_get_log_level_color() {
 __fw_color_name_to_code() {
   local color_name=${1:-default}
   case "${color_name,,}" in
-    black)   echo "30" ;;
-    red)     echo "31" ;;
-    green)   echo "32" ;;
-    yellow)  echo "33" ;;
-    blue)    echo "34" ;;
-    magenta) echo "35" ;;
-    cyan)    echo "36" ;;
-    white)   echo "37" ;;
-    faint)   echo "90" ;;  # 亮黑/灰色
-    default) echo "0" ;;
-    # 如果是数字，直接返回
-    [0-9]*)  echo "$color_name" ;;
-    *)       echo "0" ;;
+  black) echo "30" ;;
+  red) echo "31" ;;
+  green) echo "32" ;;
+  yellow) echo "33" ;;
+  blue) echo "34" ;;
+  magenta) echo "35" ;;
+  cyan) echo "36" ;;
+  white) echo "37" ;;
+  faint) echo "90" ;; # 亮黑/灰色
+  default) echo "0" ;;
+  # 如果是数字，直接返回
+  [0-9]*) echo "$color_name" ;;
+  *) echo "0" ;;
   esac
 }
 
@@ -121,11 +124,11 @@ __fw_parse_clr_syntax() {
   # 获取日志级别对应的默认颜色（支持颜色名称或数字代码）
   local level_color_config level_color
   case "${log_level^^}" in
-    DEBUG) level_color_config="${gr_radp_log_color_debug:-blue}" ;;
-    INFO)  level_color_config="${gr_radp_log_color_info:-green}" ;;
-    WARN)  level_color_config="${gr_radp_log_color_warn:-yellow}" ;;
-    ERROR) level_color_config="${gr_radp_log_color_error:-red}" ;;
-    *)     level_color_config="default" ;;
+  DEBUG) level_color_config="${gr_radp_log_color_debug:-blue}" ;;
+  INFO) level_color_config="${gr_radp_log_color_info:-green}" ;;
+  WARN) level_color_config="${gr_radp_log_color_warn:-yellow}" ;;
+  ERROR) level_color_config="${gr_radp_log_color_error:-red}" ;;
+  *) level_color_config="default" ;;
   esac
   level_color=$(__fw_color_name_to_code "$level_color_config")
 
@@ -403,10 +406,17 @@ radp_log_error() {
 #     用于控制台输出. 以保证即使在脚本被重定向输出到文件时, 控制台日志仍然可被正确输出.
 #   - 函数内部对重定向操作进行了错误检查，任何重定向失败都会导致脚本退出，
 #######################################
-__framework_setup_logger() {
-  local log_path logfile
-  logfile="${gr_radp_log_file:?}"
-  log_path=$(dirname "$logfile")
+__fw_logger_setup() {
+  local logfile="${gr_radp_log_file:?}"
+  if [[ -z "$gr_log_file_path" ]]; then
+    gr_log_file_path=$(dirname "$gr_radp_log_file")
+    readonly gr_log_file_path
+  fi
+  if [[ -z "$gr_log_filename" ]]; then
+    gr_log_filename=$(basename "$gr_radp_log_file")
+    readonly gr_log_filename
+  fi
+  local log_path="$gr_log_file_path"
 
   if [[ ! -d "$log_path" ]]; then
     if ! mkdir -p "$log_path"; then
