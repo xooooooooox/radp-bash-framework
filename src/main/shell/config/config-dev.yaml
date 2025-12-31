@@ -8,10 +8,6 @@ radp:
       max-history: 7
       total-size-cap: 5GB
       max-file-size: 10MB
-    pattern:
-      # 支持的占位符: %d(日期时间) %p(级别) %P(PID) %t(线程/脚本名) %F(文件名) %M(函数名) %L(行号) %m(消息) %n(换行)
-      console: "%d | %p %P | %t | %L:%F#%M | %m"
-      file: "%d | %p %P | %t | %L:%F#%M | %m"
   user:
     config:
       automap: true

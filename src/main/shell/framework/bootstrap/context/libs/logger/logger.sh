@@ -19,13 +19,135 @@ __fw_get_log_level_color() {
   local -u log_level=${1:-}
   local color_code
   case "$log_level" in
-    DEBUG) color_code="${gr_radp_log_color_debug:-36}" ;;
+    DEBUG) color_code="${gr_radp_log_color_debug:-34}" ;;
     INFO)  color_code="${gr_radp_log_color_info:-32}" ;;
     WARN)  color_code="${gr_radp_log_color_warn:-33}" ;;
     ERROR) color_code="${gr_radp_log_color_error:-31}" ;;
     *)     echo -e "\033[0m"; return ;;  # 默认/重置
   esac
   echo -e "\033[${color_code}m"
+}
+
+#######################################
+# 将颜色名称转换为 ANSI 颜色代码
+# 支持的颜色名称:
+#   black, red, green, yellow, blue, magenta, cyan, white
+#   faint (灰色), default (默认色)
+#   或直接使用数字颜色代码 (如 31, 32, 90 等)
+# Arguments:
+#   1 - color_name: 颜色名称或代码
+# Outputs:
+#   ANSI 颜色代码数字
+#######################################
+__fw_color_name_to_code() {
+  local color_name=${1:-default}
+  case "${color_name,,}" in
+    black)   echo "30" ;;
+    red)     echo "31" ;;
+    green)   echo "32" ;;
+    yellow)  echo "33" ;;
+    blue)    echo "34" ;;
+    magenta) echo "35" ;;
+    cyan)    echo "36" ;;
+    white)   echo "37" ;;
+    faint)   echo "90" ;;  # 亮黑/灰色
+    default) echo "0" ;;
+    # 如果是数字，直接返回
+    [0-9]*)  echo "$color_name" ;;
+    *)       echo "0" ;;
+  esac
+}
+
+#######################################
+# 为文本添加颜色
+# Arguments:
+#   1 - text: 要着色的文本
+#   2 - color_code: ANSI 颜色代码
+# Outputs:
+#   带颜色的文本
+#######################################
+__fw_colorize() {
+  local text=${1:-}
+  local color_code=${2:-0}
+  if [[ "$color_code" == "0" || -z "$color_code" ]]; then
+    echo "$text"
+  else
+    echo -e "\033[${color_code}m${text}\033[0m"
+  fi
+}
+
+#######################################
+# 解析并处理 %clr(...){color} 语法
+# 支持的语法:
+#   %clr(text){color} - 为 text 应用指定颜色
+#   %clr(text) - 为 text 应用日志级别对应的颜色
+# Arguments:
+#   1 - text: 包含 %clr 语法的文本
+#   2 - log_level: 当前日志级别 (用于 %clr(text) 无颜色参数时)
+#   3 - colorize: 是否着色 (true/false)
+# Outputs:
+#   处理后的文本
+#######################################
+__fw_parse_clr_syntax() {
+  local text=${1:-}
+  local log_level=${2:-INFO}
+  local colorize=${3:-false}
+
+  # 定义正则表达式
+  local regex_with_color='%clr\(([^)]*)\)\{([^}]*)\}'
+  local regex_without_color='%clr\(([^)]*)\)'
+
+  if [[ "$colorize" != "true" ]]; then
+    # 不着色时，移除所有 %clr 语法，只保留内容
+    # 处理 %clr(content){color} 格式
+    while [[ "$text" =~ $regex_with_color ]]; do
+      local full_match="${BASH_REMATCH[0]}"
+      local content="${BASH_REMATCH[1]}"
+      text="${text//$full_match/$content}"
+    done
+    # 处理 %clr(content) 格式（无颜色参数）
+    while [[ "$text" =~ $regex_without_color ]]; do
+      local full_match="${BASH_REMATCH[0]}"
+      local content="${BASH_REMATCH[1]}"
+      text="${text//$full_match/$content}"
+    done
+    echo "$text"
+    return
+  fi
+
+  # 着色模式
+  # 获取日志级别对应的默认颜色
+  local level_color
+  case "${log_level^^}" in
+    DEBUG) level_color="${gr_radp_log_color_debug:-34}" ;;
+    INFO)  level_color="${gr_radp_log_color_info:-32}" ;;
+    WARN)  level_color="${gr_radp_log_color_warn:-33}" ;;
+    ERROR) level_color="${gr_radp_log_color_error:-31}" ;;
+    *)     level_color="0" ;;
+  esac
+
+  # 处理 %clr(content){color} 格式
+  while [[ "$text" =~ $regex_with_color ]]; do
+    local full_match="${BASH_REMATCH[0]}"
+    local content="${BASH_REMATCH[1]}"
+    local color_name="${BASH_REMATCH[2]}"
+    local color_code
+    color_code=$(__fw_color_name_to_code "$color_name")
+    local colored_content
+    colored_content=$(__fw_colorize "$content" "$color_code")
+    text="${text//$full_match/$colored_content}"
+  done
+
+  # 处理 %clr(content) 格式（使用日志级别颜色）
+  while [[ "$text" =~ $regex_without_color ]]; do
+    local full_match="${BASH_REMATCH[0]}"
+    local content="${BASH_REMATCH[1]}"
+    local colored_content
+    colored_content=$(__fw_colorize "$content" "$level_color")
+    text="${text//$full_match/$colored_content}"
+  done
+
+  echo "$text"
 }
 
 #######################################
@@ -40,6 +162,8 @@ __fw_get_log_level_color() {
 #   %L - 行号
 #   %m - 日志消息
 #   %n - 换行符
+#   %clr(text){color} - 为 text 应用指定颜色
+#   %clr(text) - 为 text 应用日志级别对应的颜色
 # Globals:
 #   None
 # Arguments:
@@ -49,6 +173,7 @@ __fw_get_log_level_color() {
 #   4 - script_name: 脚本文件名
 #   5 - func_name: 函数名
 #   6 - line_no: 行号
+#   7 - colorize: 是否着色 (true/false)，默认 false
 # Outputs:
 #   格式化后的日志消息
 # Returns:
@@ -61,6 +186,7 @@ __fw_format_log_message() {
   local script_name=${4:-}
   local func_name=${5:-}
   local line_no=${6:-}
+  local colorize=${7:-false}
 
   local timestamp thread_name pid
   # macOS 的 date 不支持 %N，使用兼容方式
@@ -90,6 +216,9 @@ __fw_format_log_message() {
   result="${result//%L/$line_no}"
   result="${result//%m/$message}"
   result="${result//%n/$'\n'}"
+
+  # 处理 %clr 语法
+  result=$(__fw_parse_clr_syntax "$result" "$log_level" "$colorize")
 
   echo "$result"
 }
@@ -144,19 +273,15 @@ __fw_logger() {
     local file_pattern="${gr_radp_log_pattern_file:-%d | %p %P | %t | %L:%F#%M | %m}"
 
     # 格式化日志消息
+    # 控制台输出时着色 (colorize=true)，文件输出时不着色 (colorize=false)
     local formatted_console formatted_file
-    formatted_console=$(__fw_format_log_message "$console_pattern" "$log_level" "$message" "$script_name" "$func_name" "$line_no")
-    formatted_file=$(__fw_format_log_message "$file_pattern" "$log_level" "$message" "$script_name" "$func_name" "$line_no")
-
-    # 获取颜色代码
-    local log_color no_color
-    log_color=$(__fw_get_log_level_color "$log_level")
-    no_color=$(__fw_get_log_level_color "default")
+    formatted_console=$(__fw_format_log_message "$console_pattern" "$log_level" "$message" "$script_name" "$func_name" "$line_no" "true")
+    formatted_file=$(__fw_format_log_message "$file_pattern" "$log_level" "$message" "$script_name" "$func_name" "$line_no" "false")
 
     # 输出到文件(fd3)和控制台(fd4)，不影响脚本返回值
     {
       echo -e "${formatted_file}" >&3 2>/dev/null || true
-      echo -e "${log_color}${formatted_console}${no_color}" >&4 2>/dev/null || true
+      echo -e "${formatted_console}" >&4 2>/dev/null || true
     } &>/dev/null
   fi
 }
