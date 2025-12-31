@@ -15,5 +15,3 @@ radp:
   user:
     config:
       automap: true
-      path: # todo 需要支持相对路径
-      filename: config.yaml

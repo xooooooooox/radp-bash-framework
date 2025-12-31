@@ -1,55 +1,52 @@
 #!/usr/bin/env bash
 set -e
 
-# auto_configurable 的职责：
-# 1) 使用 yq 解析 framework/user yaml，按优先级合并为最终配置
-# 2) 将配置转换为 `YAML_*` 形式的变量（类似 Spring Boot ENVIRONMENT）
-# 3) source `framework_config.sh` 完成预定义 `gr_*` 声明
-# 4) 处理 user 扩展：存在 `config.sh` 则 source；否则在 automap=true 时按 user yaml 生成
-
-__fw_parse_yaml_to_map() {
-  local yaml_file=${1:?}
-  local -n __nr_out_map__=${2:?}
-
-  if [[ ! -f "$yaml_file" ]]; then
-    return 0
-  fi
-
-  # 解析所有标量节点为 key\tvalue 的 TSV 行
-  local key value
-  while IFS=$'\t' read -r key value; do
-    [[ -z "${key:-}" ]] && continue
-    if [[ "${value:-}"  == "null" ]]; then
-        value=""
-    fi
-    __nr_out_map__["$key"]="$value"
-  done < <(
-    yq -r '.. | select(tag != "!!map" and tag != "!!seq") | [ (path | join(".")), (. | tostring) ] | @tsv' "$yaml_file"
-  )
-}
-
-__fw_resolve_placeholders_in_map() {
-  local map_name=${1:?}
-}
-
 __fw_autoconfigure() {
-  # 注入 framework config
   # shellcheck source=../../../../config/framework_config.sh
   __fw_source_scripts "$gr_fw_config_file"
 
-  # 注入 user extended config
-  local user_config_path user_config_filename user_config_file
-  user_config_path="${gr_radp_user_config_path:?}"
-  user_config_filename=$(basename "${gr_radp_user_config_filename:?}")
-  user_config_file="$user_config_path"/"$user_config_filename"
-  __fw_source_scripts "$user_config_file"
+  # shellcheck source=../../../../../config/config.sh
+  __fw_source_scripts "$gr_user_config_file"
 }
 
+#######################################
+# 解析 yaml 配置文件, 并注入全局变量
+# 1) 使用 yq 解析 framework/user yaml，按优先级合并为最终配置
+# 2) 将 yaml 配置转换为 `YAML_*` 形式的变量(类似 Spring Boot ENVIRONMENT)
+# 3) YAML配置文件优先级: config-[env].yaml > config.yaml > framework_config.yaml
+# Globals:
+#   gr_fw_yaml_config_file - framework yaml config
+#   gr_fw_config_file - finally framework config
+#   gr_user_yaml_config_file - user yaml config
+#   gr_user_config_file - finally user config
+# Arguments:
+#
+# Outputs:
+#
+# Returns:
+#
+#######################################
 __main() {
-  local -A fw_parsed_yaml_config_map=()
-  __fw_parse_yaml_to_map "$gr_fw_yaml_config_file" fw_parsed_yaml_config_map
+  # step1: framework_config.yaml -> global readonly YAML_* var
 
+  # step2: user config.yaml -> global readonly YAML_* var
+
+  # step3: merge(step1 union step2), if conflict step2 override step1 -> merged YAML_* var
+
+  # step4: config-$YAML_RADP_ENV.yaml -> global readonly YAML_* var
+
+  # step5: merge(step3 union step4), if conflict step4 override step3
+
+  # step6:
   __fw_autoconfigure
 }
 
+declare -gr gr_fw_config_path="$gr_fw_root_path"/config
+declare -gr gr_fw_config_filename=framework_config
+declare -gr gr_fw_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".sh
+declare -gr gr_fw_yaml_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".yaml
+declare -gr gr_user_config_path="${GX_RADP_USER_CONFIG_PATH:-"$(dirname "${gr_fw_root_path}")/config"}"
+declare -gr gr_user_config_filename="${GX_RADP_USER_CONFIG_FILENAME:-config.yaml}"
+declare -gr gr_user_config_file="$gr_user_config_path"/"$gr_user_config_filename".sh
+declare -gr gr_user_yaml_config_file="$gr_user_config_path"/"$gr_user_config_filename".yaml
 __main "$@"
