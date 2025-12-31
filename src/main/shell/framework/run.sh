@@ -16,10 +16,8 @@ set -euo pipefail
 #   None
 #######################################
 __fw_preflight() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   # shellcheck source=./preflight/preflight.sh
-  source "$pwd"/preflight/preflight.sh
+  . "$gr_fw_preflight_path"/preflight.sh
 }
 
 #######################################
@@ -34,10 +32,8 @@ __fw_preflight() {
 #   None
 #######################################
 __fw_bootstrap() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   # shellcheck source=./bootstrap/bootstrap.sh
-  source "$pwd"/bootstrap/bootstrap.sh "$@"
+  source "$gr_fw_bootstrap_path"/bootstrap.sh "$@"
 }
 
 #######################################
@@ -55,8 +51,23 @@ __fw_bootstrap() {
 #   None
 #######################################
 __main() {
+  # 幂等控制,避免重复执行
+  if [ "${gw_fw_run_initialized:-0}" = "1" ]; then
+    return 0
+  fi
+  gw_fw_run_initialized="1"
+
+  gr_fw_root_path=$(cd "$(dirname "$0")" && pwd)
+  gr_fw_preflight_path="$gr_fw_root_path"/preflight
+  gr_fw_bootstrap_path="$gr_fw_root_path"/bootstrap
+  readonly gr_fw_root_path gr_fw_preflight_path gr_fw_bootstrap_path
+
   __fw_preflight
   __fw_bootstrap "$@"
 }
 
+gw_fw_run_initialized="0"
+gr_fw_root_path=${gr_fw_root_path:-}
+gr_fw_preflight_path=${gr_fw_preflight_path:-}
+gr_fw_bootstrap_path=${gr_fw_bootstrap_path:-}
 __main "$@"

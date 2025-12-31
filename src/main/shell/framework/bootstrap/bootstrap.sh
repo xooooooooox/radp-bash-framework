@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+# shellcheck source=../run.sh
 
 #######################################
 # 导入指定目录下的脚本(.sh 后缀)
@@ -57,19 +58,10 @@ __fw_source_scripts() {
 #######################################
 __fw_bootstrap_context() {
   # shellcheck source=./context/context.sh
-  __fw_source_scripts "$gr_fw_bootstrap_root"/context/context.sh "$@"
+  __fw_source_scripts "$gr_fw_bootstrap_path"/context/context.sh "$@"
 }
 
 __main() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
-  # bootstrap 根目录(幂等：避免重复 source 时修改只读变量)
-  if [[ -z "${gr_fw_bootstrap_root:-}" ]]; then
-    gr_fw_bootstrap_root="$pwd"
-    readonly gr_fw_bootstrap_root
-  fi
-
   # 构建上下文
   __fw_bootstrap_context "$@" || {
     local msg='Failed to build framework context, please check your code and config_file.'
@@ -78,6 +70,5 @@ __main() {
   }
 }
 
-declare -g gr_fw_bootstrap_root
 declare -gxa gwxa_fw_sourced_scripts # 记录 sourced local scripts
 __main "$@"

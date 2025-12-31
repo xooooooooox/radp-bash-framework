@@ -17,7 +17,7 @@ set -e
 #######################################
 __fw_context_setup_code_completion() {
   # shellcheck source=./completion.sh
-  # shellcheck source=../../extend/completion.sh
+  # shellcheck source=../../../extend/completion.sh
   :
 }
 
@@ -81,11 +81,12 @@ __fw_context_setup() {
 }
 
 __main() {
-  # 幂等控制, 避免重复加载上下文
+  # 进一步幂等控制, 避免重复加载上下文
   if [[ "${gw_fw_context_initialized:-0}" == "1" ]]; then
     return 0
   fi
   gw_fw_context_initialized="1"
+  readonly gw_fw_context_initialized
 
   __fw_context_setup "$@"
 }
