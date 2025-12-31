@@ -1,10 +1,5 @@
 radp:
   env: default
-  # radp.framework 下的配置不会被 user config 覆盖
-  framework:
-    config:
-      path: #todo
-      filename: framework_config.yaml
   log:
     debug: false
     level: info

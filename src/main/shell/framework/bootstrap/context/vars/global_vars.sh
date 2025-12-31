@@ -91,4 +91,8 @@ __main() {
 declare -gr gr_fw_context_path="$gr_fw_root_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
+declare -gr gr_fw_config_path="$gr_fw_root_path"/config
+declare -gr gr_fw_config_filename=framework_config
+declare -gr gr_fw_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".sh
+declare -gr gr_fw_yaml_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".yaml
 __main "$@"
