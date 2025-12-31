@@ -416,6 +416,10 @@ __fw_logger_setup() {
     gr_log_filename=$(basename "$gr_radp_log_file")
     readonly gr_log_filename
   fi
+  if [[ -z "$gr_log_rolling_path" ]]; then
+    gr_log_rolling_path="$gr_log_file_path"/archived
+    readonly gr_log_rolling_path
+  fi
   local log_path="$gr_log_file_path"
 
   if [[ ! -d "$log_path" ]]; then
@@ -470,8 +474,240 @@ __fw_logger_setup() {
   fi
 }
 
-__main() {
-  __framework_setup_logger
+#######################################
+# 转换文件大小到字节
+# 支持单位: B, KB, K, MB, M, GB, G
+# Arguments:
+#   1 - size_str: 带单位的文件大小字符串，如 '10M' 或 '1GB'
+#   2 - target_unit: 目标单位（'B', 'KB', 'K', 'MB', 'M', 'GB', 'G'），默认为'B'
+# Outputs:
+#   转换后的文件大小
+# Returns:
+#   0 - Success
+#   1 - Invalid unit
+#######################################
+__fw_transfer_filesize() {
+  local size_str=${1:?'Missing size_str argument'}
+  local target_unit=${2:-B}
+  local base_size original_unit
+
+  # 提取数字部分
+  base_size=$(echo "$size_str" | sed -E 's/[^0-9]//g')
+  # 提取并大写单位部分
+  original_unit=$(echo "$size_str" | sed -E 's/[0-9]//g' | tr '[:lower:]' '[:upper:]')
+
+  # 转换原始大小到字节
+  local size_in_bytes
+  case $original_unit in
+  'K' | 'KB') size_in_bytes=$((base_size * 1024)) ;;
+  'M' | 'MB') size_in_bytes=$((base_size * 1024 * 1024)) ;;
+  'G' | 'GB') size_in_bytes=$((base_size * 1024 * 1024 * 1024)) ;;
+  'B' | '') size_in_bytes=$base_size ;;
+  *) return 1 ;;
+  esac
+
+  # 转换字节到目标单位
+  local converted_size
+  case $(echo "$target_unit" | tr '[:lower:]' '[:upper:]') in
+  'B') converted_size=$size_in_bytes ;;
+  'K' | 'KB') converted_size=$((size_in_bytes / 1024)) ;;
+  'M' | 'MB') converted_size=$((size_in_bytes / 1024 / 1024)) ;;
+  'G' | 'GB') converted_size=$((size_in_bytes / 1024 / 1024 / 1024)) ;;
+  *) return 1 ;;
+  esac
+
+  echo "$converted_size"
 }
 
+#######################################
+# 日志文件滚动归档
+# 根据 rolling policy 配置，将日志文件归档到指定目录
+# 归档路径格式: ${gr_log_rolling_path}/yyyyMMdd/${basename}.yyyyMMdd.i.log.gz
+# Globals:
+#   gr_radp_log_rolling_policy_enabled - 是否启用滚动策略
+#   gr_radp_log_rolling_policy_max_history - 最大保留天数
+#   gr_radp_log_rolling_policy_total_size_cap - 总大小上限
+#   gr_radp_log_rolling_policy_max_file_size - 单文件最大大小
+#   gr_radp_log_file - 日志文件的绝对路径
+#   gr_log_file_path - 日志文件所在目录
+#   gr_log_filename - 日志文件名
+#   gr_log_rolling_path - 归档日志根目录
+# Arguments:
+#   None
+# Returns:
+#   0 - Success
+#######################################
+__fw_logger_rolling() {
+  # 检查是否启用滚动策略
+  if [[ "${gr_radp_log_rolling_policy_enabled:-true}" != "true" ]]; then
+    return 0
+  fi
+
+  local log_file="${gr_radp_log_file:?}"
+
+  # 检查日志文件是否存在
+  if [[ ! -f "$log_file" ]]; then
+    return 0
+  fi
+
+  local log_basename="${gr_log_filename%.*}" # 去掉扩展名
+  local log_ext="${gr_log_filename##*.}"     # 获取扩展名
+  local rolling_path="$gr_log_rolling_path"
+  local current_date
+  current_date=$(date '+%Y%m%d')
+
+  # 获取配置
+  local max_file_size="${gr_radp_log_rolling_policy_max_file_size:-10MB}"
+  local max_history="${gr_radp_log_rolling_policy_max_history:-7}"
+  local total_size_cap="${gr_radp_log_rolling_policy_total_size_cap:-5GB}"
+
+  # 转换文件大小为字节
+  local max_size_bytes
+  max_size_bytes=$(__fw_transfer_filesize "$max_file_size")
+
+  # 获取当前日志文件大小和修改日期
+  local file_size_bytes file_mod_date
+  file_size_bytes=$(wc -c <"$log_file" 2>/dev/null | tr -d ' ')
+  file_mod_date=$(date -r "$log_file" '+%Y%m%d' 2>/dev/null || stat -c '%Y' "$log_file" 2>/dev/null | xargs -I{} date -d @{} '+%Y%m%d' 2>/dev/null)
+
+  # 判断是否需要归档
+  local should_rotate=false
+  if [[ $file_size_bytes -ge $max_size_bytes ]]; then
+    should_rotate=true
+  elif [[ -n "$file_mod_date" && "$file_mod_date" != "$current_date" ]]; then
+    should_rotate=true
+  fi
+
+  # 执行归档
+  if [[ "$should_rotate" == true ]]; then
+    # 创建归档目录: archived/yyyyMMdd/
+    local archive_dir="${rolling_path}/${current_date}"
+    if [[ ! -d "$archive_dir" ]]; then
+      mkdir -p "$archive_dir" 2>/dev/null || {
+        radp_log_error "Failed to create archive directory '$archive_dir'."
+        return 1
+      }
+    fi
+
+    # 计算今天已经归档的日志文件数量来生成序号
+    local count
+    count=$(find "$archive_dir" -maxdepth 1 -type f -name "${log_basename}.${current_date}.*" 2>/dev/null | wc -l | tr -d ' ')
+    ((count++)) || true
+
+    # 归档文件名: basename.yyyyMMdd.i.log.gz
+    local archive_file="${archive_dir}/${log_basename}.${current_date}.${count}.${log_ext}.gz"
+
+    # 压缩并归档当前日志文件
+    if gzip -c "$log_file" >"$archive_file" 2>/dev/null; then
+      # 清空当前日志文件而不删除，保持文件描述符有效
+      truncate -s 0 "$log_file" 2>/dev/null || : >"$log_file"
+    fi
+  fi
+
+  # 清理超过 max-history 天数的旧日志目录
+  __fw_cleanup_old_archives "$rolling_path" "$max_history"
+
+  # 检查并清理超过 total-size-cap 的旧日志
+  __fw_cleanup_by_size_cap "$rolling_path" "$total_size_cap"
+}
+
+#######################################
+# 清理超过保留天数的旧归档日志
+# Arguments:
+#   1 - rolling_path: 归档根目录
+#   2 - max_history: 最大保留天数
+# Returns:
+#   0 - Success
+#######################################
+__fw_cleanup_old_archives() {
+  local rolling_path=${1:?'Missing rolling_path argument'}
+  local max_history=${2:-7}
+
+  if [[ ! -d "$rolling_path" ]]; then
+    return 0
+  fi
+
+  # 查找并删除超过保留期限的旧日志目录(按日期目录)
+  local cutoff_date
+  # shellcheck disable=SC2086
+  cutoff_date=$(date -v-${max_history}d '+%Y%m%d' 2>/dev/null || date -d "-${max_history} days" '+%Y%m%d' 2>/dev/null)
+
+  if [[ -z "$cutoff_date" ]]; then
+    return 0
+  fi
+
+  local dir_name dir_date
+  for dir_name in "$rolling_path"/*/; do
+    [[ -d "$dir_name" ]] || continue
+    dir_date=$(basename "$dir_name")
+    # 检查目录名是否为日期格式 (yyyyMMdd)
+    if [[ "$dir_date" =~ ^[0-9]{8}$ && "$dir_date" < "$cutoff_date" ]]; then
+      rm -rf "$dir_name" 2>/dev/null
+    fi
+  done
+}
+
+#######################################
+# 根据总大小上限清理旧归档日志
+# 从最旧的日志开始删除，直到总大小低于上限
+# Arguments:
+#   1 - rolling_path: 归档根目录
+#   2 - total_size_cap: 总大小上限 (如 5GB)
+# Returns:
+#   0 - Success
+#######################################
+__fw_cleanup_by_size_cap() {
+  local rolling_path=${1:?'Missing rolling_path argument'}
+  local total_size_cap=${2:-5GB}
+
+  if [[ ! -d "$rolling_path" ]]; then
+    return 0
+  fi
+
+  # 转换大小上限为字节
+  local cap_bytes
+  cap_bytes=$(__fw_transfer_filesize "$total_size_cap")
+
+  # 计算当前归档目录总大小 (macOS 兼容)
+  # macOS 的 du 不支持 -b 选项，使用 find + stat 来计算
+  local current_size=0
+  local file_size
+  local file
+  while IFS= read -r -d '' file; do
+    file_size=$(wc -c <"$file" 2>/dev/null | tr -d ' ')
+    ((current_size += file_size)) || true
+  done < <(find "$rolling_path" -type f -print0 2>/dev/null)
+
+  if [[ "$current_size" -le "$cap_bytes" ]]; then
+    return 0
+  fi
+
+  # 获取所有归档文件，按修改时间排序（最旧的在前）
+  local -a old_files
+  mapfile -t old_files < <(find "$rolling_path" -type f -name "*.gz" -print0 2>/dev/null | xargs -0 ls -1tr 2>/dev/null)
+
+  # 从最旧的文件开始删除，直到总大小低于上限
+  local file
+  for file in "${old_files[@]}"; do
+    [[ -f "$file" ]] || continue
+    if [[ "$current_size" -le "$cap_bytes" ]]; then
+      break
+    fi
+    file_size=$(wc -c <"$file" 2>/dev/null | tr -d ' ')
+    rm -f "$file" 2>/dev/null
+    ((current_size -= file_size)) || true
+  done
+
+  # 清理空的日期目录
+  find "$rolling_path" -type d -empty -delete 2>/dev/null || true
+}
+
+__main() {
+  __fw_logger_setup
+  __fw_logger_rolling
+}
+
+declare -g gr_log_file_path=${gr_log_file_path:-}
+declare -g gr_log_filename=${gr_log_filename:-}
+declare -g gr_log_rolling_path=${gr_log_rolling_path:-}
 __main
