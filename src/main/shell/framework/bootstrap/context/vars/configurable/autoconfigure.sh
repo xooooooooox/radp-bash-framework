@@ -69,6 +69,7 @@ __fw_merge_env_vars() {
 
 #######################################
 # 将关联数组中的变量导出为全局只读变量
+# 支持环境变量展开，例如 $HOME 会被替换为实际路径
 # Globals:
 #   None
 # Arguments:
@@ -81,12 +82,15 @@ __fw_merge_env_vars() {
 __fw_export_yaml_vars() {
   local -n __vars_map__=${1:?'Missing vars_map_name argument'}
 
-  local key value
+  local key value expanded_value
   for key in "${!__vars_map__[@]}"; do
     value="${__vars_map__[$key]}"
+    # 展开环境变量，例如 $HOME -> /Users/username
+    # 使用 eval echo 安全地展开变量引用
+    expanded_value=$(eval echo "\"$value\"" 2>/dev/null) || expanded_value="$value"
     # 使用 declare -g 声明全局变量
     # shellcheck disable=SC2086
-    declare -g $key="$value"
+    declare -g $key="$expanded_value"
   done
 }
 
