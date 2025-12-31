@@ -10,10 +10,10 @@ __fw_requirements_declare() {
 
   # 声明 requirements
   if [ -z "$gr_fw_requirements" ]; then
-    # format name:required_version:installed_version
-    gr_fw_requirements="bash:4.3:5.3.9 yq:4.44.1:4.50.1"
-    readonly gr_fw_requirements
-  fi
+  # format name:required_version:installed_version
+  gr_fw_requirements="bash:4.3:5.3.9 yq:4.44.1:4.50.1"
+  readonly gr_fw_requirements
+fi
 
   # 导入 require scripts
   __fw_req=${__fw_req:-}
