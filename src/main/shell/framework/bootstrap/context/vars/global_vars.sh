@@ -14,7 +14,7 @@ set -e
 #   1 - failed
 #######################################
 __fw_declare_constants_vars() {
-  if [[ ! -f "$gr_fw_root_path"/bootstrap.sh ]];then
+  if [[ ! -f "$gr_fw_bootstrap_root"/bootstrap.sh ]];then
     # 确保框架根目录正确
     local msg="框架初始化错误, 框架文件缺失或者框架根目录错误"
     echo -e "Error: $msg" >&2
@@ -38,8 +38,8 @@ __fw_declare_constants_vars() {
 #   1 - failed
 #######################################
 __fw_declare_configurable_vars() {
-  # shellcheck source=./configurable/auto_configurable.sh
-  __fw_source_scripts "$gr_fw_context_vars_path"/configurable/auto_configurable.sh "$@" || return 1
+  # shellcheck source=./configurable/autoconfigure.sh
+  __fw_source_scripts "$gr_fw_context_vars_path"/configurable/autoconfigure.sh "$@" || return 1
 }
 
 #######################################
@@ -88,7 +88,7 @@ __main() {
   __fw_declare_dynamic_vars "$@"
 }
 
-declare -gr gr_fw_root_path="${gr_fw_root_path:-${gr_fw_bootstrap_root:?}}"
+declare -gr gr_fw_root_path="${gr_fw_bootstrap_root}"/..
 declare -gr gr_fw_context_path="$gr_fw_root_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs

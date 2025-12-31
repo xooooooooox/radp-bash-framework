@@ -82,13 +82,13 @@ __fw_context_setup() {
 
 __main() {
   # 幂等控制, 避免重复加载上下文
-  if [[ "${gw_framework_context_initialized:-0}" == "1" ]]; then
+  if [[ "${gw_fw_context_initialized:-0}" == "1" ]]; then
     return 0
   fi
-  gw_framework_context_initialized="1"
+  gw_fw_context_initialized="1"
 
   __fw_context_setup "$@"
 }
 
-declare -g gw_framework_context_initialized="0"
+declare -g gw_fw_context_initialized="0"
 __main "$@"

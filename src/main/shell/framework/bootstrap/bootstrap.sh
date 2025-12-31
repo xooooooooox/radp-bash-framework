@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -e
 
 #######################################
 # 导入指定目录下的脚本(.sh 后缀)
 # 如果是目录, 默认按文件名排序后导入
 # Globals:
-#   gxa_framework_sourced_scripts - 记录框架导入的脚本文件
+#   gwxa_fw_sourced_scripts - 记录框架导入的脚本文件
 # Arguments:
 #   1 - 目标目录或文件
 # Outputs:
@@ -44,35 +44,26 @@ __fw_source_scripts() {
 }
 
 #######################################
-# 框架自动配置.
+# 构建框架上下文
+# 包括: 全局变量, 库函数等
 # Globals:
-#   None
+#   gr_fw_bootstrap_root - bootstrap root path
 # Arguments:
 #   @ - 命令行所有参数
 # Outputs:
 #   None
 # Returns:
-#   0 or 1
+#   None
 #######################################
 __fw_bootstrap_context() {
   # shellcheck source=./context/context.sh
   __fw_source_scripts "$gr_fw_bootstrap_root"/context/context.sh "$@"
 }
 
-#######################################
-# 脚本框架入口.
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   None
-# Returns:
-#   None
-#######################################
 __main() {
   local pwd
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
   # bootstrap 根目录(幂等：避免重复 source 时修改只读变量)
   if [[ -z "${gr_fw_bootstrap_root:-}" ]]; then
     gr_fw_bootstrap_root="$pwd"
@@ -88,5 +79,5 @@ __main() {
 }
 
 declare -g gr_fw_bootstrap_root
-declare -gxa gwxa_fw_sourced_scripts  # 记录 sourced local scripts
+declare -gxa gwxa_fw_sourced_scripts # 记录 sourced local scripts
 __main "$@"
