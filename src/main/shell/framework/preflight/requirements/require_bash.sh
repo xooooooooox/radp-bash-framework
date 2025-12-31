@@ -1,7 +1,7 @@
 #!/bin/sh
 
 __fw_requirements_check_bash() {
-  __req_ver=${1:?}
+  __req_ver=${1:-}
   __ok=0
   if [ -n "$BASH_VERSION" ]; then
     if [ -z "$__req_ver" ]; then
@@ -29,6 +29,7 @@ __fw_requirements_check_bash() {
 }
 
 __fw_requirements_prepare_bash() {
-  __install_ver=${1:?}
-  # TODO v1.0-2025/12/31: 待实现 
+  __req_ver=${1:-}
+  __install_ver=${2:-}
+  # TODO v1.0-2025/12/31: 待实现
 }
