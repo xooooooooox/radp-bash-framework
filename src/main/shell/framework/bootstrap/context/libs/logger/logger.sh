@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
-# TODO v1.0-2025/12/31: del line bellow 
-#shellcheck source=../../../config/framework_config.sh
+# TODO v1.0-2025/12/31: del line bellow
+#shellcheck source=../../../../config/framework_config.sh
 
 #######################################
 # 初始化日志框架.
