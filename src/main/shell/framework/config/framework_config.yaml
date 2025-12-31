@@ -14,19 +14,20 @@ radp:
       # 支持的颜色语法 (类似 Spring Boot Logback):
       #   %clr(text){color} - 为 text 应用指定颜色
       #   %clr(text) - 为 text 应用日志级别对应的颜色
-      # 支持的颜色名称: black, red, green, yellow, blue, magenta, cyan, white, faint(灰色), default
-      # 也可以直接使用 ANSI 颜色代码数字 (如 31, 32, 90 等)
-      console: "%clr(%d){faint} %clr(|){faint} %clr(%p) %clr(%P){magenta} %clr(|){faint} %clr(%t){cyan} %clr(|){faint} %clr(%L:%F#%M){cyan} %clr(|){faint} %m"
+      # 1) 支持颜色名称: black, red, green, yellow, blue, magenta, cyan, white, faint(灰色), default
+      # 2) 也可以直接使用 ANSI 颜色代码数字 (如 31, 32, 90 等)
+      console: "%clr(%d){faint} %clr(|){faint} %clr(%p) %clr(%P) %clr(|){faint} %clr(%t){cyan} %clr(|){faint} %clr(%L:%F#%M){cyan} %clr(|){faint} %m"
       file: "%d | %p %P | %t | %L:%F#%M | %m"
     color:
-      # 日志级别颜色配置，支持 ANSI 颜色代码
+      # 日志级别颜色配置, 用于 %clr(text) 无颜色参数时的默认颜色
+      # 1) 支持颜色名称: black, red, green, yellow, blue, magenta, cyan, white, faint(灰色), default
+      # 2) 也支持 ANSI 颜色代码数字:
       # 常用颜色: 30(黑) 31(红) 32(绿) 33(黄) 34(蓝) 35(紫) 36(青) 37(白)
       # 亮色: 90(亮黑/灰) 91(亮红) 92(亮绿) 93(亮黄) 94(亮蓝) 95(亮紫) 96(亮青) 97(亮白)
-      # 用于 %clr(text) 无颜色参数时的默认颜色
-      debug: "34"   # 蓝色
-      info: "32"    # 绿色
-      warn: "33"    # 黄色
-      error: "31"   # 红色
+      debug: faint    # 灰色
+      info: green     # 绿色
+      warn: yellow    # 黄色
+      error: red      # 红色
   user:
     config:
       automap: true

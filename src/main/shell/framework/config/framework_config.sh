@@ -19,10 +19,10 @@ declare -gr gr_radp_log_rolling_policy_max_file_size="${GX_RADP_LOG_ROLLING_POLI
 declare -gr gr_radp_log_pattern_console="${GX_RADP_LOG_PATTERN_CONSOLE:-${YAML_RADP_LOG_PATTERN_CONSOLE:-}}"
 declare -gr gr_radp_log_pattern_file="${GX_RADP_LOG_PATTERN_FILE:-${YAML_RADP_LOG_PATTERN_FILE:-}}"
 # 日志级别颜色配置 (ANSI 颜色代码)
-declare -gr gr_radp_log_color_debug="${GX_RADP_LOG_COLOR_DEBUG:-${YAML_RADP_LOG_COLOR_DEBUG:-34}}"
-declare -gr gr_radp_log_color_info="${GX_RADP_LOG_COLOR_INFO:-${YAML_RADP_LOG_COLOR_INFO:-32}}"
-declare -gr gr_radp_log_color_warn="${GX_RADP_LOG_COLOR_WARN:-${YAML_RADP_LOG_COLOR_WARN:-33}}"
-declare -gr gr_radp_log_color_error="${GX_RADP_LOG_COLOR_ERROR:-${YAML_RADP_LOG_COLOR_ERROR:-31}}"
+declare -gr gr_radp_log_color_debug="${GX_RADP_LOG_COLOR_DEBUG:-${YAML_RADP_LOG_COLOR_DEBUG:-faint}}"
+declare -gr gr_radp_log_color_info="${GX_RADP_LOG_COLOR_INFO:-${YAML_RADP_LOG_COLOR_INFO:-green}}"
+declare -gr gr_radp_log_color_warn="${GX_RADP_LOG_COLOR_WARN:-${YAML_RADP_LOG_COLOR_WARN:-yellow}}"
+declare -gr gr_radp_log_color_error="${GX_RADP_LOG_COLOR_ERROR:-${YAML_RADP_LOG_COLOR_ERROR:-red}}"
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#

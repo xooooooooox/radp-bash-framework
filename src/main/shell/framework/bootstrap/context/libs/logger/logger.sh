@@ -4,10 +4,10 @@ set -e
 #######################################
 # 根据日志级别返回对应的颜色代码
 # Globals:
-#   gr_radp_log_color_debug - DEBUG 级别颜色代码
-#   gr_radp_log_color_info - INFO 级别颜色代码
-#   gr_radp_log_color_warn - WARN 级别颜色代码
-#   gr_radp_log_color_error - ERROR 级别颜色代码
+#   gr_radp_log_color_debug - DEBUG 级别颜色配置(支持颜色名称或代码)
+#   gr_radp_log_color_info - INFO 级别颜色配置(支持颜色名称或代码)
+#   gr_radp_log_color_warn - WARN 级别颜色配置(支持颜色名称或代码)
+#   gr_radp_log_color_error - ERROR 级别颜色配置(支持颜色名称或代码)
 # Arguments:
 #   1 - log_level: 日志级别 (DEBUG, INFO, WARN, ERROR)
 # Outputs:
@@ -17,14 +17,16 @@ set -e
 #######################################
 __fw_get_log_level_color() {
   local -u log_level=${1:-}
-  local color_code
+  local color_config color_code
   case "$log_level" in
-    DEBUG) color_code="${gr_radp_log_color_debug:-34}" ;;
-    INFO)  color_code="${gr_radp_log_color_info:-32}" ;;
-    WARN)  color_code="${gr_radp_log_color_warn:-33}" ;;
-    ERROR) color_code="${gr_radp_log_color_error:-31}" ;;
+    DEBUG) color_config="${gr_radp_log_color_debug:-faint}" ;;
+    INFO)  color_config="${gr_radp_log_color_info:-green}" ;;
+    WARN)  color_config="${gr_radp_log_color_warn:-yellow}" ;;
+    ERROR) color_config="${gr_radp_log_color_error:-red}" ;;
     *)     echo -e "\033[0m"; return ;;  # 默认/重置
   esac
+  # 转换颜色名称或直接使用数字代码
+  color_code=$(__fw_color_name_to_code "$color_config")
   echo -e "\033[${color_code}m"
 }
 
@@ -116,15 +118,16 @@ __fw_parse_clr_syntax() {
   fi
 
   # 着色模式
-  # 获取日志级别对应的默认颜色
-  local level_color
+  # 获取日志级别对应的默认颜色（支持颜色名称或数字代码）
+  local level_color_config level_color
   case "${log_level^^}" in
-    DEBUG) level_color="${gr_radp_log_color_debug:-34}" ;;
-    INFO)  level_color="${gr_radp_log_color_info:-32}" ;;
-    WARN)  level_color="${gr_radp_log_color_warn:-33}" ;;
-    ERROR) level_color="${gr_radp_log_color_error:-31}" ;;
-    *)     level_color="0" ;;
+    DEBUG) level_color_config="${gr_radp_log_color_debug:-blue}" ;;
+    INFO)  level_color_config="${gr_radp_log_color_info:-green}" ;;
+    WARN)  level_color_config="${gr_radp_log_color_warn:-yellow}" ;;
+    ERROR) level_color_config="${gr_radp_log_color_error:-red}" ;;
+    *)     level_color_config="default" ;;
   esac
+  level_color=$(__fw_color_name_to_code "$level_color_config")
 
   # 处理 %clr(content){color} 格式
   while [[ "$text" =~ $regex_with_color ]]; do
