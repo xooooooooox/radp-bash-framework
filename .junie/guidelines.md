@@ -92,7 +92,8 @@ This repo uses a dedicated “hint” function to make IDE navigation and comple
 
 ## Testing
 
-- Tests live under `test/shell/` and use the `bats` testing framework.
+- Tests live under `src/test/shell/` and use the `bats` testing framework.
+  Reference: https://www.bashsupport.com/bats-core/
 - Prefer fast, hermetic tests:
     - Avoid network calls and reliance on the host environment.
     - Use temp directories (e.g. `mktemp -d`) and clean up after each test.
@@ -104,3 +105,4 @@ This repo uses a dedicated “hint” function to make IDE navigation and comple
 - Typical runs:
     - `bats test/shell`
     - `bats test/shell/<file>.bats`
+- Keep tests file.
