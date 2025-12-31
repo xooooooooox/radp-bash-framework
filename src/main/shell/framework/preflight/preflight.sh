@@ -92,7 +92,7 @@ __fw_requirements_prepare() {
 
     __req_name_safe=$(echo "$__req_name" | tr '-' '_')
     if command -v "__fw_requirements_prepare_$__req_name_safe" >/dev/null 2>&1; then
-      if ! "__fw_requirements_prepare_$__req_name_safe" "$__install_ver"; then
+      if ! "__fw_requirements_prepare_$__req_name_safe" "$__req_ver" "$__install_ver"; then
         return 1
       fi
     else
