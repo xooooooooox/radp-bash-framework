@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-# shellcheck source=../vars/global_vars.sh
 
 __main() {
   # 加载日志组件
