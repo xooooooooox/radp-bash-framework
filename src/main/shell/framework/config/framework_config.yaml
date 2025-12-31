@@ -30,7 +30,3 @@ radp:
   user:
     config:
       automap: true
-      path: ${radp.framework.config.path}/../config
-      # config.yaml automap to config.sh,
-      # if filename is user_config.yaml then automap to user_config.sh
-      filename: config.yaml
