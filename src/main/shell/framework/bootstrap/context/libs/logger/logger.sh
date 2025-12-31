@@ -4,7 +4,10 @@ set -e
 #######################################
 # 根据日志级别返回对应的颜色代码
 # Globals:
-#   None
+#   gr_radp_log_color_debug - DEBUG 级别颜色代码
+#   gr_radp_log_color_info - INFO 级别颜色代码
+#   gr_radp_log_color_warn - WARN 级别颜色代码
+#   gr_radp_log_color_error - ERROR 级别颜色代码
 # Arguments:
 #   1 - log_level: 日志级别 (DEBUG, INFO, WARN, ERROR)
 # Outputs:
@@ -14,13 +17,15 @@ set -e
 #######################################
 __fw_get_log_level_color() {
   local -u log_level=${1:-}
+  local color_code
   case "$log_level" in
-    DEBUG) echo -e "\033[36m" ;;  # 青色
-    INFO)  echo -e "\033[32m" ;;  # 绿色
-    WARN)  echo -e "\033[33m" ;;  # 黄色
-    ERROR) echo -e "\033[31m" ;;  # 红色
-    *)     echo -e "\033[0m" ;;   # 默认/重置
+    DEBUG) color_code="${gr_radp_log_color_debug:-36}" ;;
+    INFO)  color_code="${gr_radp_log_color_info:-32}" ;;
+    WARN)  color_code="${gr_radp_log_color_warn:-33}" ;;
+    ERROR) color_code="${gr_radp_log_color_error:-31}" ;;
+    *)     echo -e "\033[0m"; return ;;  # 默认/重置
   esac
+  echo -e "\033[${color_code}m"
 }
 
 #######################################

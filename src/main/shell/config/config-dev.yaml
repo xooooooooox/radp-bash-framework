@@ -1,7 +1,7 @@
 radp:
   log:
     debug: false
-    level: info
+    level: debug
     file: $HOME/logs/radp/radp_bash.log
     rolling-policy:
       enabled: true
