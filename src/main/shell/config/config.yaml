@@ -1,5 +1,5 @@
 radp:
-  env: dev
+  env: local
   log:
     debug: false
     level: info

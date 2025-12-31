@@ -1,3 +1,5 @@
+config-local.yaml
+
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
