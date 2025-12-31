@@ -304,7 +304,7 @@ __framework_setup_logger() {
   if [[ -t 1 ]]; then
     if [[ -e /dev/tty ]]; then
       if exec 4>/dev/tty; then
-        if [[ "$g_debug" == 'true' ]]; then
+        if [[ "$gr_radp_log_debug" == 'true' ]]; then
           echo "Redirect fd4 to /dev/tty"
         fi
       else
@@ -317,7 +317,7 @@ __framework_setup_logger() {
     fi
   else
     if exec 4>&1; then
-      if [[ "$g_debug" == 'true' ]]; then
+      if [[ "$gr_radp_log_debug" == 'true' ]]; then
         echo "In non-interactive terminal, redirecting fd4 to stdout"
       fi
     else

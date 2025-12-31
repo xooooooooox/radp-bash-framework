@@ -57,7 +57,7 @@ __fw_context_setup_global_vars() {
 #######################################
 __fw_context_setup_libs() {
   # shellcheck source=./libs/libs.sh
-  __fw_source_scripts "$gr_fw_context_libs_path"/libs/libs.sh || {
+  __fw_source_scripts "$gr_fw_context_libs_path"/libs.sh || {
     echo "Failed to setup logging, please check your code and config file" >&1
     return 1
   }

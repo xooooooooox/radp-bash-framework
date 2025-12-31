@@ -88,7 +88,7 @@ __main() {
   __fw_declare_dynamic_vars "$@"
 }
 
-declare -gr gr_fw_context_path="$gr_fw_root_path"/context
+declare -gr gr_fw_context_path="$gr_fw_bootstrap_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
 __main "$@"
