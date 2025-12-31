@@ -10,16 +10,25 @@ __fw_requirements_declare() {
 
   # 声明 requirements
   if [ -z "$gr_fw_requirements" ]; then
-    gr_fw_requirements="bash:4.3 yq:4.44.1"
+    # format name:required_version:installed_version
+    gr_fw_requirements="bash:4.3:5.2.21 yq:4.44.1:4.44.2"
     readonly gr_fw_requirements
   fi
 
   # 导入 require scripts
   __fw_req=${__fw_req:-}
+  __req_name=${__req_name:-}
   for __fw_req in $gr_fw_requirements; do
     __req_name=${__fw_req%%:*}
-    __req_ver=${__fw_req#*:}
-    [ "$__req_name" = "$__req_ver" ] && __req_ver=""
+    __temp=${__fw_req#*:} # 暂存子串
+    if [ "$__temp" = "$__fw_req" ]; then
+      __req_ver=""
+      __install_ver=""
+    else
+      __req_ver=${__temp%%:*}
+      __install_ver=${__temp#*:}
+      [ "$__install_ver" = "$__temp" ] && __install_ver=""
+    fi
 
     __req_name_safe=${__req_name_safe:-}
     __req_name_safe=$(echo "$__req_name" | tr '-' '_')
@@ -30,15 +39,24 @@ __fw_requirements_declare() {
       . "$__require_script"
     fi
   done
-  unset __fw_req __req_name __req_ver __req_name_safe __require_script __fw_preflight_dir
+  unset __fw_req __req_name __req_ver __install_ver __temp __req_name_safe __require_script
 }
 
 __fw_requirements_check() {
   __fw_req=${__fw_req:-}
+  __req_name=${__req_name:-}
+  __req_ver=${__req_ver:-}
   for __fw_req in $gr_fw_requirements; do
     __req_name=${__fw_req%%:*}
-    __req_ver=${__fw_req#*:}
-    [ "$__req_name" = "$__req_ver" ] && __req_ver=""
+    __temp=${__fw_req#*:}
+    if [ "$__temp" = "$__fw_req" ]; then
+      __req_ver=""
+      __install_ver=""
+    else
+      __req_ver=${__temp%%:*}
+      __install_ver=${__temp#*:}
+      [ "$__install_ver" = "$__temp" ] && __install_ver=""
+    fi
 
     __req_name_safe=${__req_name_safe:-}
     __req_name_safe=$(echo "$__req_name" | tr '-' '_')
@@ -52,19 +70,29 @@ __fw_requirements_check() {
       fi
     fi
   done
-  unset __req_name __req_ver __req_name_safe __fw_req
+  unset __req_name __req_ver __install_ver __temp __req_name_safe __fw_req
   return 0
 }
 
 __fw_requirements_prepare() {
+  __fw_req=${__fw_req:-}
+  __req_name=${__req_name:-}
+  __req_ver=${__req_ver:-}
   for __fw_req in $gw_fw_requirements_not_satisfied; do
     __req_name=${__fw_req%%:*}
-    __req_ver=${__fw_req#*:}
-    [ "$__req_name" = "$__req_ver" ] && __req_ver=""
+    __temp=${__fw_req#*:}
+    if [ "$__temp" = "$__fw_req" ]; then
+      __req_ver=""
+      __install_ver=""
+    else
+      __req_ver=${__temp%%:*}
+      __install_ver=${__temp#*:}
+      [ "$__install_ver" = "$__temp" ] && __install_ver=""
+    fi
 
     __req_name_safe=$(echo "$__req_name" | tr '-' '_')
     if command -v "__fw_requirements_prepare_$__req_name_safe" >/dev/null 2>&1; then
-      if ! "__fw_requirements_prepare_$__req_name_safe" "$__req_ver"; then
+      if ! "__fw_requirements_prepare_$__req_name_safe" "$__install_ver"; then
         return 1
       fi
     else
@@ -72,7 +100,7 @@ __fw_requirements_prepare() {
       return 1
     fi
   done
-  unset __req_name __req_ver __req_name_safe __fw_req gw_fw_requirements_not_satisfied
+  unset __req_name __req_ver __install_ver __temp __req_name_safe __fw_req gw_fw_requirements_not_satisfied
 }
 
 __main() {

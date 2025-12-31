@@ -29,7 +29,6 @@ __fw_requirements_check_bash() {
 }
 
 __fw_requirements_prepare_bash() {
-  __req_ver=${1:?}
-  echo "Error: bash version >= $__req_ver is required. Your current bash version is $BASH_VERSION." >&2
-  return 1
+  __install_ver=${1:?}
+  # TODO v1.0-2025/12/31: 待实现 
 }
