@@ -41,6 +41,7 @@ This repository contains `radp-bash-framework`, a modular Bash framework.
 
 - Framework private/internal functions commonly use a double-underscore prefix (e.g. `__fw_bootstrap_context`,
   `__fw_source_scripts`).
+- public functions commonly use `radp_` prefix (e.g. `radp_log_info`)
 - Global variables tend to be prefixed:
     - `gr_...` — global readonly-ish paths/config (e.g. `gr_fw_root_path`)
     - `gw_...` — global writable state/flags (e.g. `gw_fw_run_initialized`)
