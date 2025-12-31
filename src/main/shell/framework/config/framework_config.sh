@@ -8,7 +8,6 @@ set -e
 
 # shellcheck source=../bootstrap/context/vars/global_vars.sh
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
-declare -gr gr_radp_env="${GX_RADP_ENV:-${YAML_RADP_ENV:-default}}"
 #--------------------------------------------- logger config ----------------------------------------------------------#
 declare -gr gr_radp_log_debug="${GX_RADP_LOG_DEBUG:-${YAML_RADP_LOG_DEBUG:-false}}"
 declare -gr gr_radp_log_level="${GX_RADP_LOG_LEVEL:-${YAML_RADP_LOG_LEVEL:-info}}"

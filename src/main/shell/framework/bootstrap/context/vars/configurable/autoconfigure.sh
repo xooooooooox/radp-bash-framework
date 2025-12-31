@@ -34,6 +34,8 @@ __main() {
   # step3: merge(step1 union step2), if conflict step2 override step1 -> merged YAML_* var
 
   # step4: config-$YAML_RADP_ENV.yaml -> global readonly YAML_* var
+  gr_radp_env="${GX_RADP_ENV:-${YAML_RADP_ENV:-}}"
+  readonly gr_radp_env
 
   # step5: merge(step3 union step4), if conflict step4 override step3
 
@@ -41,6 +43,7 @@ __main() {
   __fw_autoconfigure
 }
 
+declare -g gr_radp_env=${gr_radp_env:-}
 declare -gr gr_fw_config_path="$gr_fw_root_path"/config
 declare -gr gr_fw_config_filename=framework_config
 declare -gr gr_fw_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".sh
