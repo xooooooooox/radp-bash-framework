@@ -94,9 +94,105 @@ __fw_export_yaml_vars() {
   done
 }
 
+#######################################
+# 从 YAML 变量名生成对应的 shell 变量名
+# 例如: YAML_RADP_USER_CONFIG_EXTEND_MY_VAR -> gr_radp_user_config_extend_my_var
+# Globals:
+#   None
+# Arguments:
+#   1 - yaml_var_name: YAML 变量名 (如 YAML_RADP_USER_CONFIG_EXTEND_MY_VAR)
+# Outputs:
+#   转换后的 shell 变量名
+# Returns:
+#   0 - Success
+#######################################
+__fw_yaml_var_to_shell_var() {
+  local yaml_var_name=${1:?'Missing yaml_var_name argument'}
+  # 移除 YAML_ 前缀，转换为小写，添加 gr_ 前缀
+  echo "gr_$(echo "${yaml_var_name#YAML_}" | tr '[:upper:]' '[:lower:]')"
+}
+
+#######################################
+# 从 YAML 变量名生成对应的环境变量名
+# 例如: YAML_RADP_USER_CONFIG_EXTEND_MY_VAR -> GX_RADP_USER_CONFIG_EXTEND_MY_VAR
+# Globals:
+#   None
+# Arguments:
+#   1 - yaml_var_name: YAML 变量名 (如 YAML_RADP_USER_CONFIG_EXTEND_MY_VAR)
+# Outputs:
+#   转换后的环境变量名
+# Returns:
+#   0 - Success
+#######################################
+__fw_yaml_var_to_env_var() {
+  local yaml_var_name=${1:?'Missing yaml_var_name argument'}
+  # 将 YAML_ 前缀替换为 GX_ 前缀
+  echo "GX_${yaml_var_name#YAML_}"
+}
+
+#######################################
+# 生成用户配置文件 config.sh 的内容
+# 当 radp.user.config.automap=true 时，自动将 radp.user.config.extend.*
+# 下的 YAML 配置映射为 shell 变量声明
+# Globals:
+#   gr_user_config_file - 用户配置文件路径
+# Arguments:
+#   1 - vars_map_name: 包含所有 YAML 变量的关联数组名
+# Outputs:
+#   None (直接写入 config.sh 文件)
+# Returns:
+#   0 - Success
+#######################################
+__fw_generate_user_config() {
+  local -n __all_vars__=${1:?'Missing vars_map_name argument'}
+
+  local config_content="#!/usr/bin/env bash
+set -e
+########################################################################################################################
+###
+# User configurable vars (auto-generated from YAML)
+# 优先级: 环境变量（GX_*） > YAML（YAML_*） > 默认值
+# 此文件由 automap 功能自动生成，请勿手动编辑
+########################################################################################################################
+"
+
+  local key shell_var env_var value
+  local has_extend_vars=false
+
+  # 遍历所有变量，筛选出 YAML_RADP_USER_CONFIG_EXTEND_* 前缀的变量
+  for key in "${!__all_vars__[@]}"; do
+    if [[ "$key" == YAML_RADP_USER_CONFIG_EXTEND_* ]]; then
+      has_extend_vars=true
+      shell_var=$(__fw_yaml_var_to_shell_var "$key")
+      env_var=$(__fw_yaml_var_to_env_var "$key")
+      value="${__all_vars__[$key]}"
+
+      # 生成 declare 语句，格式与 framework_config.sh 一致
+      config_content+="declare -gr ${shell_var}=\"\${${env_var}:-\${${key}:-${value}}}\""
+      config_content+=$'\n'
+    fi
+  done
+
+  # 只有存在 extend 变量时才写入文件
+  if [[ "$has_extend_vars" == true ]]; then
+    echo "$config_content" >"$gr_user_config_file"
+  fi
+  echo ">>>>>>>>>>>$has_extend_vars"
+  echo "$config_content"
+  echo ">>>>>>>>>>>$gr_user_config_file"
+}
+
 __fw_autoconfigure() {
   # shellcheck source=../../../../config/framework_config.sh
   __fw_source_scripts "$gr_fw_config_file"
+
+  # 当 automap 启用时，自动生成 config.sh
+  if [[ "${gr_radp_user_config_automap:-false}" == "true" ]]; then
+    # 需要传入最终合并后的变量，这里使用全局变量 gw_final_yaml_vars
+    if [[ ${#gw_final_yaml_vars[@]} -gt 0 ]]; then
+      __fw_generate_user_config gw_final_yaml_vars
+    fi
+  fi
 
   # shellcheck source=../../../../../config/config.sh
   __fw_source_scripts "$gr_user_config_file"
@@ -147,11 +243,12 @@ __main() {
   fi
 
   # step5: merge(step3 union step4), if conflict step4 override step3
-  local -A final_vars=()
-  __fw_merge_env_vars merged_vars env_yaml_vars final_vars
+  # 使用全局关联数组，以便 __fw_autoconfigure 可以访问
+  declare -gA gw_final_yaml_vars=()
+  __fw_merge_env_vars merged_vars env_yaml_vars gw_final_yaml_vars
 
   # 导出最终合并后的变量
-  __fw_export_yaml_vars final_vars
+  __fw_export_yaml_vars gw_final_yaml_vars
 
   # step6:
   __fw_autoconfigure
