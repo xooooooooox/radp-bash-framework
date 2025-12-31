@@ -177,9 +177,6 @@ set -e
   if [[ "$has_extend_vars" == true ]]; then
     echo "$config_content" >"$gr_user_config_file"
   fi
-  echo ">>>>>>>>>>>$has_extend_vars"
-  echo "$config_content"
-  echo ">>>>>>>>>>>$gr_user_config_file"
 }
 
 __fw_autoconfigure() {
