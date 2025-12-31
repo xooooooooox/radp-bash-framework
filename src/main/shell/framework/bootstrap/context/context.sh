@@ -81,8 +81,8 @@ __fw_context_setup() {
 }
 
 __fw_context_finished() {
-  # print banner
-  cat "$gr_fw_banner_file"
+  # print banner with variable substitution
+  eval "echo \"$(cat "$gr_fw_banner_file")\""
   radp_log_info "${gra_command_line[*]}"
 }
 
