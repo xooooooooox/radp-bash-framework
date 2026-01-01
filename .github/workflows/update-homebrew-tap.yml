@@ -1,0 +1,88 @@
+name: Update Homebrew Tap
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAP_REPO: xooooooooox/homebrew-radp
+      TAP_FORMULA_PATH: Formula/radp-bash-framework.rb
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TAP_REPO }}
+          path: homebrew-radp
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Prepare release metadata
+        id: release
+        run: |
+          set -euo pipefail
+          tag_name="${GITHUB_REF_NAME}"
+          version="${tag_name#v}"
+          tarball_url="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${tag_name}.tar.gz"
+          sha256="$(curl -L "${tarball_url}" | sha256sum | awk '{print $1}')"
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tarball_url=${tarball_url}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${sha256}" >> "$GITHUB_OUTPUT"
+
+      - name: Update formula
+        run: |
+          set -euo pipefail
+          formula="homebrew-radp/${TAP_FORMULA_PATH}"
+          export RELEASE_TAG_NAME="${{ steps.release.outputs.tag_name }}"
+          export RELEASE_VERSION="${{ steps.release.outputs.version }}"
+          export RELEASE_TARBALL_URL="${{ steps.release.outputs.tarball_url }}"
+          export RELEASE_SHA256="${{ steps.release.outputs.sha256 }}"
+          python - <<'PY'
+          import os
+          import pathlib
+          import re
+          import sys
+
+          formula_path = pathlib.Path("homebrew-radp") / pathlib.Path(os.environ["TAP_FORMULA_PATH"])
+          tag_name = os.environ["RELEASE_TAG_NAME"]
+          version = os.environ["RELEASE_VERSION"]
+          tarball_url = os.environ["RELEASE_TARBALL_URL"]
+          sha256 = os.environ["RELEASE_SHA256"]
+
+          content = formula_path.read_text(encoding="utf-8")
+          updated = content
+          updated = re.sub(r'^\s*url\s+"[^"]*"\s*$', f'  url "{tarball_url}"', updated, flags=re.MULTILINE)
+          updated = re.sub(r'^\s*sha256\s+"[^"]*"\s*$', f'  sha256 "{sha256}"', updated, flags=re.MULTILINE)
+          if re.search(r'^\s*version\s+"[^"]*"\s*$', updated, flags=re.MULTILINE):
+              updated = re.sub(r'^\s*version\s+"[^"]*"\s*$', f'  version "{version}"', updated, flags=re.MULTILINE)
+
+          if updated == content:
+              print("No changes detected in formula.")
+              sys.exit(0)
+
+          formula_path.write_text(updated, encoding="utf-8")
+          print(f"Updated {formula_path} for {tag_name}.")
+          PY
+
+      - name: Commit and push
+        working-directory: homebrew-radp
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${TAP_FORMULA_PATH}"
+          git commit -m "Update radp-bash-framework to ${{ steps.release.outputs.version }}"
+          git push
