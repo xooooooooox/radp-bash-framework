@@ -15,11 +15,14 @@ set -eou pipefail
 setup_radp_bash_framework() {
   local pwd
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  local project_src_root="$pwd"/../../../..
+  project_src_root=$(cd -P -- "$project_src_root" && pwd)
+  local radp_bf="$project_src_root"/src/main/shell/bin/radp-bf
+
   GX_RADP_USER_CONFIG_PATH="$pwd"/config
   readonly GX_RADP_USER_CONFIG_PATH
-
   # shellcheck source=../../../main/shell/framework/run.sh
-  source "$pwd"/../../../main/shell/framework/run.sh "$@"
+  source "$("$radp_bf" --print-run)" "$@"
 }
 
 #######################################
