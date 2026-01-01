@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+__radp_bf_usage() {
+ cat <<'USAGE'
+radp-bash-framework
+Usage:
+  radp-bash-framework [--print-root|--print-run|--help]
+
+Commands:
+  --print-root  Print framework root directory (default).
+  --print-run   Print full path to run.sh.
+  --help        Show this help.
+
+Example:
+  source "$(radp-bash-framework --print-run)"
+USAGE
+}
+
+__radp_bf_script_dir() {
+  local script_path
+  script_path="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  echo "${script_path}"
+}
+
+__radp_bf_find_root() {
+  local script_dir candidate
+  script_dir="$(__radp_bf_script_dir)"
+
+  for candidate in \
+    "${RADP_BASH_FRAMEWORK_HOME:-}" \
+    "${script_dir}/../libexec/radp-bash-framework/framework" \
+    "${script_dir}/../libexec/framework" \
+    "${script_dir}/../share/radp-bash-framework/framework" \
+    "${script_dir}/../src/main/shell/framework" \
+    "${script_dir}/../framework"
+  do
+    if [[ -n "${candidate}" && -f "${candidate}/run.sh" ]]; then
+      echo "${candidate}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+__radp_bf_main() {
+  local root
+
+  case "${1:-}" in
+    --help|-h)
+      __radp_bf_usage
+      return 0
+      ;;
+    --print-run)
+      root="$(__radp_bf_find_root)" || {
+        echo "radp-bash-framework: unable to locate framework root" >&2
+        return 1
+      }
+      echo "${root}/run.sh"
+      return 0
+      ;;
+    --print-root|"")
+      root="$(__radp_bf_find_root)" || {
+        echo "radp-bash-framework: unable to locate framework root" >&2
+        return 1
+      }
+      echo "${root}"
+      return 0
+      ;;
+    *)
+      echo "radp-bash-framework: unknown argument '${1}'" >&2
+      __radp_bf_usage >&2
+      return 2
+      ;;
+  esac
+}
+
+__radp_bf_main "$@"
