@@ -1,0 +1,38 @@
+radp:
+  fw:
+    log:
+      debug: false
+      level: info
+      file: $HOME/logs/radp/radp_bash.log
+      rolling-policy:
+        enabled: true
+        max-history: 7
+        total-size-cap: 5GB
+        max-file-size: 10MB
+      pattern:
+        # 支持的占位符: %d(日期时间) %p(级别) %P(PID) %t(线程/脚本名) %F(文件名) %M(函数名) %L(行号) %m(消息) %n(换行)
+        # 支持的颜色语法 (类似 Spring Boot Logback):
+        #   %clr(text){color} - 为 text 应用指定颜色
+        #   %clr(text) - 为 text 应用日志级别对应的颜色
+        # 1) 支持颜色名称: black, red, green, yellow, blue, magenta, cyan, white, faint(灰色), default
+        # 2) 也可以直接使用 ANSI 颜色代码数字 (如 31, 32, 90 等)
+        console: "%clr(%d){faint} %clr(|){faint} %clr(%p) %clr(%P) %clr(|){faint} %clr(%t){cyan} %clr(|){faint} %clr(%L:%F#%M){cyan} %clr(|){faint} %m"
+        file: "%d | %p %P | %t | %L:%F#%M | %m"
+      color:
+        # 日志级别颜色配置, 用于 %clr(text) 无颜色参数时的默认颜色
+        # 1) 支持颜色名称: black, red, green, yellow, blue, magenta, cyan, white, faint(灰色), default
+        # 2) 也支持 ANSI 颜色代码数字:
+        # 常用颜色: 30(黑) 31(红) 32(绿) 33(黄) 34(蓝) 35(紫) 36(青) 37(白)
+        # 亮色: 90(亮黑/灰) 91(亮红) 92(亮绿) 93(亮黄) 94(亮蓝) 95(亮紫) 96(亮青) 97(亮白)
+        debug: faint    # 灰色
+        info: green     # 绿色
+        warn: yellow    # 黄色
+        error: red      # 红色
+    user:
+      config:
+        automap: true
+      lib:
+        path: $HOME/.local/lib/radp_bash
+  # 可在 user yaml config (如 config.yaml) 中自行定义任何配置,
+  # 只需要将这部分配置放置在 radp.extend.* 下, 框架会自动将此部分配置 automap to user config file(即config.sh) 中
+  extend:
