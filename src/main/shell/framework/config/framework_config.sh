@@ -29,5 +29,4 @@ declare -gr gr_radp_fw_log_color_error="${GX_RADP_FW_LOG_COLOR_ERROR:-${YAML_RAD
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
 #--------------------------------------------- user config ------------------------------------------------------------#
 declare -gr gr_radp_fw_user_config_automap="${GX_RADP_FW_USER_CONFIG_AUTOMAP:-${YAML_RADP_FW_USER_CONFIG_AUTOMAP:-false}}"
-declare -gr gr_radp_fw_user_extend_path="${GX_RADP_FW_USER_EXTEND_PATH:-${YAML_RADP_FW_USER_EXTEND_PATH:-}}" #todo default val
 declare -gr gr_radp_fw_user_lib_path="${GX_RADP_FW_USER_LIB_PATH:-${YAML_RADP_FW_USER_LIB_PATH:-}}" #todo default val

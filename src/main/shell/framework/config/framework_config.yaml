@@ -32,7 +32,5 @@ radp:
     user:
       config:
         automap: true
-      extend:
-        path: ${gr_fw_root_path}/extend
       lib:
-        path: ${radp.fw.user.extend.path}/lib
+        path: ${gr_fw_root_path}/../lib
