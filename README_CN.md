@@ -96,3 +96,4 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
     - `update-homebrew-tap` 更新 Homebrew 的 formula。
     - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
 5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/rpm/radp-bash-framework.spec`。
+6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建。

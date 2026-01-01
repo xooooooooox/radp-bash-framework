@@ -12,6 +12,11 @@
 - **触发方式：** `main` 分支推送。
 - **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，确保对应标签已存在，并与最新标签中的 `gr_fw_version` 对比，仅在版本不同的情况下更新 `packaging/rpm/radp-bash-framework.spec` 的 `Version` 字段为 `x.y.z`。
 
+### 构建 COPR 包（`build-copr-package.yml`）
+
+- **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发。
+- **用途：** 使用 `packaging/rpm/radp-bash-framework.spec` 触发 COPR SCM 构建。
+
 ### 更新 Homebrew tap（`update-homebrew-tap.yml`）
 
 - **触发方式：** 推送版本标签（`v*`）或手动触发（`workflow_dispatch`）。
