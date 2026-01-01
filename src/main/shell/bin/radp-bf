@@ -18,9 +18,22 @@ USAGE
 }
 
 __radp_bf_script_dir() {
-  local script_path
-  script_path="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-  echo "${script_path}"
+  # Resolve symlinks so we can locate the real installation directory.
+  local src dir
+  src="${BASH_SOURCE[0]}"
+
+  # If invoked via a relative path, make it absolute first.
+  if [[ "${src}" != /* ]]; then
+    src="$(cd -P -- "$(dirname -- "${src}")" && pwd)/$(basename -- "${src}")"
+  fi
+
+  while [[ -h "${src}" ]]; do
+    dir="$(cd -P -- "$(dirname -- "${src}")" && pwd)"
+    src="$(readlink "${src}")"
+    [[ "${src}" != /* ]] && src="${dir}/${src}"
+  done
+
+  cd -P -- "$(dirname -- "${src}")" && pwd
 }
 
 __radp_bf_find_root() {
@@ -29,14 +42,15 @@ __radp_bf_find_root() {
 
   for candidate in \
     "${RADP_BASH_FRAMEWORK_HOME:-}" \
+    "${script_dir}/../framework" \
     "${script_dir}/../libexec/radp-bash-framework/framework" \
     "${script_dir}/../libexec/framework" \
     "${script_dir}/../share/radp-bash-framework/framework" \
-    "${script_dir}/../src/main/shell/framework" \
-    "${script_dir}/../framework"
+    "${script_dir}/../src/main/shell/framework"
   do
     if [[ -n "${candidate}" && -f "${candidate}/run.sh" ]]; then
-      echo "${candidate}"
+      # Normalize path (remove .. and resolve symlinks) for stable output.
+      (cd -P -- "${candidate}" && pwd)
       return 0
     fi
   done
