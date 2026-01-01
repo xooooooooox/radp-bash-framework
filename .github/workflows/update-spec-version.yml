@@ -1,0 +1,66 @@
+name: Update spec version
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/main/shell/framework/bootstrap/context/vars/constants/constants.sh
+
+permissions:
+  contents: write
+
+jobs:
+  update-spec-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read and validate version
+        id: version
+        run: |
+          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
+          version=$(sed -n 's/^declare -gr gr_fw_version=//p' "$constants_file" | head -n 1)
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_fw_version from $constants_file" >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '$version' does not match vx.y.z" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag exists
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          if ! git rev-parse "$version" >/dev/null 2>&1; then
+            echo "Tag $version does not exist. Skipping spec update."
+            exit 0
+          fi
+
+      - name: Update spec version
+        run: |
+          spec_file="packaging/rpm/radp-bash-framework.spec"
+          version="${{ steps.version.outputs.version }}"
+          version_no_prefix="${version#v}"
+          if [[ ! -f "$spec_file" ]]; then
+            echo "Spec file not found: $spec_file" >&2
+            exit 1
+          fi
+          sed -i "s/^Version:.*/Version:        ${version_no_prefix}/" "$spec_file"
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packaging/rpm/radp-bash-framework.spec
+          git commit -m "Update spec version to ${{ steps.version.outputs.version }}"
+          git push
