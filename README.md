@@ -60,7 +60,6 @@ VERSION="<version>"
 curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
   "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
 sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
-sudo apt-get install radp-bash-framework
 ```
 
 After install, resolve the framework entrypoint:
