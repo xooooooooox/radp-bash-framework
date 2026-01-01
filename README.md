@@ -4,7 +4,7 @@
 
 ### Homebrew
 
-See details: <https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb>.
+Click [here](https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb) see details.
 
 ```bash
 brew tap xooooooooox/radp
