@@ -1,0 +1,45 @@
+name: Build deb package
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: |
+          set -euo pipefail
+          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
+          version=$(sed -n 's/^declare -gr gr_fw_version=//p' "$constants_file" | head -n 1)
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_fw_version from $constants_file" >&2
+            exit 1
+          fi
+          version_no_prefix="${version#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "version_no_prefix=${version_no_prefix}" >> "$GITHUB_OUTPUT"
+
+      - name: Build deb package
+        run: |
+          set -euo pipefail
+          chmod +x packaging/deb/build-deb.sh
+          RADP_DEB_VERSION="${{ steps.version.outputs.version_no_prefix }}" \
+            RADP_DEB_BUILD_ROOT="packaging/deb/build" \
+            packaging/deb/build-deb.sh
+
+      - name: Create release and upload deb
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          files: packaging/deb/build/output/*.deb

@@ -16,3 +16,8 @@
 
 - **触发方式：** 推送版本标签（`v*`）或手动触发（`workflow_dispatch`）。
 - **用途：** 根据标签生成发布元数据，更新 Homebrew tap 的 formula，并将变更推送到 tap 仓库。
+
+### 构建 deb 包（`build-deb-package.yml`）
+
+- **触发方式：** 推送版本标签（`v*`）或手动触发（`workflow_dispatch`）。
+- **用途：** 基于标签源码构建 `.deb` 包，并上传到 GitHub Release。

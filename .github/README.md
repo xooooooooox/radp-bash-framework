@@ -16,3 +16,8 @@
 
 - **Trigger:** On push of a version tag (`v*`) or manual (`workflow_dispatch`).
 - **Purpose:** Build release metadata from the tag, update the Homebrew tap formula, and push the changes to the tap repository.
+
+### Build deb package (`build-deb-package.yml`)
+
+- **Trigger:** On push of a version tag (`v*`) or manual (`workflow_dispatch`).
+- **Purpose:** Build the `.deb` package from the tagged source and upload it to the GitHub release.
