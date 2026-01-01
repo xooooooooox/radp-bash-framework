@@ -26,3 +26,4 @@
 
 - **Trigger:** On push of a version tag (`v*`) or manual (`workflow_dispatch`).
 - **Purpose:** Build the `.deb` package from the tagged source and upload it to the GitHub release.
+

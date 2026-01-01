@@ -26,3 +26,4 @@
 
 - **触发方式：** 推送版本标签（`v*`）或手动触发（`workflow_dispatch`）。
 - **用途：** 基于标签源码构建 `.deb` 包，并上传到 GitHub Release。
+
