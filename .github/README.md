@@ -9,8 +9,8 @@
 
 ### Update spec version (`update-spec-version.yml`)
 
-- **Trigger:** Push to `main` that changes `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` and the matching tag already exists.
-- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, then update `packaging/rpm/radp-bash-framework.spec` to `x.y.z` and commit the change.
+- **Trigger:** Push to `main`.
+- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, ensure the matching tag exists, compare it against the latest tag's `gr_fw_version`, and update `packaging/rpm/radp-bash-framework.spec` to `x.y.z` only when the version differs.
 
 ### Update Homebrew tap (`update-homebrew-tap.yml`)
 

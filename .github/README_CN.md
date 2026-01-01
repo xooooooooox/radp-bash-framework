@@ -9,8 +9,8 @@
 
 ### 更新 spec 版本（`update-spec-version.yml`）
 
-- **触发方式：** `main` 分支推送且变更 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh`，并且对应标签已存在。
-- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，然后将 `packaging/rpm/radp-bash-framework.spec` 的 `Version` 字段更新为 `x.y.z` 并提交变更。
+- **触发方式：** `main` 分支推送。
+- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，确保对应标签已存在，并与最新标签中的 `gr_fw_version` 对比，仅在版本不同的情况下更新 `packaging/rpm/radp-bash-framework.spec` 的 `Version` 字段为 `x.y.z`。
 
 ### 更新 Homebrew tap（`update-homebrew-tap.yml`）
 
