@@ -1,0 +1,61 @@
+name: Build COPR package
+
+on:
+  workflow_run:
+    workflows:
+      - Update spec version
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  build-copr-package:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      }}
+    runs-on: ubuntu-latest
+    env:
+      COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+      COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+      COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+      COPR_PROJECT: ${{ secrets.COPR_PROJECT }}
+    steps:
+      - name: Validate COPR secrets
+        run: |
+          set -euo pipefail
+          for value in COPR_LOGIN COPR_TOKEN COPR_USERNAME COPR_PROJECT; do
+            if [[ -z "${!value:-}" ]]; then
+              echo "Missing required secret: ${value}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Install copr-cli
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install copr-cli
+
+      - name: Configure copr-cli
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.config
+          cat <<CONFIG > ~/.config/copr
+          [main]
+          login = ${COPR_LOGIN}
+          token = ${COPR_TOKEN}
+          username = ${COPR_USERNAME}
+          CONFIG
+
+      - name: Trigger COPR build
+        run: |
+          set -euo pipefail
+          copr-cli buildscm "${COPR_PROJECT}" \
+            --clone-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
+            --commit "${{ github.event.workflow_run.head_sha }}" \
+            --subdir "packaging/rpm" \
+            --spec "radp-bash-framework.spec"
