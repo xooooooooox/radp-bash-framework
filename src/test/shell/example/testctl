@@ -12,23 +12,30 @@ set -eou pipefail
 # Returns:
 #   None
 #######################################
-__setup() {
+setup_radp_bash_framework() {
   local pwd
   pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
-  declare -gr GX_RADP_USER_CONFIG_PATH="$pwd"/config
+  GX_RADP_USER_CONFIG_PATH="$pwd"/config
+  readonly GX_RADP_USER_CONFIG_PATH
 
   # shellcheck source=../../../main/shell/framework/run.sh
-  source "$pwd"/../../../main/shell/framework/run.sh
+  source "$pwd"/../../../main/shell/framework/run.sh "$@"
 }
 
+#######################################
+# 如果要使用 radp_bash_framework 只需要按照 setup_radp_bash_framework 便可以完成初始化了
+# Globals:
+#   GX_RADP_USER_CONFIG_PATH
+# Arguments:
+#   @ - 命令行所有参数
+# Outputs:
+#   None
+# Returns:
+#   None
+#######################################
 main() {
-  # 指定 user config path
-  __setup
-
-  radp_log_info ">>>>>>>>>>>>>$gr_radp_env"
-  radp_log_info ">>>>>>>>>>>>>$gr_radp_fw_user_lib_path"
-  radp_log_info ">>>>>>>>>>>>>$gr_user_yaml_config_file"
+  setup_radp_bash_framework "$@"
 }
 
+declare -g GX_RADP_USER_CONFIG_PATH=${GX_RADP_USER_CONFIG_PATH:-}
 main "$@"
