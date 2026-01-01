@@ -57,3 +57,15 @@ source /path/to/framework/run.sh
 ```
 
 ### 手动安装
+
+TODO
+
+## 发布
+
+1. 更新 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` 中的 `gr_fw_version`（格式：`vx.y.z`）。
+2. 推送到 `main` 分支。
+3. 手动触发 `create-version-tag` 工作流创建并推送版本标签。
+4. 等待标签相关工作流执行完成：
+    - `update-homebrew-tap` 更新 Homebrew 的 formula。
+    - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
+5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/rpm/radp-bash-framework.spec`。

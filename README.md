@@ -72,3 +72,13 @@ source "$(radp-bf --print-run)"
 ### manual
 
 TODO
+
+## Release
+
+1. Update `gr_fw_version` in `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` (format: `vx.y.z`).
+2. Push to `main`.
+3. Trigger the `create-version-tag` workflow to create/push the tag.
+4. Wait for tag workflows:
+    - `update-homebrew-tap` updates the Homebrew formula.
+    - `build-deb-package` builds and uploads the `.deb` to the GitHub Release.
+5. The `update-spec-version` workflow updates `packaging/rpm/radp-bash-framework.spec` on `main` when the version changes.
