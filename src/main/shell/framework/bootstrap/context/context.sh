@@ -16,9 +16,11 @@ set -e
 #   0 - Success
 #######################################
 __fw_context_setup_code_completion() {
+  local pwd
+  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
   # shellcheck source=./completion.sh
-  # shellcheck source=../../../extend/completion.sh
-  :
+  __fw_source_scripts "$pwd"/completion.sh
 }
 
 #######################################

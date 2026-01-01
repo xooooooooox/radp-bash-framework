@@ -16,8 +16,22 @@ __fw_include_lib_internal() {
 }
 
 __fw_include_lib_external() {
-  # TODO v1.0-2026/1/1: log debug sourced scripts
+  local scripts_before=${#gwxa_fw_sourced_scripts[@]}
   __fw_source_scripts "$gr_radp_fw_user_lib_path"
+
+  # Log debug info about sourced external scripts if debug mode is enabled
+  if [[ "${gr_radp_fw_log_debug:-false}" == "true" ]]; then
+    local scripts_after=${#gwxa_fw_sourced_scripts[@]}
+    if [[ $scripts_after -gt $scripts_before ]]; then
+      radp_log_debug "Sourced external user lib scripts:"
+      local i
+      for ((i = scripts_before; i < scripts_after; i++)); do
+        radp_log_debug "  - ${gwxa_fw_sourced_scripts[$i]}"
+      done
+    else
+      radp_log_debug "No external user lib scripts found in '$gr_radp_fw_user_lib_path'"
+    fi
+  fi
 }
 
 __main() {
