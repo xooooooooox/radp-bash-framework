@@ -66,8 +66,10 @@ __main() {
   __fw_bootstrap "$@"
 }
 
+#----------------------------------------------------------------------------------------------------------------------#
 gw_fw_run_initialized="0"
 gr_fw_root_path=${gr_fw_root_path:-}
 gr_fw_preflight_path=${gr_fw_preflight_path:-}
 gr_fw_bootstrap_path=${gr_fw_bootstrap_path:-}
+
 __main "$@"
