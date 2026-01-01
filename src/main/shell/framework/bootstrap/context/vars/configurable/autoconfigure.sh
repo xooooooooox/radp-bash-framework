@@ -263,12 +263,14 @@ __fw_autoconfigure() {
   if [[ "${gr_radp_fw_user_config_automap:-false}" == "true" ]]; then
     # 需要传入最终合并后的变量，这里使用全局变量 gw_final_yaml_vars
     if [[ ${#gw_final_yaml_vars[@]} -gt 0 ]]; then
-      __fw_generate_user_config gw_final_yaml_vars
+      if [[ "$gr_user_config_path_exists" == "true" ]]; then
+        __fw_generate_user_config gw_final_yaml_vars
+
+        # shellcheck source=../../../../../config/config.sh
+        __fw_source_scripts "$gr_user_config_file"
+      fi
     fi
   fi
-
-  # shellcheck source=../../../../../config/config.sh
-  __fw_source_scripts "$gr_user_config_file"
 }
 
 #######################################
@@ -289,17 +291,32 @@ __fw_autoconfigure() {
 #
 #######################################
 __main() {
+  # 检查 user config path 是否存在，如果不存在则跳过用户配置相关的处理
+  if [[ -d "$gr_user_config_path" ]]; then
+    gr_user_config_path_exists=true
+    readonly gr_user_config_path_exists
+  fi
+
   # step1: framework_config.yaml -> global readonly YAML_* var
   local -A fw_yaml_vars=()
   __fw_yaml_to_env_vars "$gr_fw_yaml_config_file" fw_yaml_vars
 
-  # step2: user config.yaml -> global readonly YAML_* var
-  local -A user_yaml_vars=()
-  __fw_yaml_to_env_vars "$gr_user_yaml_config_file" user_yaml_vars
-
-  # step3: merge(step1 union step2), if conflict step2 override step1 -> merged YAML_* var
   local -A merged_vars=()
-  __fw_merge_env_vars fw_yaml_vars user_yaml_vars merged_vars
+  if [[ "$gr_user_config_path_exists" == true ]]; then
+    # step2: user config.yaml -> global readonly YAML_* var
+    local -A user_yaml_vars=()
+    __fw_yaml_to_env_vars "$gr_user_yaml_config_file" user_yaml_vars
+
+    # step3: merge(step1 union step2), if conflict step2 override step1 -> merged YAML_* var
+    # 即 user_yaml override fw_yaml
+    __fw_merge_env_vars fw_yaml_vars user_yaml_vars merged_vars
+  else
+    # user config path 不存在，直接使用 framework 配置
+    local key
+    for key in "${!fw_yaml_vars[@]}"; do
+      merged_vars["$key"]="${fw_yaml_vars[$key]}"
+    done
+  fi
 
   # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
   __fw_resolve_yaml_references merged_vars
@@ -311,37 +328,59 @@ __main() {
   gr_radp_env="${GX_RADP_ENV:-${YAML_RADP_ENV:-}}"
   readonly gr_radp_env
 
-  local -A env_yaml_vars=()
-  if [[ -n "$gr_radp_env" ]]; then
-    # 构建环境特定配置文件路径: config-dev.yaml, config-prod.yaml 等
-    local env_config_file="${gr_user_config_path}/${gr_user_config_filename}-${gr_radp_env}.yaml"
-    __fw_yaml_to_env_vars "$env_config_file" env_yaml_vars
-  fi
-
-  # step5: merge(step3 union step4), if conflict step4 override step3
   # 使用全局关联数组，以便 __fw_autoconfigure 可以访问
   declare -gA gw_final_yaml_vars=()
-  __fw_merge_env_vars merged_vars env_yaml_vars gw_final_yaml_vars
 
-  # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
-  __fw_resolve_yaml_references gw_final_yaml_vars
+  if [[ "$gr_user_config_path_exists" == true && -n "$gr_radp_env" ]]; then
+    # 构建环境特定配置文件路径: config-dev.yaml, config-prod.yaml 等
+    local env_config_file="${gr_user_config_path}/${gr_user_config_filename}-${gr_radp_env}.yaml"
+    if [[ "$gr_radp_env" == 'default' ]]; then
+        env_config_file="${gr_user_config_path}/${gr_user_config_filename}.yaml"
+    fi
+    local -A env_yaml_vars=()
+    __fw_yaml_to_env_vars "$env_config_file" env_yaml_vars
 
-  # 导出最终合并后的变量
-  __fw_export_yaml_vars gw_final_yaml_vars
+    # step5: merge(step3 union step4), if conflict step4 override step3
+    __fw_merge_env_vars merged_vars env_yaml_vars gw_final_yaml_vars
+
+    # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
+    __fw_resolve_yaml_references gw_final_yaml_vars
+
+    # 导出最终合并后的变量
+    __fw_export_yaml_vars gw_final_yaml_vars
+  else
+    # user config path 不存在或没有环境特定配置，直接使用 merged_vars 作为最终配置
+    local key
+    for key in "${!merged_vars[@]}"; do
+      gw_final_yaml_vars["$key"]="${merged_vars[$key]}"
+    done
+    # merged_vars 已经导出过了，gw_final_yaml_vars 内容相同，无需再次导出
+  fi
 
   # step6
   __fw_autoconfigure
 }
 
-#----------------------------------------------------------------------------------------------------------------------#
 declare -g gr_radp_env=${gr_radp_env:-}
+declare -g gr_user_config_path_exists=${gr_user_config_path:-false}
+#----------------------------------------------------------------------------------------------------------------------#
 declare -gr gr_fw_config_path="$gr_fw_root_path"/config
 declare -gr gr_fw_config_filename=framework_config
 declare -gr gr_fw_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".sh
 declare -gr gr_fw_yaml_config_file="$gr_fw_config_path"/"$gr_fw_config_filename".yaml
 declare -gr gr_fw_banner_file="$gr_fw_config_path"/banner.txt
 
-declare -gr gr_user_config_path="${GX_RADP_USER_CONFIG_PATH:-"$(dirname "${gr_fw_root_path}")/config"}"
+declare -g gr_user_config_path
+gr_user_config_path="$(
+  if [[ -n "${GX_RADP_USER_CONFIG_PATH:-}" ]]; then
+    printf '%s\n' "$GX_RADP_USER_CONFIG_PATH"
+  elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
+    printf '%s\n' "${XDG_CONFIG_HOME%/}/radp_bash"
+  else
+    printf '%s\n' "$(dirname "${gr_fw_root_path}")/config"
+  fi
+)"
+readonly gr_user_config_path
 declare -gr gr_user_config_filename="${GX_RADP_USER_CONFIG_FILENAME:-config}"
 declare -gr gr_user_config_file="$gr_user_config_path"/"$gr_user_config_filename".sh
 declare -gr gr_user_yaml_config_file="$gr_user_config_path"/"$gr_user_config_filename".yaml
