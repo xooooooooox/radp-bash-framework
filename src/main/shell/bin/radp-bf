@@ -2,7 +2,7 @@
 set -euo pipefail
 
 __radp_bf_usage() {
- cat <<'USAGE'
+  cat <<'USAGE'
 radp-bash-framework
 Usage:
   radp-bash-framework [--print-root|--print-run|--help]
@@ -17,17 +17,17 @@ Example:
 USAGE
 }
 
-__radp_bf_script_dir() {
-  # Resolve symlinks so we can locate the real installation directory.
-  local src dir
-  src="${BASH_SOURCE[0]}"
+__radp_bf_bin_dir() {
+  local src="${BASH_SOURCE[0]}"
 
-  # If invoked via a relative path, make it absolute first.
+  # 如果是通过相对路径调用, 得到其绝对路径
   if [[ "${src}" != /* ]]; then
     src="$(cd -P -- "$(dirname -- "${src}")" && pwd)/$(basename -- "${src}")"
   fi
 
-  while [[ -h "${src}" ]]; do
+  # 解决符号链接, 获取其真实绝对路径
+  local dir
+  while [[ -L "${src}" ]]; do
     dir="$(cd -P -- "$(dirname -- "${src}")" && pwd)"
     src="$(readlink "${src}")"
     [[ "${src}" != /* ]] && src="${dir}/${src}"
@@ -36,57 +36,38 @@ __radp_bf_script_dir() {
   cd -P -- "$(dirname -- "${src}")" && pwd
 }
 
-__radp_bf_find_root() {
-  local script_dir candidate
-  script_dir="$(__radp_bf_script_dir)"
+__radp_bf_setup() {
+  local bin_dir
+  bin_dir=$(__radp_bf_bin_dir)
 
-  for candidate in \
-    "${RADP_BASH_FRAMEWORK_HOME:-}" \
-    "${script_dir}/../framework" \
-    "${script_dir}/../libexec/radp-bash-framework/framework" \
-    "${script_dir}/../libexec/framework" \
-    "${script_dir}/../share/radp-bash-framework/framework" \
-    "${script_dir}/../src/main/shell/framework"
-  do
-    if [[ -n "${candidate}" && -f "${candidate}/run.sh" ]]; then
-      # Normalize path (remove .. and resolve symlinks) for stable output.
-      (cd -P -- "${candidate}" && pwd)
-      return 0
-    fi
-  done
-
-  return 1
+  local project_src_root
+  project_src_root=$(dirname "$bin_dir")
+  # shellcheck source=../framework/run.sh
+  source "$project_src_root"/framework/run.sh
 }
 
 __radp_bf_main() {
-  local root
+  # 丢弃打印 banner 等信息
+  __radp_bf_setup >/dev/null
 
   case "${1:-}" in
-    --help|-h)
-      __radp_bf_usage
-      return 0
-      ;;
-    --print-run)
-      root="$(__radp_bf_find_root)" || {
-        echo "radp-bash-framework: unable to locate framework root" >&2
-        return 1
-      }
-      echo "${root}/run.sh"
-      return 0
-      ;;
-    --print-root|"")
-      root="$(__radp_bf_find_root)" || {
-        echo "radp-bash-framework: unable to locate framework root" >&2
-        return 1
-      }
-      echo "${root}"
-      return 0
-      ;;
-    *)
-      echo "radp-bash-framework: unknown argument '${1}'" >&2
-      __radp_bf_usage >&2
-      return 2
-      ;;
+  --help | -h)
+    __radp_bf_usage
+    return 0
+    ;;
+  --print-run)
+    echo "${gr_fw_root_path}/run.sh"
+    return 0
+    ;;
+  --print-root | "")
+    echo "${gr_fw_root_path}"
+    return 0
+    ;;
+  *)
+    echo "radp-bash-framework: unknown argument '${1}'" >&2
+    __radp_bf_usage >&2
+    return 2
+    ;;
   esac
 }
 
