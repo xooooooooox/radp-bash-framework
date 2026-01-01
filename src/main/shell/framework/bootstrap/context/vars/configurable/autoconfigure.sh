@@ -329,7 +329,7 @@ __main() {
   # 导出最终合并后的变量
   __fw_export_yaml_vars gw_final_yaml_vars
 
-  # step6:
+  # step6
   __fw_autoconfigure
 }
 
