@@ -53,18 +53,6 @@ After install, resolve the framework entrypoint:
 source "$(radp-bf --print-run)"
 ```
 
-### npm
-
-```shell
-npm install -g radp-bash-framework
-```
-
-After install, resolve the framework entrypoint:
-
-```shell
-source "$(radp-bf --print-run)"
-```
-
 ### apt-get
 
 ```shell
@@ -78,3 +66,5 @@ source "$(radp-bf --print-run)"
 ```
 
 ### manual
+
+TODO
