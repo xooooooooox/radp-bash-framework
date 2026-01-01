@@ -68,6 +68,70 @@ __fw_merge_env_vars() {
 }
 
 #######################################
+# 解析 YAML 内部引用，将 ${yaml.path.key} 格式的引用展开为实际值
+# 例如: ${radp.fw.user.extend.path}/lib -> ../../extend/lib
+# Globals:
+#   None
+# Arguments:
+#   1 - vars_map_name: 包含所有 YAML 变量的关联数组名（会被原地修改）
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
+__fw_resolve_yaml_references() {
+  local -n __vars__=${1:?'Missing vars_map_name argument'}
+
+  local max_iterations=10
+  local iteration=0
+  local has_unresolved=true
+
+  # 多次迭代以处理嵌套引用
+  while [[ "$has_unresolved" == true && $iteration -lt $max_iterations ]]; do
+    has_unresolved=false
+    iteration=$((iteration + 1))
+
+    local key value
+    for key in "${!__vars__[@]}"; do
+      value="${__vars__[$key]}"
+
+      # 检查是否包含 ${...} 格式的引用（YAML 内部引用格式）
+      if [[ "$value" =~ \$\{([a-zA-Z0-9._-]+)\} ]]; then
+        local new_value="$value"
+
+        # 使用循环处理同一个值中的多个引用
+        while [[ "$new_value" =~ \$\{([a-zA-Z0-9._-]+)\} ]]; do
+          local ref_path="${BASH_REMATCH[1]}"
+          # 将点分隔的路径转换为 YAML_* 变量名格式
+          # 例如: radp.fw.user.extend.path -> YAML_RADP_FW_USER_EXTEND_PATH
+          local ref_var_name
+          ref_var_name="YAML_$(echo "$ref_path" | tr '[:lower:].' '[:upper:]_' | tr '-' '_')"
+
+          # 查找引用的值
+          if [[ -n "${__vars__[$ref_var_name]:-}" ]]; then
+            local ref_value="${__vars__[$ref_var_name]}"
+            # 替换引用为实际值
+            new_value="${new_value//\$\{$ref_path\}/$ref_value}"
+          else
+            # 引用的变量不存在，跳出循环避免无限循环
+            break
+          fi
+        done
+
+        # 如果值发生了变化，更新并标记可能还有未解析的引用
+        if [[ "$new_value" != "$value" ]]; then
+          __vars__["$key"]="$new_value"
+          # 检查新值是否还包含引用
+          if [[ "$new_value" =~ \$\{([a-zA-Z0-9._-]+)\} ]]; then
+            has_unresolved=true
+          fi
+        fi
+      fi
+    done
+  done
+}
+
+#######################################
 # 将关联数组中的变量导出为全局只读变量
 # 支持环境变量展开，例如 $HOME 会被替换为实际路径
 # Globals:
@@ -237,6 +301,9 @@ __main() {
   local -A merged_vars=()
   __fw_merge_env_vars fw_yaml_vars user_yaml_vars merged_vars
 
+  # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
+  __fw_resolve_yaml_references merged_vars
+
   # 先导出合并后的变量，以便 step4 可以使用 YAML_RADP_ENV
   __fw_export_yaml_vars merged_vars
 
@@ -255,6 +322,9 @@ __main() {
   # 使用全局关联数组，以便 __fw_autoconfigure 可以访问
   declare -gA gw_final_yaml_vars=()
   __fw_merge_env_vars merged_vars env_yaml_vars gw_final_yaml_vars
+
+  # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
+  __fw_resolve_yaml_references gw_final_yaml_vars
 
   # 导出最终合并后的变量
   __fw_export_yaml_vars gw_final_yaml_vars
