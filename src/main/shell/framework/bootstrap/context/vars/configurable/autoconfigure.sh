@@ -274,6 +274,138 @@ __fw_autoconfigure() {
 }
 
 #######################################
+# 初始化用户配置路径状态
+# 检查 user config path 是否存在，设置 gr_user_config_path_exists 标志
+# Globals:
+#   gr_user_config_path - 用户配置路径
+#   gr_user_config_path_exists - (写入) 用户配置路径是否存在的标志
+# Arguments:
+#   None
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
+__fw_init_user_config_path_status() {
+  if [[ -d "$gr_user_config_path" ]]; then
+    gr_user_config_path_exists=true
+    readonly gr_user_config_path_exists
+  fi
+}
+
+#######################################
+# 加载并合并基础配置（framework + user）
+# 1) 解析 framework_config.yaml
+# 2) 如果用户配置路径存在，解析 user config.yaml 并合并
+# 3) 解析 YAML 内部引用并导出变量
+# Globals:
+#   gr_fw_yaml_config_file - framework yaml 配置文件路径
+#   gr_user_yaml_config_file - user yaml 配置文件路径
+#   gr_user_config_path_exists - 用户配置路径是否存在
+# Arguments:
+#   1 - result_var_name: 用于存储合并结果的关联数组变量名
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
+__fw_load_and_merge_base_configs() {
+  local -n __result__=${1:?'Missing result_var_name argument'}
+
+  # step1: framework_config.yaml -> YAML_* var
+  local -A fw_yaml_vars=()
+  __fw_yaml_to_env_vars "$gr_fw_yaml_config_file" fw_yaml_vars
+
+  if [[ "$gr_user_config_path_exists" == true ]]; then
+    # step2: user config.yaml -> YAML_* var
+    local -A user_yaml_vars=()
+    __fw_yaml_to_env_vars "$gr_user_yaml_config_file" user_yaml_vars
+
+    # step3: merge(fw_yaml union user_yaml), user_yaml override fw_yaml
+    __fw_merge_env_vars fw_yaml_vars user_yaml_vars __result__
+  else
+    # user config path 不存在，直接使用 framework 配置
+    local key
+    for key in "${!fw_yaml_vars[@]}"; do
+      __result__["$key"]="${fw_yaml_vars[$key]}"
+    done
+  fi
+
+  # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
+  __fw_resolve_yaml_references __result__
+
+  # 导出合并后的变量，以便后续可以使用 YAML_RADP_ENV
+  __fw_export_yaml_vars __result__
+}
+
+#######################################
+# 初始化环境变量 gr_radp_env
+# 优先级: GX_RADP_ENV > YAML_RADP_ENV > 空
+# Globals:
+#   gr_radp_env - (写入) 当前环境标识
+#   GX_RADP_ENV - 环境变量覆盖
+#   YAML_RADP_ENV - YAML 配置中的环境标识
+# Arguments:
+#   None
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
+__fw_init_radp_env() {
+  gr_radp_env="${GX_RADP_ENV:-${YAML_RADP_ENV:-}}"
+  readonly gr_radp_env
+}
+
+#######################################
+# 加载环境特定配置并合并到最终配置
+# 根据 gr_radp_env 加载对应的 config-{env}.yaml 文件
+# 如果 env=default, 则无需加载 env 配置
+# Globals:
+#   gr_user_config_path - 用户配置路径
+#   gr_user_config_filename - 用户配置文件名
+#   gr_user_config_path_exists - 用户配置路径是否存在
+#   gr_radp_env - 当前环境标识
+#   gw_final_yaml_vars - (写入) 最终合并后的 YAML 变量
+# Arguments:
+#   1 - merged_vars_name: 已合并的基础配置关联数组变量名
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
+__fw_load_env_specific_config() {
+  local -n __merged__=${1:?'Missing merged_vars_name argument'}
+
+  # 使用全局关联数组，以便 __fw_autoconfigure 可以访问
+  declare -gA gw_final_yaml_vars=()
+
+  if [[ "$gr_user_config_path_exists" == true && -n "$gr_radp_env" && "$gr_radp_env" != "default" ]]; then
+    # 构建环境特定配置文件路径: config-dev.yaml, config-prod.yaml 等
+    local env_config_file="${gr_user_config_path}/${gr_user_config_filename}-${gr_radp_env}.yaml"
+
+    local -A env_yaml_vars=()
+    __fw_yaml_to_env_vars "$env_config_file" env_yaml_vars
+
+    # merge(merged union env), env override merged
+    __fw_merge_env_vars __merged__ env_yaml_vars gw_final_yaml_vars
+
+    # 解析 YAML 内部引用
+    __fw_resolve_yaml_references gw_final_yaml_vars
+
+    # 导出最终合并后的变量
+    __fw_export_yaml_vars gw_final_yaml_vars
+  else
+    # user config path 不存在或没有环境特定配置，直接使用 merged_vars 作为最终配置
+    local key
+    for key in "${!__merged__[@]}"; do
+      gw_final_yaml_vars["$key"]="${__merged__[$key]}"
+    done
+    # merged_vars 已经导出过了，gw_final_yaml_vars 内容相同，无需再次导出
+  fi
+}
+
+#######################################
 # 解析 yaml 配置文件, 并注入全局变量
 # 1) 使用 yq 解析 framework/user yaml，按优先级合并为最终配置
 # 2) 将 yaml 配置转换为 `YAML_*` 形式的变量(类似 Spring Boot ENVIRONMENT)
@@ -284,85 +416,32 @@ __fw_autoconfigure() {
 #   gr_user_yaml_config_file - user yaml config
 #   gr_user_config_file - finally user config
 # Arguments:
-#
+#   None
 # Outputs:
-#
+#   None
 # Returns:
-#
+#   0 - Success
 #######################################
 __main() {
-  # 检查 user config path 是否存在，如果不存在则跳过用户配置相关的处理
-  if [[ -d "$gr_user_config_path" ]]; then
-    gr_user_config_path_exists=true
-    readonly gr_user_config_path_exists
-  fi
+  # 1. 初始化用户配置路径状态
+  __fw_init_user_config_path_status
 
-  # step1: framework_config.yaml -> global readonly YAML_* var
-  local -A fw_yaml_vars=()
-  __fw_yaml_to_env_vars "$gr_fw_yaml_config_file" fw_yaml_vars
-
+  # 2. 加载并合并基础配置（framework + user）
   local -A merged_vars=()
-  if [[ "$gr_user_config_path_exists" == true ]]; then
-    # step2: user config.yaml -> global readonly YAML_* var
-    local -A user_yaml_vars=()
-    __fw_yaml_to_env_vars "$gr_user_yaml_config_file" user_yaml_vars
+  __fw_load_and_merge_base_configs merged_vars
 
-    # step3: merge(step1 union step2), if conflict step2 override step1 -> merged YAML_* var
-    # 即 user_yaml override fw_yaml
-    __fw_merge_env_vars fw_yaml_vars user_yaml_vars merged_vars
-  else
-    # user config path 不存在，直接使用 framework 配置
-    local key
-    for key in "${!fw_yaml_vars[@]}"; do
-      merged_vars["$key"]="${fw_yaml_vars[$key]}"
-    done
-  fi
+  # 3. 初始化环境变量
+  __fw_init_radp_env
 
-  # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
-  __fw_resolve_yaml_references merged_vars
+  # 4. 加载环境特定配置并生成最终配置
+  __fw_load_env_specific_config merged_vars
 
-  # 先导出合并后的变量，以便 step4 可以使用 YAML_RADP_ENV
-  __fw_export_yaml_vars merged_vars
-
-  # step4: config-$YAML_RADP_ENV.yaml -> global readonly YAML_* var
-  gr_radp_env="${GX_RADP_ENV:-${YAML_RADP_ENV:-}}"
-  readonly gr_radp_env
-
-  # 使用全局关联数组，以便 __fw_autoconfigure 可以访问
-  declare -gA gw_final_yaml_vars=()
-
-  if [[ "$gr_user_config_path_exists" == true && -n "$gr_radp_env" ]]; then
-    # 构建环境特定配置文件路径: config-dev.yaml, config-prod.yaml 等
-    local env_config_file="${gr_user_config_path}/${gr_user_config_filename}-${gr_radp_env}.yaml"
-    if [[ "$gr_radp_env" == 'default' ]]; then
-        env_config_file="${gr_user_config_path}/${gr_user_config_filename}.yaml"
-    fi
-    local -A env_yaml_vars=()
-    __fw_yaml_to_env_vars "$env_config_file" env_yaml_vars
-
-    # step5: merge(step3 union step4), if conflict step4 override step3
-    __fw_merge_env_vars merged_vars env_yaml_vars gw_final_yaml_vars
-
-    # 解析 YAML 内部引用，如 ${radp.fw.user.extend.path}
-    __fw_resolve_yaml_references gw_final_yaml_vars
-
-    # 导出最终合并后的变量
-    __fw_export_yaml_vars gw_final_yaml_vars
-  else
-    # user config path 不存在或没有环境特定配置，直接使用 merged_vars 作为最终配置
-    local key
-    for key in "${!merged_vars[@]}"; do
-      gw_final_yaml_vars["$key"]="${merged_vars[$key]}"
-    done
-    # merged_vars 已经导出过了，gw_final_yaml_vars 内容相同，无需再次导出
-  fi
-
-  # step6
+  # 5. 执行自动配置
   __fw_autoconfigure
 }
 
 declare -g gr_radp_env=${gr_radp_env:-}
-declare -g gr_user_config_path_exists=${gr_user_config_path:-false}
+declare -g gr_user_config_path_exists=${gr_user_config_path_exists:-false}
 #----------------------------------------------------------------------------------------------------------------------#
 declare -gr gr_fw_config_path="$gr_fw_root_path"/config
 declare -gr gr_fw_config_filename=framework_config
