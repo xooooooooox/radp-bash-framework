@@ -57,7 +57,7 @@ __main() {
   fi
   gw_fw_run_initialized="1"
 
-  gr_fw_root_path=$(cd "$(dirname "$0")" && pwd)
+  gr_fw_root_path=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   gr_fw_preflight_path="$gr_fw_root_path"/preflight
   gr_fw_bootstrap_path="$gr_fw_root_path"/bootstrap
   readonly gr_fw_root_path gr_fw_preflight_path gr_fw_bootstrap_path

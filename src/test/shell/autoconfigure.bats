@@ -41,6 +41,7 @@ source_autoconfigure_functions() {
   # We use a subshell approach to avoid running __main
   eval "$(sed -n '/^__fw_yaml_to_env_vars()/,/^}/p' "$autoconfigure_file")"
   eval "$(sed -n '/^__fw_merge_env_vars()/,/^}/p' "$autoconfigure_file")"
+  eval "$(sed -n '/^__fw_resolve_yaml_references()/,/^}/p' "$autoconfigure_file")"
   eval "$(sed -n '/^__fw_export_yaml_vars()/,/^}/p' "$autoconfigure_file")"
   eval "$(sed -n '/^__fw_yaml_var_to_shell_var()/,/^}/p' "$autoconfigure_file")"
   eval "$(sed -n '/^__fw_yaml_var_to_env_var()/,/^}/p' "$autoconfigure_file")"
@@ -554,4 +555,122 @@ EOF
   # Check the exact format of the declaration
   # Format should be: declare -gr gr_xxx="${GX_XXX:-${YAML_XXX:-default}}"
   grep -q 'declare -gr gr_radp_user_config_extend_test="${GX_RADP_USER_CONFIG_EXTEND_TEST:-${YAML_RADP_USER_CONFIG_EXTEND_TEST:-test_value}}"' "$gr_user_config_file"
+}
+
+# =============================================================================
+# Tests for __fw_resolve_yaml_references
+# =============================================================================
+
+@test "__fw_resolve_yaml_references: resolves simple reference" {
+  source_autoconfigure_functions
+
+  local -A vars=(
+    [YAML_RADP_FW_USER_EXTEND_PATH]="../../extend"
+    [YAML_RADP_FW_USER_LIB_PATH]='${radp.fw.user.extend.path}/lib'
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Reference should be resolved
+  [[ "${vars[YAML_RADP_FW_USER_LIB_PATH]}" == "../../extend/lib" ]]
+}
+
+@test "__fw_resolve_yaml_references: resolves multiple references in same value" {
+  source_autoconfigure_functions
+
+  local -A vars=(
+    [YAML_RADP_BASE_PATH]="/opt"
+    [YAML_RADP_APP_NAME]="myapp"
+    [YAML_RADP_FULL_PATH]='${radp.base.path}/${radp.app.name}/bin'
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Both references should be resolved
+  [[ "${vars[YAML_RADP_FULL_PATH]}" == "/opt/myapp/bin" ]]
+}
+
+@test "__fw_resolve_yaml_references: resolves nested references" {
+  source_autoconfigure_functions
+
+  local -A vars=(
+    [YAML_RADP_ROOT]="/home/user"
+    [YAML_RADP_APP_DIR]='${radp.root}/app'
+    [YAML_RADP_LOG_DIR]='${radp.app.dir}/logs'
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Nested references should be resolved
+  [[ "${vars[YAML_RADP_APP_DIR]}" == "/home/user/app" ]]
+  [[ "${vars[YAML_RADP_LOG_DIR]}" == "/home/user/app/logs" ]]
+}
+
+@test "__fw_resolve_yaml_references: handles non-existent reference gracefully" {
+  source_autoconfigure_functions
+
+  local -A vars=(
+    [YAML_RADP_PATH]='${radp.nonexistent.path}/lib'
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Non-existent reference should remain unchanged
+  [[ "${vars[YAML_RADP_PATH]}" == '${radp.nonexistent.path}/lib' ]]
+}
+
+@test "__fw_resolve_yaml_references: handles empty array" {
+  source_autoconfigure_functions
+
+  local -A vars=()
+
+  run __fw_resolve_yaml_references vars
+
+  [[ "$status" -eq 0 ]]
+}
+
+@test "__fw_resolve_yaml_references: preserves values without references" {
+  source_autoconfigure_functions
+
+  local -A vars=(
+    [YAML_RADP_SIMPLE]="simple_value"
+    [YAML_RADP_NUMBER]="123"
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Values without references should remain unchanged
+  [[ "${vars[YAML_RADP_SIMPLE]}" == "simple_value" ]]
+  [[ "${vars[YAML_RADP_NUMBER]}" == "123" ]]
+}
+
+@test "__fw_resolve_yaml_references: handles hyphenated keys" {
+  source_autoconfigure_functions
+
+  local -A vars=(
+    [YAML_RADP_LOG_ROLLING_POLICY_ENABLED]="true"
+    [YAML_RADP_LOG_STATUS]='policy-enabled: ${radp.log.rolling-policy.enabled}'
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Hyphenated key reference should be resolved
+  [[ "${vars[YAML_RADP_LOG_STATUS]}" == "policy-enabled: true" ]]
+}
+
+@test "__fw_resolve_yaml_references: integration with actual framework config pattern" {
+  source_autoconfigure_functions
+
+  # Simulate the actual use case from framework_config.yaml
+  local -A vars=(
+    [YAML_RADP_FW_USER_EXTEND_PATH]="../../extend"
+    [YAML_RADP_FW_USER_LIB_PATH]='${radp.fw.user.extend.path}/lib'
+  )
+
+  __fw_resolve_yaml_references vars
+
+  # Should resolve to the expected path
+  [[ "${vars[YAML_RADP_FW_USER_LIB_PATH]}" == "../../extend/lib" ]]
+  # Original value should remain unchanged
+  [[ "${vars[YAML_RADP_FW_USER_EXTEND_PATH]}" == "../../extend" ]]
 }

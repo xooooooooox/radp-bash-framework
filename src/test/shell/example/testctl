@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+#######################################
+# 导入 radp bash framework
+# Globals:
+#   BASH_SOURCE
+# Arguments:
+#   @ - 命令行所有参数
+# Outputs:
+#   None
+# Returns:
+#   None
+#######################################
+__setup() {
+  local pwd
+  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+  declare -gr GX_RADP_USER_CONFIG_PATH="$pwd"/config
+
+  # shellcheck source=../../../main/shell/framework/run.sh
+  source "$pwd"/../../../main/shell/framework/run.sh
+}
+
+main() {
+  # 指定 user config path
+  __setup
+
+  radp_log_info ">>>>>>>>>>>>>$gr_radp_env"
+  radp_log_info ">>>>>>>>>>>>>$gr_radp_fw_user_lib_path"
+  radp_log_info ">>>>>>>>>>>>>$gr_user_yaml_config_file"
+}
+
+main "$@"
