@@ -28,7 +28,7 @@ After install, resolve the framework entrypoint:
 source "$(radp-bf --print-run)"
 ```
 
-### rpm
+### rpm (dnf/yum)
 
 - If use `dnf`:
 
@@ -71,6 +71,30 @@ source "$(radp-bf --print-run)"
 ### manual
 
 TODO
+
+## Upgrade
+
+### Homebrew
+
+```shell
+brew upgrade radp-bash-framework
+```
+
+### rpm (dnf/yum)
+
+```shell
+sudo dnf upgrade -y radp-bash-framework
+sudo yum update -y radp-bash-framework
+```
+
+### apt-get
+
+```shell
+VERSION="<version>"
+curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
+  "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
+sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
+```
 
 ## Release
 

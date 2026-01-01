@@ -17,20 +17,23 @@ brew install radp-bash-framework
 source "$(radp-bf --print-run)"
 ```
 
-### yum
+### rpm (dnf/yum)
 
-### dnf
+- `dnf`:
 
-### npm
-
-```bash
-npm install -g radp-bash-framework
+```shell
+sudo dnf install -y dnf-plugins-core
+sudo dnf copr enable -y xooooooooox/radp
+sudo dnf install -y radp-bash-framework
 ```
 
-安装后，可以通过以下方式获取 `run.sh` 的路径：
+- `yum`:
 
-```bash
-source "$(radp-bf --print-run)"
+```shell
+sudo yum install -y epel-release
+sudo yum install -y yum-plugin-copr
+sudo yum copr enable -y xooooooooox/radp
+sudo yum install -y radp-bash-framework
 ```
 
 ### apt-get
@@ -59,6 +62,30 @@ source /path/to/framework/run.sh
 ### 手动安装
 
 TODO
+
+## 升级
+
+### Homebrew
+
+```bash
+brew upgrade radp-bash-framework
+```
+
+### rpm (dnf/yum)
+
+```bash
+sudo dnf upgrade -y radp-bash-framework
+sudo yum update -y radp-bash-framework
+```
+
+### apt-get
+
+```bash
+VERSION="<version>"
+curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
+  "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
+sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
+```
 
 ## 发布
 
