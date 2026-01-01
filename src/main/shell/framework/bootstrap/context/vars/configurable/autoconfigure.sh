@@ -196,8 +196,8 @@ __fw_yaml_var_to_env_var() {
 
 #######################################
 # 生成用户配置文件 config.sh 的内容
-# 当 radp.user.config.automap=true 时，自动将 radp.user.extend.*
-# 下的 YAML 配置映射为 shell 变量声明
+# 当 radp.user.config.automap=true 时，自动将 radp.extend.*
+# 下的 YAML 配置映射为 shell 变量声明 YAML_RADP_EXTEND_*
 # Globals:
 #   gr_user_config_file - 用户配置文件路径
 # Arguments:
@@ -223,9 +223,9 @@ set -e
   local key shell_var env_var value
   local has_extend_vars=false
 
-  # 遍历所有变量，筛选出 YAML_RADP_USER_EXTEND_* 前缀的变量
+  # 遍历所有变量，筛选出 YAML_RADP_EXTEND_* 前缀的变量
   for key in "${!__all_vars__[@]}"; do
-    if [[ "$key" == YAML_RADP_USER_EXTEND_* ]]; then
+    if [[ "$key" == YAML_RADP_EXTEND_* ]]; then
       has_extend_vars=true
       shell_var=$(__fw_yaml_var_to_shell_var "$key")
       env_var=$(__fw_yaml_var_to_env_var "$key")

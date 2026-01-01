@@ -34,3 +34,6 @@ radp:
         automap: true
       lib:
         path: ${gr_fw_root_path}/../lib
+  # 可在 user yaml config (如 config.yaml) 中自行定义任何配置,
+  # 只需要将这部分配置放置在 radp.extend.* 下, 框架会自动将此部分配置 automap to user config file(即config.sh) 中
+  extend:
