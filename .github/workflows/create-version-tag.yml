@@ -1,0 +1,42 @@
+name: Create version tag
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-version-tag:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
+          version=$(sed -n 's/^declare -gr gr_fw_version=//p' "$constants_file" | head -n 1)
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_fw_version from $constants_file" >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '$version' does not match vx.y.z" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          if git rev-parse "$version" >/dev/null 2>&1; then
+            echo "Tag $version already exists."
+            exit 0
+          fi
+          git tag "$version"
+          git push origin "$version"
