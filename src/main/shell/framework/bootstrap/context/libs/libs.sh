@@ -2,7 +2,7 @@
 set -e
 # shellcheck source=../vars/global_vars.sh
 
-__main() {
+__fw_include_lib_internal() {
   # 加载日志组件
   # shellcheck source=./logger/logger.sh
   __fw_source_scripts "$gr_fw_context_libs_path"/logger/logger.sh
@@ -13,6 +13,16 @@ __main() {
     radp_log_error "$msg"
     return 1
   }
+}
+
+__fw_include_lib_external() {
+  # TODO v1.0-2026/1/1: log debug sourced scripts
+  __fw_source_scripts "$gr_radp_fw_user_lib_path"
+}
+
+__main() {
+  __fw_include_lib_internal
+  __fw_include_lib_external
 }
 
 __main
