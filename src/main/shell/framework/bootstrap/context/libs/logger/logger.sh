@@ -19,10 +19,10 @@ __fw_get_log_level_color() {
   local -u log_level=${1:-}
   local color_config color_code
   case "$log_level" in
-  DEBUG) color_config="${gr_radp_log_color_debug:-faint}" ;;
-  INFO) color_config="${gr_radp_log_color_info:-green}" ;;
-  WARN) color_config="${gr_radp_log_color_warn:-yellow}" ;;
-  ERROR) color_config="${gr_radp_log_color_error:-red}" ;;
+  DEBUG) color_config="${gr_radp_fw_log_color_debug:-faint}" ;;
+  INFO) color_config="${gr_radp_fw_log_color_info:-green}" ;;
+  WARN) color_config="${gr_radp_fw_log_color_warn:-yellow}" ;;
+  ERROR) color_config="${gr_radp_fw_log_color_error:-red}" ;;
   *)
     echo -e "\033[0m"
     return
@@ -124,10 +124,10 @@ __fw_parse_clr_syntax() {
   # 获取日志级别对应的默认颜色（支持颜色名称或数字代码）
   local level_color_config level_color
   case "${log_level^^}" in
-  DEBUG) level_color_config="${gr_radp_log_color_debug:-blue}" ;;
-  INFO) level_color_config="${gr_radp_log_color_info:-green}" ;;
-  WARN) level_color_config="${gr_radp_log_color_warn:-yellow}" ;;
-  ERROR) level_color_config="${gr_radp_log_color_error:-red}" ;;
+  DEBUG) level_color_config="${gr_radp_fw_log_color_debug:-blue}" ;;
+  INFO) level_color_config="${gr_radp_fw_log_color_info:-green}" ;;
+  WARN) level_color_config="${gr_radp_fw_log_color_warn:-yellow}" ;;
+  ERROR) level_color_config="${gr_radp_fw_log_color_error:-red}" ;;
   *) level_color_config="default" ;;
   esac
   level_color=$(__fw_color_name_to_code "$level_color_config")
@@ -266,17 +266,17 @@ __fw_logger() {
   )
 
   # 获取配置的日志级别, 默认为 INFO
-  local configured_level="${gr_radp_log_level:-info}"
+  local configured_level="${gr_radp_fw_log_level:-info}"
   configured_level="${configured_level^^}"
 
   # 判断是否需要输出日志
   local current_level_id=${log_level_id[$log_level]:-1}
   local configured_level_id=${log_level_id[$configured_level]:-1}
 
-  if [[ "${gr_radp_log_debug:-false}" == "true" || $current_level_id -ge $configured_level_id ]]; then
+  if [[ "${gr_radp_fw_log_debug:-false}" == "true" || $current_level_id -ge $configured_level_id ]]; then
     # 获取日志格式 pattern
-    local console_pattern="${gr_radp_log_pattern_console:-%d | %p %P | %t | %L:%F#%M | %m}"
-    local file_pattern="${gr_radp_log_pattern_file:-%d | %p %P | %t | %L:%F#%M | %m}"
+    local console_pattern="${gr_radp_fw_log_pattern_console:-%d | %p %P | %t | %L:%F#%M | %m}"
+    local file_pattern="${gr_radp_fw_log_pattern_file:-%d | %p %P | %t | %L:%F#%M | %m}"
 
     # 格式化日志消息
     # 控制台输出时着色 (colorize=true)，文件输出时不着色 (colorize=false)
@@ -407,13 +407,13 @@ radp_log_error() {
 #   - 函数内部对重定向操作进行了错误检查，任何重定向失败都会导致脚本退出，
 #######################################
 __fw_logger_setup() {
-  local logfile="${gr_radp_log_file:?}"
+  local logfile="${gr_radp_fw_log_file:?}"
   if [[ -z "$gr_log_file_path" ]]; then
-    gr_log_file_path=$(dirname "$gr_radp_log_file")
+    gr_log_file_path=$(dirname "$gr_radp_fw_log_file")
     readonly gr_log_file_path
   fi
   if [[ -z "$gr_log_filename" ]]; then
-    gr_log_filename=$(basename "$gr_radp_log_file")
+    gr_log_filename=$(basename "$gr_radp_fw_log_file")
     readonly gr_log_filename
   fi
   if [[ -z "$gr_log_rolling_path" ]]; then
@@ -443,7 +443,7 @@ __fw_logger_setup() {
     echo "Error: Failed to open logfile '$logfile' for writing."
     exit 1
   }
-  [[ "$gr_radp_log_debug" == 'true' ]] && echo "Redirect fd3 to '$logfile'"
+  [[ "$gr_radp_fw_log_debug" == 'true' ]] && echo "Redirect fd3 to '$logfile'"
 
   # 检测是否在交互式终端中运行
   # 如果是则重定向到 stdout
@@ -451,7 +451,7 @@ __fw_logger_setup() {
   if [[ -t 1 ]]; then
     if [[ -e /dev/tty ]]; then
       if exec 4>/dev/tty; then
-        if [[ "$gr_radp_log_debug" == 'true' ]]; then
+        if [[ "$gr_radp_fw_log_debug" == 'true' ]]; then
           echo "Redirect fd4 to /dev/tty"
         fi
       else
@@ -464,7 +464,7 @@ __fw_logger_setup() {
     fi
   else
     if exec 4>&1; then
-      if [[ "$gr_radp_log_debug" == 'true' ]]; then
+      if [[ "$gr_radp_fw_log_debug" == 'true' ]]; then
         echo "In non-interactive terminal, redirecting fd4 to stdout"
       fi
     else
@@ -541,11 +541,11 @@ __fw_transfer_filesize() {
 #######################################
 __fw_logger_rolling() {
   # 检查是否启用滚动策略
-  if [[ "${gr_radp_log_rolling_policy_enabled:-true}" != "true" ]]; then
+  if [[ "${gr_radp_fw_log_rolling_policy_enabled:-true}" != "true" ]]; then
     return 0
   fi
 
-  local log_file="${gr_radp_log_file:?}"
+  local log_file="${gr_radp_fw_log_file:?}"
 
   # 检查日志文件是否存在
   if [[ ! -f "$log_file" ]]; then
@@ -559,9 +559,9 @@ __fw_logger_rolling() {
   current_date=$(date '+%Y%m%d')
 
   # 获取配置
-  local max_file_size="${gr_radp_log_rolling_policy_max_file_size:-10MB}"
-  local max_history="${gr_radp_log_rolling_policy_max_history:-7}"
-  local total_size_cap="${gr_radp_log_rolling_policy_total_size_cap:-5GB}"
+  local max_file_size="${gr_radp_fw_log_rolling_policy_max_file_size:-10MB}"
+  local max_history="${gr_radp_fw_log_rolling_policy_max_history:-7}"
+  local total_size_cap="${gr_radp_fw_log_rolling_policy_total_size_cap:-5GB}"
 
   # 转换文件大小为字节
   local max_size_bytes

@@ -196,7 +196,7 @@ __fw_autoconfigure() {
   __fw_source_scripts "$gr_fw_config_file"
 
   # 当 automap 启用时，自动生成 config.sh
-  if [[ "${gr_radp_user_config_automap:-false}" == "true" ]]; then
+  if [[ "${gr_radp_fw_user_config_automap:-false}" == "true" ]]; then
     # 需要传入最终合并后的变量，这里使用全局变量 gw_final_yaml_vars
     if [[ ${#gw_final_yaml_vars[@]} -gt 0 ]]; then
       __fw_generate_user_config gw_final_yaml_vars

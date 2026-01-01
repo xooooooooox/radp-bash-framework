@@ -1,13 +1,14 @@
 radp:
-  log:
-    debug: false
-    level: debug
-    file: $HOME/logs/radp/radp_bash.log
-    rolling-policy:
-      enabled: true
-      max-history: 7
-      total-size-cap: 5GB
-      max-file-size: 10MB
-  user:
-    config:
-      automap: true
+  fw:
+    log:
+      debug: false
+      level: debug
+      file: $HOME/logs/radp/radp_bash.log
+      rolling-policy:
+        enabled: true
+        max-history: 7
+        total-size-cap: 5GB
+        max-file-size: 10MB
+    user:
+      config:
+        automap: true
