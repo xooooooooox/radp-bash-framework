@@ -1,5 +1,16 @@
 # radp-bash-framework
 
+```
+    ____  ___    ____  ____     ____  ___   _____ __  __
+   / __ \/   |  / __ \/ __ \   / __ )/   | / ___// / / /
+  / /_/ / /| | / / / / /_/ /  / __  / /| | \__ \/ /_/ /
+ / _, _/ ___ |/ /_/ / ____/  / /_/ / ___ |___/ / __  /
+/_/ |_/_/  |_/_____/_/      /_____/_/  |_/____/_/ /_/
+
+```
+
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/)
+
 ## Installation
 
 ### Homebrew
