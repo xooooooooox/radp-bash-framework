@@ -4,6 +4,8 @@
 
 ### Homebrew
 
+详情见: <https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb>.
+
 ```bash
 brew tap xooooooooox/radp
 brew install radp-bash-framework
