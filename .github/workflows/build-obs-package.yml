@@ -53,7 +53,9 @@ jobs:
           set -euo pipefail
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
           api_url="${api_url%/}"
-          cat <<CONFIG > ~/.oscrc
+          osc_config="$HOME/.config/osc/oscrc"
+          mkdir -p "$(dirname "$osc_config")"
+          cat <<CONFIG > "$osc_config"
           [general]
           apiurl = ${api_url}
           credentials_mgr_class = PlaintextConfigFileCredentialsManager
@@ -61,6 +63,8 @@ jobs:
           user = ${OBS_USERNAME}
           pass = ${OBS_PASSWORD}
           CONFIG
+          cp "$osc_config" "$HOME/.oscrc"
+          echo "OSC_CONFIG=$osc_config" >> "$GITHUB_ENV"
 
       - name: Read version
         id: version
