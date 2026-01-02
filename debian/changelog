@@ -1,4 +1,4 @@
-radp-bash-framework (0.0.0-1) unstable; urgency=medium
+radp-bash-framework (0.1.0-1) unstable; urgency=medium
 
   * Initial Debian packaging for OBS.
 

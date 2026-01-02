@@ -1,0 +1,13 @@
+<services>
+  <service name="tar_scm">
+    <param name="scm">git</param>
+    <param name="url">https://github.com/xooooooooox/radp-bash-framework.git</param>
+    <param name="revision">v0.1.0</param>
+    <param name="versionformat">0.1.0</param>
+    <param name="filename">radp-bash-framework</param>
+  </service>
+  <service name="recompress">
+    <param name="file">radp-bash-framework-*.tar</param>
+    <param name="compression">gz</param>
+  </service>
+</services>
