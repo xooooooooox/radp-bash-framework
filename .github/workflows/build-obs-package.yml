@@ -142,6 +142,9 @@ jobs:
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
           api_url="${api_url%/}"
           osc_config="${OSC_CONFIG:-$HOME/.config/osc/oscrc}"
+          if ! OSC_CONFIG="$osc_config" osc -A "$api_url" meta pkg "$OBS_PROJECT" "$OBS_PACKAGE" >/dev/null 2>&1; then
+            OSC_CONFIG="$osc_config" osc -A "$api_url" mkpac "$OBS_PROJECT" "$OBS_PACKAGE"
+          fi
           OSC_CONFIG="$osc_config" osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
