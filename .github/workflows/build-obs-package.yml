@@ -138,7 +138,7 @@ jobs:
         if: steps.prepare.outputs.should_sync == 'true'
         run: |
           set -euo pipefail
-          obs_dir="${OBS_PACKAGE}"
+          obs_dir="${OBS_PROJECT}/${OBS_PACKAGE}"
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
           api_url="${api_url%/}"
           osc_config="${OSC_CONFIG:-$HOME/.config/osc/oscrc}"
