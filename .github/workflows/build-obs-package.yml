@@ -112,7 +112,7 @@ jobs:
           cp -a debian "$obs_dir/"
 
           pushd "$obs_dir" >/dev/null
-          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" addremove
-          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
-          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" commit -m "Release ${{ steps.version.outputs.version }}"
+          osc -A "$api_url" addremove
+          osc -A "$api_url" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
+          osc -A "$api_url" commit -m "Release ${{ steps.version.outputs.version }}"
           popd >/dev/null
