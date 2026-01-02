@@ -145,8 +145,8 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
     - `update-homebrew-tap` 更新 Homebrew 的 formula。
     - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
 5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/copr/radp-bash-framework.spec`。
-6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建。
-7. `build-obs-package` 会同步源码到 OBS 并触发 OBS 构建。
+6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建（仅在版本标签存在时执行）。
+7. `build-obs-package` 会同步源码到 OBS 并触发 OBS 构建（仅在版本标签存在时执行）。
 
 ## Github Actions
 
@@ -163,7 +163,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### 构建 COPR 包（`build-copr-package.yml`）
 
 - **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发。
-- **用途：** 使用 `packaging/copr/radp-bash-framework.spec` 触发 COPR SCM 构建。
+- **用途：** 使用 `packaging/copr/radp-bash-framework.spec` 触发 COPR SCM 构建，若版本标签不存在则跳过（SCM 源码基于标签归档）。
 
 ### 更新 Homebrew tap（`update-homebrew-tap.yml`）
 
@@ -178,4 +178,4 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### 构建 OBS 包（`build-obs-package.yml`）
 
 - **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发，或手动触发（`workflow_dispatch`）。
-- **用途：** 同步源码 tarball、spec 和 Debian 打包元数据到 OBS 并触发构建。
+- **用途：** 同步源码 tarball、spec 和 Debian 打包元数据到 OBS 并触发构建，若版本标签不存在则跳过（tarball 基于标签归档）。

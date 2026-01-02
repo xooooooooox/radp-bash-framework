@@ -154,8 +154,8 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
     - `update-homebrew-tap` updates the Homebrew formula.
     - `build-deb-package` builds and uploads the `.deb` to the GitHub Release.
 5. The `update-spec-version` workflow updates `packaging/copr/radp-bash-framework.spec` on `main` when the version changes.
-6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main`.
-7. The `build-obs-package` workflow syncs sources to OBS and triggers the OBS build.
+6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main` (only when the release tag exists).
+7. The `build-obs-package` workflow syncs sources to OBS and triggers the OBS build (only when the release tag exists).
 
 ## GitHub Actions
 
@@ -172,7 +172,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### Build COPR package (`build-copr-package.yml`)
 
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`.
-- **Purpose:** Trigger a COPR SCM build using the updated spec at `packaging/copr/radp-bash-framework.spec`.
+- **Purpose:** Trigger a COPR SCM build using the updated spec at `packaging/copr/radp-bash-framework.spec`, skipping the build when the release tag is missing (the SCM source is generated from the tag).
 
 ### Update Homebrew tap (`update-homebrew-tap.yml`)
 
@@ -187,4 +187,4 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### Build OBS package (`build-obs-package.yml`)
 
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`, or manual (`workflow_dispatch`).
-- **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build.
+- **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build, skipping the build when the release tag is missing (the tarball is created from the tag).
