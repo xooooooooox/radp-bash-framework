@@ -159,6 +159,6 @@ jobs:
 
           pushd "$obs_dir" >/dev/null
           OSC_CONFIG="$osc_config" osc -A "$api_url" addremove
-          OSC_CONFIG="$osc_config" osc -A "$api_url" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
+          OSC_CONFIG="$osc_config" osc -A "$api_url" vc -m "Release ${{ steps.version.outputs.version }}"
           OSC_CONFIG="$osc_config" osc -A "$api_url" commit -m "Release ${{ steps.version.outputs.version }}"
           popd >/dev/null
