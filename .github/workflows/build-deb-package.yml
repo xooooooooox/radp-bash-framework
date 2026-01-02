@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_run:
+    workflows:
+      - Create version tag
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -11,10 +16,37 @@ permissions:
 
 jobs:
   build-deb:
+    if: >-
+      ${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main')
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            head_sha="${{ github.event.workflow_run.head_sha }}"
+            tag_name="$(git tag --points-at "${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+          else
+            tag_name="${GITHUB_REF_NAME}"
+          fi
+          if [[ -z "${tag_name}" ]]; then
+            echo "Failed to resolve version tag for event ${GITHUB_EVENT_NAME}" >&2
+            exit 1
+          fi
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
 
       - name: Read version
         id: version
@@ -24,6 +56,10 @@ jobs:
           version=$(sed -n 's/^declare -gr gr_fw_version=//p' "$constants_file" | head -n 1)
           if [[ -z "$version" ]]; then
             echo "Failed to read gr_fw_version from $constants_file" >&2
+            exit 1
+          fi
+          if [[ "${{ steps.tag.outputs.tag_name }}" != "${version}" ]]; then
+            echo "Resolved tag (${{ steps.tag.outputs.tag_name }}) does not match gr_fw_version (${version})." >&2
             exit 1
           fi
           version_no_prefix="${version#v}"
@@ -41,5 +77,5 @@ jobs:
       - name: Create release and upload deb
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.tag.outputs.tag_name }}
           files: packaging/deb/build/output/*.deb

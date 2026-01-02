@@ -4,10 +4,21 @@ on:
   push:
     tags:
       - "v*"
+  workflow_run:
+    workflows:
+      - Create version tag
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
   update-tap:
+    if: >-
+      ${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main')
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,6 +28,11 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
 
       - name: Checkout tap repository
         uses: actions/checkout@v4
@@ -29,7 +45,16 @@ jobs:
         id: release
         run: |
           set -euo pipefail
-          tag_name="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            head_sha="${{ github.event.workflow_run.head_sha }}"
+            tag_name="$(git tag --points-at "${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+          else
+            tag_name="${GITHUB_REF_NAME}"
+          fi
+          if [[ -z "${tag_name}" ]]; then
+            echo "Failed to resolve version tag for event ${GITHUB_EVENT_NAME}" >&2
+            exit 1
+          fi
           version="${tag_name#v}"
           tarball_url="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${tag_name}.tar.gz"
           sha256="$(curl -L "${tarball_url}" | sha256sum | awk '{print $1}')"
@@ -55,34 +80,3 @@ jobs:
           formula_path = pathlib.Path("homebrew-radp") / pathlib.Path(os.environ["TAP_FORMULA_PATH"])
           tag_name = os.environ["RELEASE_TAG_NAME"]
           version = os.environ["RELEASE_VERSION"]
-          tarball_url = os.environ["RELEASE_TARBALL_URL"]
-          sha256 = os.environ["RELEASE_SHA256"]
-
-          content = formula_path.read_text(encoding="utf-8")
-          updated = content
-          updated = re.sub(r'^\s*url\s+"[^"]*"\s*$', f'  url "{tarball_url}"', updated, flags=re.MULTILINE)
-          updated = re.sub(r'^\s*sha256\s+"[^"]*"\s*$', f'  sha256 "{sha256}"', updated, flags=re.MULTILINE)
-          if re.search(r'^\s*version\s+"[^"]*"\s*$', updated, flags=re.MULTILINE):
-              updated = re.sub(r'^\s*version\s+"[^"]*"\s*$', f'  version "{version}"', updated, flags=re.MULTILINE)
-
-          if updated == content:
-              print("No changes detected in formula.")
-              sys.exit(0)
-
-          formula_path.write_text(updated, encoding="utf-8")
-          print(f"Updated {formula_path} for {tag_name}.")
-          PY
-
-      - name: Commit and push
-        working-directory: homebrew-radp
-        run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${TAP_FORMULA_PATH}"
-          git commit -m "Update radp-bash-framework to ${{ steps.release.outputs.version }}"
-          git push
