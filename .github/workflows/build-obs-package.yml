@@ -55,6 +55,7 @@ jobs:
           cat <<CONFIG > ~/.oscrc
           [general]
           apiurl = ${api_url}
+          credentials_mgr_class = PlaintextConfigFileCredentialsManager
           [${api_url}]
           user = ${OBS_USERNAME}
           pass = ${OBS_PASSWORD}
@@ -101,7 +102,7 @@ jobs:
           set -euo pipefail
           obs_dir="obs-package"
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
-          osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
+          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -rf "$obs_dir"/debian
@@ -111,7 +112,7 @@ jobs:
           cp -a debian "$obs_dir/"
 
           pushd "$obs_dir" >/dev/null
-          osc addremove
-          osc vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
-          osc commit -m "Release ${{ steps.version.outputs.version }}"
+          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" addremove
+          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
+          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" commit -m "Release ${{ steps.version.outputs.version }}"
           popd >/dev/null
