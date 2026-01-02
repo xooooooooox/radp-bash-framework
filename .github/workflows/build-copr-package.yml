@@ -49,11 +49,15 @@ jobs:
           login = ${COPR_LOGIN}
           token = ${COPR_TOKEN}
           username = ${COPR_USERNAME}
+          copr_url = https://copr.fedorainfracloud.org
+          encrypted = false
 
           [main]
           login = ${COPR_LOGIN}
           token = ${COPR_TOKEN}
           username = ${COPR_USERNAME}
+          copr_url = https://copr.fedorainfracloud.org
+          encrypted = false
           CONFIG
 
       - name: Trigger COPR build
