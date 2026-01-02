@@ -108,8 +108,8 @@ jobs:
           obs_dir="obs-package"
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
           api_url="${api_url%/}"
-          osc_args=(-A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD")
-          osc "${osc_args[@]}" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
+          osc_config="${OSC_CONFIG:-$HOME/.config/osc/oscrc}"
+          OSC_CONFIG="$osc_config" osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -rf "$obs_dir"/debian
@@ -119,7 +119,7 @@ jobs:
           cp -a debian "$obs_dir/"
 
           pushd "$obs_dir" >/dev/null
-          osc "${osc_args[@]}" addremove
-          osc "${osc_args[@]}" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
-          osc "${osc_args[@]}" commit -m "Release ${{ steps.version.outputs.version }}"
+          OSC_CONFIG="$osc_config" osc -A "$api_url" addremove
+          OSC_CONFIG="$osc_config" osc -A "$api_url" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
+          OSC_CONFIG="$osc_config" osc -A "$api_url" commit -m "Release ${{ steps.version.outputs.version }}"
           popd >/dev/null
