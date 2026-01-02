@@ -138,15 +138,16 @@ jobs:
         if: steps.prepare.outputs.should_sync == 'true'
         run: |
           set -euo pipefail
-          obs_dir="obs-package"
+          obs_dir="${OBS_PACKAGE}"
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
           api_url="${api_url%/}"
           osc_config="${OSC_CONFIG:-$HOME/.config/osc/oscrc}"
+          rm -rf "$obs_dir"
           if ! OSC_CONFIG="$osc_config" osc -A "$api_url" meta pkg "$OBS_PROJECT" "$OBS_PACKAGE" >/dev/null 2>&1; then
             OSC_CONFIG="$osc_config" osc -A "$api_url" mkpac "$OBS_PROJECT" "$OBS_PACKAGE"
           fi
-          if ! OSC_CONFIG="$osc_config" osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"; then
-            OSC_CONFIG="$osc_config" osc -A "$api_url" checkout --meta "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
+          if ! OSC_CONFIG="$osc_config" osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE"; then
+            OSC_CONFIG="$osc_config" osc -A "$api_url" checkout --meta "$OBS_PROJECT" "$OBS_PACKAGE"
           fi
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
