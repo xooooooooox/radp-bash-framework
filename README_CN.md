@@ -36,6 +36,37 @@ sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
 ```
 
+### OBS (zypper/apt/dnf)
+
+OBS 提供多发行版的 RPM/DEB 构建。添加对应 OBS 仓库后安装：
+
+```shell
+# openSUSE/SLES
+sudo zypper addrepo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo zypper refresh
+sudo zypper install radp-bash-framework
+
+# Fedora/RHEL/CentOS (replace <DISTRO> with your distro path, e.g. Fedora_39)
+sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo dnf install -y radp-bash-framework
+
+# CentOS/RHEL (yum)
+sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo yum install -y radp-bash-framework
+
+# Debian/Ubuntu (replace <DISTRO> with your distro codename)
+echo "deb https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /" | sudo tee /etc/apt/sources.list.d/radp-bash-framework.list
+curl -fsSL https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/Release.key | sudo gpg --dearmor -o /usr/share/keyrings/radp-bash-framework.gpg
+sudo apt-get update
+sudo apt-get install -y radp-bash-framework
+```
+
+安装后，可以通过以下方式获取 `run.sh` 的路径：
+
+```bash
+source "$(radp-bf --print-run)"
+```
+
 ### apt-get
 
 ```bash
@@ -51,7 +82,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 source "$(radp-bf --print-run)"
 ```
 
-"#{## 本地直接使用
+### 本地直接使用
 
 将整个 `src/main/shell/framework` 目录拷贝到本地并使用：
 
@@ -78,6 +109,24 @@ sudo dnf upgrade -y radp-bash-framework
 sudo yum update -y radp-bash-framework
 ```
 
+### OBS (zypper/apt-get/yum/dnf)
+
+```shell
+# openSUSE/SLES
+sudo zypper refresh
+sudo zypper update radp-bash-framework
+
+# Fedora/RHEL/CentOS (dnf)
+sudo dnf upgrade -y radp-bash-framework
+
+# CentOS/RHEL (yum)
+sudo yum update -y radp-bash-framework
+
+# Debian/Ubuntu
+sudo apt-get update
+sudo apt-get install -y radp-bash-framework
+```
+
 ### apt-get
 
 ```bash
@@ -97,6 +146,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
     - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
 5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/copr/radp-bash-framework.spec`。
 6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建。
+7. `build-obs-package` 会同步源码到 OBS 并触发 OBS 构建。
 
 ## Github Actions
 
@@ -125,3 +175,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 - **触发方式：** 推送版本标签（`v*`）或手动触发（`workflow_dispatch`）。
 - **用途：** 基于标签源码构建 `.deb` 包，并上传到 GitHub Release。
 
+### 构建 OBS 包（`build-obs-package.yml`）
+
+- **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发，或手动触发（`workflow_dispatch`）。
+- **用途：** 同步源码 tarball、spec 和 Debian 打包元数据到 OBS 并触发构建。

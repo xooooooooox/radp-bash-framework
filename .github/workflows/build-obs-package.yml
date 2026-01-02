@@ -25,7 +25,7 @@ jobs:
       OBS_PASSWORD: ${{ secrets.OBS_PASSWORD }}
       OBS_PROJECT: ${{ secrets.OBS_PROJECT }}
       OBS_PACKAGE: ${{ secrets.OBS_PACKAGE }}
-      OBS_API_URL: ${{ secrets.OBS_API_URL || 'https://api.opensuse.org' }}
+      OBS_API_URL: ${{ secrets.OBS_API_URL }}
     steps:
       - name: Validate OBS secrets
         run: |
@@ -48,6 +48,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y osc devscripts
 
+      - name: Configure osc
+        run: |
+          set -euo pipefail
+          api_url="${OBS_API_URL:-https://api.opensuse.org}"
+          cat <<CONFIG > ~/.oscrc
+          [general]
+          apiurl = ${api_url}
+          [${api_url}]
+          user = ${OBS_USERNAME}
+          pass = ${OBS_PASSWORD}
+          CONFIG
+
       - name: Read version
         id: version
         run: |
@@ -63,11 +75,18 @@ jobs:
           echo "version_no_prefix=${version_no_prefix}" >> "$GITHUB_OUTPUT"
 
       - name: Prepare OBS sources
+        id: prepare
         run: |
           set -euo pipefail
           version="${{ steps.version.outputs.version }}"
           version_no_prefix="${{ steps.version.outputs.version_no_prefix }}"
           git fetch --tags --force
+          if ! git rev-parse "$version" >/dev/null 2>&1; then
+            echo "Tag $version does not exist. Skipping OBS build."
+            echo "should_sync=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "should_sync=true" >> "$GITHUB_OUTPUT"
           tarball="radp-bash-framework-${version_no_prefix}.tar.gz"
           git archive --format=tar.gz --output="$tarball" "$version"
 
@@ -77,10 +96,12 @@ jobs:
             "Release ${version}" >/dev/null
 
       - name: Sync to OBS
+        if: steps.prepare.outputs.should_sync == 'true'
         run: |
           set -euo pipefail
           obs_dir="obs-package"
-          osc -A "$OBS_API_URL" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
+          api_url="${OBS_API_URL:-https://api.opensuse.org}"
+          osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -rf "$obs_dir"/debian

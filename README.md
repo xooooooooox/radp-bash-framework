@@ -53,6 +53,37 @@ After install, resolve the framework entrypoint:
 source "$(radp-bf --print-run)"
 ```
 
+### OBS (zypper/apt/dnf)
+
+OBS provides multi-distro builds for RPM/DEB. Add the repository from your OBS project, then install:
+
+```shell
+# openSUSE/SLES
+sudo zypper addrepo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo zypper refresh
+sudo zypper install radp-bash-framework
+
+# Fedora/RHEL/CentOS (replace <DISTRO> with your distro path, e.g. Fedora_39)
+sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo dnf install -y radp-bash-framework
+
+# CentOS/RHEL (yum)
+sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo yum install -y radp-bash-framework
+
+# Debian/Ubuntu (replace <DISTRO> with your distro codename)
+echo "deb https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /" | sudo tee /etc/apt/sources.list.d/radp-bash-framework.list
+curl -fsSL https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/Release.key | sudo gpg --dearmor -o /usr/share/keyrings/radp-bash-framework.gpg
+sudo apt-get update
+sudo apt-get install -y radp-bash-framework
+```
+
+After install, resolve the framework entrypoint:
+
+```shell
+source "$(radp-bf --print-run)"
+```
+
 ### apt-get
 
 ```shell
@@ -87,6 +118,24 @@ sudo dnf upgrade -y radp-bash-framework
 sudo yum update -y radp-bash-framework
 ```
 
+### OBS (zypper/apt-get/yum/dnf)
+
+```shell
+# openSUSE/SLES
+sudo zypper refresh
+sudo zypper update radp-bash-framework
+
+# Fedora/RHEL/CentOS (dnf)
+sudo dnf upgrade -y radp-bash-framework
+
+# CentOS/RHEL (yum)
+sudo yum update -y radp-bash-framework
+
+# Debian/Ubuntu
+sudo apt-get update
+sudo apt-get install -y radp-bash-framework
+```
+
 ### apt-get
 
 ```shell
@@ -106,6 +155,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
     - `build-deb-package` builds and uploads the `.deb` to the GitHub Release.
 5. The `update-spec-version` workflow updates `packaging/copr/radp-bash-framework.spec` on `main` when the version changes.
 6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main`.
+7. The `build-obs-package` workflow syncs sources to OBS and triggers the OBS build.
 
 ## GitHub Actions
 
@@ -134,3 +184,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 - **Trigger:** On push of a version tag (`v*`) or manual (`workflow_dispatch`).
 - **Purpose:** Build the `.deb` package from the tagged source and upload it to the GitHub release.
 
+### Build OBS package (`build-obs-package.yml`)
+
+- **Trigger:** Successful completion of the `update-spec-version` workflow on `main`, or manual (`workflow_dispatch`).
+- **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build.
