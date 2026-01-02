@@ -95,7 +95,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 4. 等待标签相关工作流执行完成：
     - `update-homebrew-tap` 更新 Homebrew 的 formula。
     - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
-5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/rpm/radp-bash-framework.spec`。
+5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/copr/radp-bash-framework.spec`。
 6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建。
 
 ## Github Actions
@@ -108,12 +108,12 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### 更新 spec 版本（`update-spec-version.yml`）
 
 - **触发方式：** `main` 分支推送。
-- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，确保对应标签已存在，并与最新标签中的 `gr_fw_version` 对比，仅在版本不同的情况下更新 `packaging/rpm/radp-bash-framework.spec` 的 `Version` 字段为 `x.y.z`。
+- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，确保对应标签已存在，并与最新标签中的 `gr_fw_version` 对比，仅在版本不同的情况下更新 `packaging/copr/radp-bash-framework.spec` 的 `Version` 字段为 `x.y.z`。
 
 ### 构建 COPR 包（`build-copr-package.yml`）
 
 - **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发。
-- **用途：** 使用 `packaging/rpm/radp-bash-framework.spec` 触发 COPR SCM 构建。
+- **用途：** 使用 `packaging/copr/radp-bash-framework.spec` 触发 COPR SCM 构建。
 
 ### 更新 Homebrew tap（`update-homebrew-tap.yml`）
 

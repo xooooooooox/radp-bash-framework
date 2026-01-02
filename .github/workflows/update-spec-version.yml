@@ -64,14 +64,22 @@ jobs:
       - name: Update spec version
         if: steps.gate.outputs.should_update == 'true'
         run: |
-          spec_file="packaging/rpm/radp-bash-framework.spec"
           version="${{ steps.version.outputs.version }}"
           version_no_prefix="${version#v}"
-          if [[ ! -f "$spec_file" ]]; then
-            echo "Spec file not found: $spec_file" >&2
+          copr_spec_file="packaging/copr/radp-bash-framework.spec"
+          if [[ -f "$copr_spec_file" ]]; then
+            sed -i "s/^Version:.*/Version:        ${version_no_prefix}/" "$copr_spec_file"
+          else
+            echo "COPR spec file not found: $copr_spec_file" >&2
             exit 1
           fi
-          sed -i "s/^Version:.*/Version:        ${version_no_prefix}/" "$spec_file"
+          obs_spec_file="packaging/obs/radp-bash-framework.spec"
+          if [[ -f "$obs_spec_file" ]]; then
+            sed -i "s/^Version:.*/Version:        ${version_no_prefix}/" "$obs_spec_file"
+          else
+            echo "OBS spec file not found: $obs_spec_file" >&2
+            exit 1
+          fi
 
       - name: Commit and push
         if: steps.gate.outputs.should_update == 'true'
@@ -82,6 +90,9 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packaging/rpm/radp-bash-framework.spec
+          git add packaging/copr/radp-bash-framework.spec
+          if [[ -f "packaging/obs/radp-bash-framework.spec" ]]; then
+            git add packaging/obs/radp-bash-framework.spec
+          fi
           git commit -m "Update spec version to ${{ steps.version.outputs.version }}"
           git push

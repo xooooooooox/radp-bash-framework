@@ -57,5 +57,5 @@ jobs:
           copr-cli buildscm "${COPR_PROJECT}" \
             --clone-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
             --commit "${{ github.event.workflow_run.head_sha }}" \
-            --subdir "packaging/rpm" \
+            --subdir "packaging/copr" \
             --spec "radp-bash-framework.spec"

@@ -1,0 +1,96 @@
+name: Build OBS package
+
+on:
+  workflow_run:
+    workflows:
+      - Update spec version
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-obs-package:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main')
+      }}
+    runs-on: ubuntu-latest
+    env:
+      OBS_USERNAME: ${{ secrets.OBS_USERNAME }}
+      OBS_PASSWORD: ${{ secrets.OBS_PASSWORD }}
+      OBS_PROJECT: ${{ secrets.OBS_PROJECT }}
+      OBS_PACKAGE: ${{ secrets.OBS_PACKAGE }}
+      OBS_API_URL: ${{ secrets.OBS_API_URL || 'https://api.opensuse.org' }}
+    steps:
+      - name: Validate OBS secrets
+        run: |
+          set -euo pipefail
+          for value in OBS_USERNAME OBS_PASSWORD OBS_PROJECT OBS_PACKAGE; do
+            if [[ -z "${!value:-}" ]]; then
+              echo "Missing required secret: ${value}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install osc
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y osc devscripts
+
+      - name: Read version
+        id: version
+        run: |
+          set -euo pipefail
+          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
+          version=$(sed -n 's/^declare -gr gr_fw_version=//p' "$constants_file" | head -n 1)
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_fw_version from $constants_file" >&2
+            exit 1
+          fi
+          version_no_prefix="${version#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "version_no_prefix=${version_no_prefix}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare OBS sources
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          version_no_prefix="${{ steps.version.outputs.version_no_prefix }}"
+          git fetch --tags --force
+          tarball="radp-bash-framework-${version_no_prefix}.tar.gz"
+          git archive --format=tar.gz --output="$tarball" "$version"
+
+          export DEBEMAIL="xozoz.sos@gmail.com"
+          export DEBFULLNAME="xooooooooox"
+          dch --newversion "${version_no_prefix}-1" --distribution stable --urgency medium \
+            "Release ${version}" >/dev/null
+
+      - name: Sync to OBS
+        run: |
+          set -euo pipefail
+          obs_dir="obs-package"
+          osc -A "$OBS_API_URL" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
+
+          rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
+          rm -rf "$obs_dir"/debian
+          cp -a "radp-bash-framework-${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
+          cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
+          cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
+          cp -a debian "$obs_dir/"
+
+          pushd "$obs_dir" >/dev/null
+          osc addremove
+          osc vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
+          osc commit -m "Release ${{ steps.version.outputs.version }}"
+          popd >/dev/null

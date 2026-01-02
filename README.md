@@ -104,7 +104,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 4. Wait for tag workflows:
     - `update-homebrew-tap` updates the Homebrew formula.
     - `build-deb-package` builds and uploads the `.deb` to the GitHub Release.
-5. The `update-spec-version` workflow updates `packaging/rpm/radp-bash-framework.spec` on `main` when the version changes.
+5. The `update-spec-version` workflow updates `packaging/copr/radp-bash-framework.spec` on `main` when the version changes.
 6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main`.
 
 ## GitHub Actions
@@ -117,12 +117,12 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### Update spec version (`update-spec-version.yml`)
 
 - **Trigger:** Push to `main`.
-- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, ensure the matching tag exists, compare it against the latest tag's `gr_fw_version`, and update `packaging/rpm/radp-bash-framework.spec` to `x.y.z` only when the version differs.
+- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, ensure the matching tag exists, compare it against the latest tag's `gr_fw_version`, and update `packaging/copr/radp-bash-framework.spec` to `x.y.z` only when the version differs.
 
 ### Build COPR package (`build-copr-package.yml`)
 
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`.
-- **Purpose:** Trigger a COPR SCM build using the updated spec at `packaging/rpm/radp-bash-framework.spec`.
+- **Purpose:** Trigger a COPR SCM build using the updated spec at `packaging/copr/radp-bash-framework.spec`.
 
 ### Update Homebrew tap (`update-homebrew-tap.yml`)
 

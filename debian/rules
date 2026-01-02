@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_install:
+	install -d $(DESTDIR)/usr/lib/radp-bash-framework
+	cp -a src/main/shell/bin $(DESTDIR)/usr/lib/radp-bash-framework/
+	cp -a src/main/shell/framework $(DESTDIR)/usr/lib/radp-bash-framework/
+	install -d $(DESTDIR)/usr/bin
+	ln -sf /usr/lib/radp-bash-framework/bin/radp-bf $(DESTDIR)/usr/bin/radp-bf
+	ln -sf /usr/lib/radp-bash-framework/bin/radp-bf $(DESTDIR)/usr/bin/radp-bash-framework
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0755 $(DESTDIR)/usr/lib/radp-bash-framework/bin/radp-bf
+	find $(DESTDIR)/usr/lib/radp-bash-framework/framework -type f -name "*.sh" -exec chmod 0755 {} +

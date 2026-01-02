@@ -1,0 +1,5 @@
+radp-bash-framework (0.0.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging for OBS.
+
+ -- xooooooooox <xozoz.sos@gmail.com>  Thu, 01 Jan 2026 00:00:00 +0000
