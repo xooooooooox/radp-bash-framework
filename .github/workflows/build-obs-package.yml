@@ -146,10 +146,7 @@ jobs:
             OSC_CONFIG="$osc_config" osc -A "$api_url" mkpac "$OBS_PROJECT" "$OBS_PACKAGE"
           fi
           if ! OSC_CONFIG="$osc_config" osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"; then
-            mkdir -p "$obs_dir"
-            pushd "$obs_dir" >/dev/null
-            OSC_CONFIG="$osc_config" osc -A "$api_url" init "$OBS_PROJECT" "$OBS_PACKAGE"
-            popd >/dev/null
+            OSC_CONFIG="$osc_config" osc -A "$api_url" checkout --meta "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
           fi
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
