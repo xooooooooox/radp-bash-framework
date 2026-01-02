@@ -105,7 +105,9 @@ brew upgrade radp-bash-framework
 ### rpm (dnf/yum)
 
 ```bash
-sudo dnf upgrade -y radp-bash-framework
+sudo dnf clean metadata
+sudo dnf upgrade --refresh -y radp-bash-framework
+sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
 
