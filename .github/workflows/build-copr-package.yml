@@ -45,6 +45,11 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.config
           cat <<CONFIG > ~/.config/copr
+          [copr-cli]
+          login = ${COPR_LOGIN}
+          token = ${COPR_TOKEN}
+          username = ${COPR_USERNAME}
+
           [main]
           login = ${COPR_LOGIN}
           token = ${COPR_TOKEN}
