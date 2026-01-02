@@ -27,15 +27,40 @@ jobs:
       OBS_PACKAGE: ${{ secrets.OBS_PACKAGE }}
       OBS_API_URL: ${{ secrets.OBS_API_URL }}
     steps:
-      - name: Validate OBS secrets
+      - name: Normalize OBS secrets
         run: |
           set -euo pipefail
+          normalize() {
+            printf '%s' "$1" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+          }
+
+          OBS_USERNAME="$(normalize "${OBS_USERNAME:-}")"
+          OBS_PASSWORD="$(normalize "${OBS_PASSWORD:-}")"
+          OBS_PROJECT="$(normalize "${OBS_PROJECT:-}")"
+          OBS_PACKAGE="$(normalize "${OBS_PACKAGE:-}")"
+          OBS_API_URL="$(normalize "${OBS_API_URL:-}")"
+
           for value in OBS_USERNAME OBS_PASSWORD OBS_PROJECT OBS_PACKAGE; do
             if [[ -z "${!value:-}" ]]; then
               echo "Missing required secret: ${value}" >&2
               exit 1
             fi
           done
+
+          for value in OBS_USERNAME OBS_PROJECT OBS_PACKAGE; do
+            if [[ "${!value}" =~ [[:space:]] ]]; then
+              echo "Secret ${value} contains whitespace; check for trailing spaces or newlines." >&2
+              exit 1
+            fi
+          done
+
+          {
+            echo "OBS_USERNAME=${OBS_USERNAME}"
+            echo "OBS_PASSWORD=${OBS_PASSWORD}"
+            echo "OBS_PROJECT=${OBS_PROJECT}"
+            echo "OBS_PACKAGE=${OBS_PACKAGE}"
+            echo "OBS_API_URL=${OBS_API_URL}"
+          } >> "$GITHUB_ENV"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -131,4 +156,3 @@ jobs:
           OSC_CONFIG="$osc_config" osc -A "$api_url" vc -m "Release ${{ steps.version.outputs.version }}" --no-cleanup
           OSC_CONFIG="$osc_config" osc -A "$api_url" commit -m "Release ${{ steps.version.outputs.version }}"
           popd >/dev/null
-
