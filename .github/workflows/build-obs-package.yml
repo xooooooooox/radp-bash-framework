@@ -66,6 +66,14 @@ jobs:
           cp "$osc_config" "$HOME/.oscrc"
           echo "OSC_CONFIG=$osc_config" >> "$GITHUB_ENV"
 
+      - name: Verify OBS authentication
+        run: |
+          set -euo pipefail
+          api_url="${OBS_API_URL:-https://api.opensuse.org}"
+          api_url="${api_url%/}"
+          osc_config="${OSC_CONFIG:-$HOME/.config/osc/oscrc}"
+          OSC_CONFIG="$osc_config" osc -A "$api_url" whois
+
       - name: Read version
         id: version
         run: |
