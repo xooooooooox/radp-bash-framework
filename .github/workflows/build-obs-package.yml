@@ -102,7 +102,7 @@ jobs:
           set -euo pipefail
           obs_dir="obs-package"
           api_url="${OBS_API_URL:-https://api.opensuse.org}"
-          osc -A "$api_url" -u "$OBS_USERNAME" -p "$OBS_PASSWORD" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
+          osc -A "$api_url" checkout "$OBS_PROJECT" "$OBS_PACKAGE" "$obs_dir"
 
           rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -rf "$obs_dir"/debian
