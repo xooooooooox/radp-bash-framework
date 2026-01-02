@@ -149,8 +149,8 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 
 1. Update `gr_fw_version` in `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` (format: `vx.y.z`).
 2. Push to `main`.
-3. Trigger the `create-version-tag` workflow to create/push the tag.
-4. Wait for tag workflows:
+3. Trigger the `create-version-tag` workflow to create/push the tag (or push a valid `vX.Y.Z` tag directly).
+4. Wait for tag workflows (triggered by tag push or by the `create-version-tag` workflow run):
     - `update-homebrew-tap` updates the Homebrew formula.
     - `build-deb-package` builds and uploads the `.deb` to the GitHub Release.
 5. The `update-spec-version` workflow updates `packaging/copr/radp-bash-framework.spec` on `main` when the version changes.
@@ -166,7 +166,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 
 ### Update spec version (`update-spec-version.yml`)
 
-- **Trigger:** Push to `main`.
+- **Trigger:** Push to `main`, push a version tag (`v*`), or successful completion of the `create-version-tag` workflow on `main`.
 - **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, ensure the matching tag exists, compare it against the latest tag's `gr_fw_version`, and update `packaging/copr/radp-bash-framework.spec` to `x.y.z` only when the version differs.
 
 ### Build COPR package (`build-copr-package.yml`)
@@ -176,12 +176,12 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 
 ### Update Homebrew tap (`update-homebrew-tap.yml`)
 
-- **Trigger:** On push of a version tag (`v*`) or manual (`workflow_dispatch`).
+- **Trigger:** On push of a version tag (`v*`), successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Build release metadata from the tag, update the Homebrew tap formula, and push the changes to the tap repository.
 
 ### Build deb package (`build-deb-package.yml`)
 
-- **Trigger:** On push of a version tag (`v*`) or manual (`workflow_dispatch`).
+- **Trigger:** On push of a version tag (`v*`), successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Build the `.deb` package from the tagged source and upload it to the GitHub release.
 
 ### Build OBS package (`build-obs-package.yml`)
