@@ -22,8 +22,8 @@ setup() {
   export YAML_RADP_LOG_PATTERN_FILE="%d | %p %P | %t | %L:%F#%M | %m"
 
   # 只 source 日志函数部分，不执行 __main
-  # 我们需要手动定义函数（增加行数以包含更多代码）
-  # 文件现在有 731 行，source 到 720 行以包含所有函数定义（不包含 __main 及之后的代码）
+  # 我们需要手动定义函数(增加行数以包含更多代码)
+  # 文件现在有 731 行，source 到 720 行以包含所有函数定义(不包含 __main 及之后的代码)
   source <(sed -n '1,720p' "$LOGGER_FILE")
 }
 
@@ -238,7 +238,7 @@ run_logger_to_file() {
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "DEBUG" "debug message" "test.sh" "test_func" "10"
 
-  # DEBUG 消息应该被记录（因为 debug 模式开启）
+  # DEBUG 消息应该被记录(因为 debug 模式开启)
   content=$(cat "$TEST_LOG_FILE")
   [[ "$content" == *"debug message"* ]]
 }
@@ -613,7 +613,7 @@ run_logger_to_file() {
   local rolling_path="$TEST_TEMP_DIR/archived"
   mkdir -p "$rolling_path"
 
-  # 创建一个 3 天前的目录（在 7 天保留期内）
+  # 创建一个 3 天前的目录(在 7 天保留期内)
   local recent_date
   recent_date=$(date -v-3d '+%Y%m%d' 2>/dev/null || date -d "-3 days" '+%Y%m%d')
 
@@ -656,7 +656,7 @@ run_logger_to_file() {
   current_date=$(date '+%Y%m%d')
   mkdir -p "$rolling_path/$current_date"
 
-  # 创建多个较大的文件（使用随机数据避免 gzip 压缩太多）
+  # 创建多个较大的文件(使用随机数据避免 gzip 压缩太多)
   # 每个文件约 1KB
   dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test1.log.gz"
   sleep 1 # 确保文件有不同的修改时间
@@ -667,7 +667,7 @@ run_logger_to_file() {
   # 设置一个较小的大小上限 (1.5KB，应该只能保留 1-2 个文件)
   __fw_cleanup_by_size_cap "$rolling_path" "1536B"
 
-  # 应该删除一些文件（总大小约 3KB，上限 1.5KB，应该删除至少 1 个）
+  # 应该删除一些文件(总大小约 3KB，上限 1.5KB，应该删除至少 1 个)
   remaining_count=$(find "$rolling_path" -name "*.gz" -type f | wc -l | tr -d ' ')
   [[ "$remaining_count" -lt "3" ]]
 }

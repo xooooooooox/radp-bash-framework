@@ -3,7 +3,7 @@ set -e
 ########################################################################################################################
 ###
 # framework predefined configurable vars
-# 优先级: 环境变量（GX_*） > YAML（YAML_*） > 默认值
+# 优先级: 环境变量(GX_*) > YAML(YAML_*) > 默认值
 ########################################################################################################################
 
 # shellcheck source=../bootstrap/context/vars/global_vars.sh
@@ -30,4 +30,8 @@ declare -gr gr_radp_fw_log_color_error="${GX_RADP_FW_LOG_COLOR_ERROR:-${YAML_RAD
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
 #--------------------------------------------- user config ------------------------------------------------------------#
 declare -gr gr_radp_fw_user_config_automap="${GX_RADP_FW_USER_CONFIG_AUTOMAP:-${YAML_RADP_FW_USER_CONFIG_AUTOMAP:-false}}"
-declare -gr gr_radp_fw_user_lib_path="${GX_RADP_FW_USER_LIB_PATH:-${YAML_RADP_FW_USER_LIB_PATH:-}}" #todo default val
+declare -g gr_radp_fw_user_lib_path
+gr_radp_fw_user_lib_path="$(
+  __fw_normalize_path "${GX_RADP_FW_USER_LIB_PATH:-${YAML_RADP_FW_USER_LIB_PATH:-"${gr_fw_root_path}/../lib"}}"
+)"
+readonly gr_radp_fw_user_lib_path

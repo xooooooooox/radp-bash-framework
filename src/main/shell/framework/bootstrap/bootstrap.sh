@@ -45,6 +45,43 @@ __fw_source_scripts() {
 }
 
 #######################################
+# 归一化路径(展开 .. 并解析为绝对路径)
+# Globals:
+#   None
+# Arguments:
+#   1 - path: 待归一化处理的路径
+# Outputs:
+#   归一化后的路径
+# Returns:
+#   0 - Success
+#######################################
+__fw_normalize_path() {
+  local path=${1:-}
+
+  if [[ -z "$path" ]]; then
+    printf '%s' "$path"
+    return 0
+  fi
+
+  local resolved
+  if [[ -d "$path" ]]; then
+    resolved=$(cd -P -- "$path" >/dev/null 2>&1 && pwd) || resolved="$path"
+    printf '%s' "$resolved"
+    return 0
+  fi
+
+  local dir base
+  dir=$(dirname -- "$path")
+  base=$(basename -- "$path")
+  if [[ -d "$dir" ]]; then
+    resolved=$(cd -P -- "$dir" >/dev/null 2>&1 && pwd) || resolved="$dir"
+    printf '%s/%s' "$resolved" "$base"
+  else
+    printf '%s' "$path"
+  fi
+}
+
+#######################################
 # 构建框架上下文
 # 包括: 全局变量, 库函数等
 # Globals:

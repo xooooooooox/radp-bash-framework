@@ -110,7 +110,7 @@ __fw_parse_clr_syntax() {
       local content="${BASH_REMATCH[1]}"
       text="${text//$full_match/$content}"
     done
-    # 处理 %clr(content) 格式（无颜色参数）
+    # 处理 %clr(content) 格式(无颜色参数)
     while [[ "$text" =~ $regex_without_color ]]; do
       local full_match="${BASH_REMATCH[0]}"
       local content="${BASH_REMATCH[1]}"
@@ -121,7 +121,7 @@ __fw_parse_clr_syntax() {
   fi
 
   # 着色模式
-  # 获取日志级别对应的默认颜色（支持颜色名称或数字代码）
+  # 获取日志级别对应的默认颜色(支持颜色名称或数字代码)
   local level_color_config level_color
   case "${log_level^^}" in
   DEBUG) level_color_config="${gr_radp_fw_log_color_debug:-blue}" ;;
@@ -144,7 +144,7 @@ __fw_parse_clr_syntax() {
     text="${text//$full_match/$colored_content}"
   done
 
-  # 处理 %clr(content) 格式（使用日志级别颜色）
+  # 处理 %clr(content) 格式(使用日志级别颜色)
   while [[ "$text" =~ $regex_without_color ]]; do
     local full_match="${BASH_REMATCH[0]}"
     local content="${BASH_REMATCH[1]}"
@@ -479,7 +479,7 @@ __fw_logger_setup() {
 # 支持单位: B, KB, K, MB, M, GB, G
 # Arguments:
 #   1 - size_str: 带单位的文件大小字符串，如 '10M' 或 '1GB'
-#   2 - target_unit: 目标单位（'B', 'KB', 'K', 'MB', 'M', 'GB', 'G'），默认为'B'
+#   2 - target_unit: 目标单位('B', 'KB', 'K', 'MB', 'M', 'GB', 'G')，默认为'B'
 # Outputs:
 #   转换后的文件大小
 # Returns:
@@ -605,7 +605,7 @@ __fw_logger_rolling() {
         archive_success=true
       fi
     else
-      # gzip 不可用，直接移动文件（不压缩）
+      # gzip 不可用，直接移动文件(不压缩)
       archive_file="${archive_dir}/${log_basename}.${current_date}.${count}.${log_ext}"
       if cp "$log_file" "$archive_file" 2>/dev/null; then
         archive_success=true
@@ -698,7 +698,7 @@ __fw_cleanup_by_size_cap() {
     return 0
   fi
 
-  # 获取所有归档文件，按修改时间排序（最旧的在前）
+  # 获取所有归档文件，按修改时间排序(最旧的在前)
   # 同时匹配压缩 (.gz) 和非压缩 (.log) 的归档文件
   local -a old_files
   mapfile -t old_files < <(find "$rolling_path" -type f \( -name "*.gz" -o -name "*.log" \) -print0 2>/dev/null | xargs -0 ls -1tr 2>/dev/null)

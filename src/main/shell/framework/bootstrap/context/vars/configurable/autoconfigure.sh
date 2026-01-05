@@ -73,7 +73,7 @@ __fw_merge_env_vars() {
 # Globals:
 #   None
 # Arguments:
-#   1 - vars_map_name: 包含所有 YAML 变量的关联数组名（会被原地修改）
+#   1 - vars_map_name: 包含所有 YAML 变量的关联数组名(会被原地修改)
 # Outputs:
 #   None
 # Returns:
@@ -95,7 +95,7 @@ __fw_resolve_yaml_references() {
     for key in "${!__vars__[@]}"; do
       value="${__vars__[$key]}"
 
-      # 检查是否包含 ${...} 格式的引用（YAML 内部引用格式）
+      # 检查是否包含 ${...} 格式的引用(YAML 内部引用格式)
       if [[ "$value" =~ \$\{([a-zA-Z0-9._-]+)\} ]]; then
         local new_value="$value"
 
@@ -215,7 +215,7 @@ set -e
 ########################################################################################################################
 ###
 # User configurable vars (auto-generated from YAML)
-# 优先级: 环境变量（GX_*） > YAML（YAML_*） > 默认值
+# 优先级: 环境变量(GX_*) > YAML(YAML_*) > 默认值
 # 此文件由 automap 功能自动生成，请勿手动编辑
 ########################################################################################################################
 "
@@ -241,14 +241,14 @@ set -e
   if [[ "$has_extend_vars" == true ]]; then
     echo "$config_content" >"$gr_fw_user_config_file"
   else
-    # 没有 extend 变量时，重置为空模板（清空之前可能存在的内容）
+    # 没有 extend 变量时，重置为空模板(清空之前可能存在的内容)
     cat >"$gr_fw_user_config_file" << 'EOF'
 #!/usr/bin/env bash
 set -e
 ########################################################################################################################
 ###
 # User configurable vars (auto-generated from YAML)
-# 优先级: 环境变量（GX_*） > YAML（YAML_*） > 默认值
+# 优先级: 环境变量(GX_*) > YAML(YAML_*) > 默认值
 # 此文件由 automap 功能自动生成，请勿手动编辑
 ########################################################################################################################
 EOF
@@ -294,7 +294,7 @@ __fw_init_user_config_path_status() {
 }
 
 #######################################
-# 加载并合并基础配置（framework + user）
+# 加载并合并基础配置(framework + user)
 # 1) 解析 framework_config.yaml
 # 2) 如果用户配置路径存在，解析 user config.yaml 并合并
 # 3) 解析 YAML 内部引用并导出变量
@@ -426,7 +426,7 @@ __main() {
   # 1. 初始化用户配置路径状态
   __fw_init_user_config_path_status
 
-  # 2. 加载并合并基础配置（framework + user）
+  # 2. 加载并合并基础配置(framework + user)
   local -A merged_vars=()
   __fw_load_and_merge_base_configs merged_vars
 
