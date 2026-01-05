@@ -103,6 +103,14 @@ jobs:
             echo "OBS spec file not found: $obs_spec_file" >&2
             exit 1
           fi
+          debian_service_file="debian/_service"
+          if [[ -f "$debian_service_file" ]]; then
+            sed -i "s#<param name=\"revision\">.*</param>#<param name=\"revision\">${version}</param>#" "$debian_service_file"
+            sed -i "s#<param name=\"versionformat\">.*</param>#<param name=\"versionformat\">${version_no_prefix}</param>#" "$debian_service_file"
+          else
+            echo "Debian service file not found: $debian_service_file" >&2
+            exit 1
+          fi
 
       - name: Commit and push
         if: steps.gate.outputs.should_update == 'true'
@@ -117,6 +125,9 @@ jobs:
           git add packaging/copr/radp-bash-framework.spec
           if [[ -f "packaging/obs/radp-bash-framework.spec" ]]; then
             git add packaging/obs/radp-bash-framework.spec
+          fi
+          if [[ -f "debian/_service" ]]; then
+            git add debian/_service
           fi
           git commit -m "Update spec version to ${{ steps.version.outputs.version }}"
           git push
