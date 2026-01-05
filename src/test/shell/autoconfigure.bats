@@ -440,7 +440,7 @@ EOF
   source_autoconfigure_functions
 
   # Set up the user config file path
-  gr_user_config_file="$TEST_TEMP_DIR/config.sh"
+  gr_fw_user_config_file="$TEST_TEMP_DIR/config.sh"
 
   # Create a vars map with extend variables
   local -A vars=(
@@ -451,18 +451,18 @@ EOF
   __fw_generate_user_config vars
 
   # Check that config.sh was created
-  [[ -f "$gr_user_config_file" ]]
+  [[ -f "$gr_fw_user_config_file" ]]
 
   # Check content contains the expected declarations
-  grep -q 'declare -gr gr_radp_user_config_extend_my_var=' "$gr_user_config_file"
-  grep -q 'declare -gr gr_radp_user_config_extend_database_host=' "$gr_user_config_file"
+  grep -q 'declare -gr gr_radp_user_config_extend_my_var=' "$gr_fw_user_config_file"
+  grep -q 'declare -gr gr_radp_user_config_extend_database_host=' "$gr_fw_user_config_file"
 }
 
 @test "__fw_generate_user_config: generates empty template without extend vars" {
   source_autoconfigure_functions
 
   # Set up the user config file path
-  gr_user_config_file="$TEST_TEMP_DIR/config.sh"
+  gr_fw_user_config_file="$TEST_TEMP_DIR/config.sh"
 
   # Create a vars map without extend variables
   local -A vars=(
@@ -473,11 +473,11 @@ EOF
   __fw_generate_user_config vars
 
   # Check that config.sh was created with empty template
-  [[ -f "$gr_user_config_file" ]]
+  [[ -f "$gr_fw_user_config_file" ]]
 
   # Check that it contains the header but no declare statements
-  grep -q '# User configurable vars (auto-generated from YAML)' "$gr_user_config_file"
-  run grep -q 'declare -gr' "$gr_user_config_file"
+  grep -q '# User configurable vars (auto-generated from YAML)' "$gr_fw_user_config_file"
+  run grep -q 'declare -gr' "$gr_fw_user_config_file"
   [[ "$status" -ne 0 ]]
 }
 
@@ -485,7 +485,7 @@ EOF
   source_autoconfigure_functions
 
   # Set up the user config file path
-  gr_user_config_file="$TEST_TEMP_DIR/config.sh"
+  gr_fw_user_config_file="$TEST_TEMP_DIR/config.sh"
 
   # First, create a config.sh with extend vars
   local -A vars_with_extend=(
@@ -494,8 +494,8 @@ EOF
   __fw_generate_user_config vars_with_extend
 
   # Verify it was created with the extend var
-  [[ -f "$gr_user_config_file" ]]
-  grep -q 'declare -gr gr_radp_user_config_extend_my_var=' "$gr_user_config_file"
+  [[ -f "$gr_fw_user_config_file" ]]
+  grep -q 'declare -gr gr_radp_user_config_extend_my_var=' "$gr_fw_user_config_file"
 
   # Now call again without extend vars (simulating removal from YAML)
   local -A vars_without_extend=(
@@ -504,19 +504,19 @@ EOF
   __fw_generate_user_config vars_without_extend
 
   # Check that config.sh still exists but no longer has the extend var declaration
-  [[ -f "$gr_user_config_file" ]]
-  run grep -q 'declare -gr gr_radp_user_config_extend_my_var=' "$gr_user_config_file"
+  [[ -f "$gr_fw_user_config_file" ]]
+  run grep -q 'declare -gr gr_radp_user_config_extend_my_var=' "$gr_fw_user_config_file"
   [[ "$status" -ne 0 ]]
 
   # Should still have the header
-  grep -q '# User configurable vars (auto-generated from YAML)' "$gr_user_config_file"
+  grep -q '# User configurable vars (auto-generated from YAML)' "$gr_fw_user_config_file"
 }
 
 @test "__fw_generate_user_config: only includes extend vars in output" {
   source_autoconfigure_functions
 
   # Set up the user config file path
-  gr_user_config_file="$TEST_TEMP_DIR/config.sh"
+  gr_fw_user_config_file="$TEST_TEMP_DIR/config.sh"
 
   # Create a vars map with mixed variables
   local -A vars=(
@@ -528,14 +528,14 @@ EOF
   __fw_generate_user_config vars
 
   # Check that config.sh was created
-  [[ -f "$gr_user_config_file" ]]
+  [[ -f "$gr_fw_user_config_file" ]]
 
   # Check that only extend var is in the file
-  grep -q 'gr_radp_user_config_extend_custom' "$gr_user_config_file"
+  grep -q 'gr_radp_user_config_extend_custom' "$gr_fw_user_config_file"
   # Non-extend vars should NOT be in the file
-  run grep -q 'gr_radp_log_debug' "$gr_user_config_file"
+  run grep -q 'gr_radp_log_debug' "$gr_fw_user_config_file"
   [[ "$status" -ne 0 ]]
-  run grep -q 'gr_radp_env' "$gr_user_config_file"
+  run grep -q 'gr_radp_env' "$gr_fw_user_config_file"
   [[ "$status" -ne 0 ]]
 }
 
@@ -543,7 +543,7 @@ EOF
   source_autoconfigure_functions
 
   # Set up the user config file path
-  gr_user_config_file="$TEST_TEMP_DIR/config.sh"
+  gr_fw_user_config_file="$TEST_TEMP_DIR/config.sh"
 
   # Create a vars map with an extend variable
   local -A vars=(
@@ -554,7 +554,7 @@ EOF
 
   # Check the exact format of the declaration
   # Format should be: declare -gr gr_xxx="${GX_XXX:-${YAML_XXX:-default}}"
-  grep -q 'declare -gr gr_radp_user_config_extend_test="${GX_RADP_USER_CONFIG_EXTEND_TEST:-${YAML_RADP_USER_CONFIG_EXTEND_TEST:-test_value}}"' "$gr_user_config_file"
+  grep -q 'declare -gr gr_radp_user_config_extend_test="${GX_RADP_USER_CONFIG_EXTEND_TEST:-${YAML_RADP_USER_CONFIG_EXTEND_TEST:-test_value}}"' "$gr_fw_user_config_file"
 }
 
 # =============================================================================

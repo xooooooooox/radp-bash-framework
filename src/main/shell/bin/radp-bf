@@ -65,10 +65,10 @@ __radp_bf_main() {
     return 0
     ;;
   --print | "")
-    echo "Root path: $gr_fw_root_path"
-    echo "Config path: $gr_fw_config_path"
-    echo "User config path: $gr_user_config_path"
-    echo "User lib path: $gr_radp_fw_user_lib_path"
+    printf "%-17s %s\n" "Root path:" "$gr_fw_root_path"
+    printf "%-17s %s\n" "Config path:" "$gr_fw_config_path"
+    printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
+    printf "%-17s %s\n" "User lib path:" "$gr_radp_fw_user_lib_path"
     return 0
     ;;
   *)
