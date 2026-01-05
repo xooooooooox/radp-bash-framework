@@ -451,8 +451,8 @@ declare -gr gr_fw_banner_file="$gr_fw_config_path"/banner.txt
 
 declare -g gr_user_config_path
 gr_user_config_path="$(
-  if [[ -n "${GX_RADP_USER_CONFIG_PATH:-}" ]]; then
-    printf '%s\n' "$GX_RADP_USER_CONFIG_PATH"
+  if [[ -n "${GX_RADP_FW_USER_CONFIG_PATH:-}" ]]; then
+    printf '%s\n' "$GX_RADP_FW_USER_CONFIG_PATH"
   elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
     printf '%s\n' "${XDG_CONFIG_HOME%/}/radp_bash"
   else
