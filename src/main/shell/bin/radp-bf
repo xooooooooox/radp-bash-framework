@@ -8,8 +8,9 @@ Usage:
   radp-bash-framework [--print-root|--print-run|--help]
 
 Commands:
-  --print-root  Print framework root directory (default).
+  --print       Print all default paths. (default)
   --print-run   Print full path to run.sh.
+  --print-root  Print framework root directory.
   --help        Show this help.
 
 Example:
@@ -48,7 +49,7 @@ __radp_bf_setup() {
 
 __radp_bf_main() {
   # 丢弃打印 banner 等信息
-  __radp_bf_setup >/dev/null
+  __radp_bf_setup "$@" >/dev/null
 
   case "${1:-}" in
   --help | -h)
@@ -59,8 +60,15 @@ __radp_bf_main() {
     echo "${gr_fw_root_path}/run.sh"
     return 0
     ;;
-  --print-root | "")
+  --print-root)
     echo "${gr_fw_root_path}"
+    return 0
+    ;;
+  --print | "")
+    echo "Root path: $gr_fw_root_path"
+    echo "Config path: $gr_fw_config_path"
+    echo "User config path: $gr_user_config_path"
+    echo "User lib path: $gr_radp_fw_user_lib_path"
     return 0
     ;;
   *)
