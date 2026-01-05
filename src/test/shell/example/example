@@ -19,8 +19,8 @@ setup_radp_bash_framework() {
   project_src_root=$(cd -P -- "$project_src_root" && pwd)
   local radp_bf="$project_src_root"/src/main/shell/bin/radp-bf
 
-  GX_RADP_USER_CONFIG_PATH="$pwd"/config
-  readonly GX_RADP_USER_CONFIG_PATH
+  GX_RADP_FW_USER_CONFIG_PATH="$pwd"/config
+  readonly GX_RADP_FW_USER_CONFIG_PATH
   # shellcheck source=../../../main/shell/framework/run.sh
   source "$("$radp_bf" --print-run)" "$@"
 }
@@ -28,7 +28,7 @@ setup_radp_bash_framework() {
 #######################################
 # 如果要使用 radp_bash_framework 只需要按照 setup_radp_bash_framework 便可以完成初始化了
 # Globals:
-#   GX_RADP_USER_CONFIG_PATH
+#   GX_RADP_FW_USER_CONFIG_PATH
 # Arguments:
 #   @ - 命令行所有参数
 # Outputs:
@@ -40,5 +40,5 @@ main() {
   setup_radp_bash_framework "$@"
 }
 
-declare -g GX_RADP_USER_CONFIG_PATH=${GX_RADP_USER_CONFIG_PATH:-}
+declare -g GX_RADP_FW_USER_CONFIG_PATH=${GX_RADP_FW_USER_CONFIG_PATH:-}
 main "$@"
