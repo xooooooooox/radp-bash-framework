@@ -1,10 +1,4 @@
 -------------------------------------------------------------------
-Thu Jan 02 2026 xooooooooox <xozoz.sos@gmail.com>
+* Thu Jan 01 2026 xooooooooox <xozoz.sos@gmail.com>
 
-- Match %%setup directory to tarball root (%{name}).
-- Install framework under %{_datadir} for noarch RPMs and keep symlinks stable.
-
--------------------------------------------------------------------
-Thu Jan 01 2026 xooooooooox <xozoz.sos@gmail.com>
-
-- Initial OBS packaging.
+- Initial RPM package

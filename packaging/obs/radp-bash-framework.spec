@@ -15,19 +15,17 @@ Summary:        Modular Bash framework with structured context
 
 License:        MIT
 URL:            https://github.com/xooooooooox/radp-bash-framework
-Source0:        %{name}-%{version}.tar.gz
+Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildArch:      noarch
 Requires:       bash
 Requires:       coreutils
 
-%global radp_root %{_datadir}/radp-bash-framework
-
 %description
 radp-bash-framework is a modular Bash framework with structured context.
 
 %prep
-%setup -q -n %{name}
+%setup -q -n radp-bash-framework-%{version}
 
 %build
 # nothing to build
@@ -36,26 +34,26 @@ radp-bash-framework is a modular Bash framework with structured context.
 rm -rf %{buildroot}
 
 # install framework "root" that keeps bin/ and framework/ as siblings
-mkdir -p %{buildroot}%{radp_root}
-cp -a src/main/shell/bin %{buildroot}%{radp_root}/
-cp -a src/main/shell/framework %{buildroot}%{radp_root}/
+mkdir -p %{buildroot}%{_libdir}/radp-bash-framework
+cp -a src/main/shell/bin %{buildroot}%{_libdir}/radp-bash-framework/
+cp -a src/main/shell/framework %{buildroot}%{_libdir}/radp-bash-framework/
 
 # ensure executables
-chmod 0755 %{buildroot}%{radp_root}/bin/radp-bf
-find %{buildroot}%{radp_root}/framework -type f -name "*.sh" -exec chmod 0755 {} \;
+chmod 0755 %{buildroot}%{_libdir}/radp-bash-framework/bin/radp-bf
+find %{buildroot}%{_libdir}/radp-bash-framework/framework -type f -name "*.sh" -exec chmod 0755 {} \;
 
 # user-facing commands
 mkdir -p %{buildroot}%{_bindir}
-ln -s %{radp_root}/bin/radp-bf %{buildroot}%{_bindir}/radp-bf
-ln -s %{radp_root}/bin/radp-bf %{buildroot}%{_bindir}/radp-bash-framework
+ln -s %{_libdir}/radp-bash-framework/bin/radp-bf %{buildroot}%{_bindir}/radp-bf
+ln -s %{_libdir}/radp-bash-framework/bin/radp-bf %{buildroot}%{_bindir}/radp-bash-framework
 
 %files
 %license LICENSE
 %doc README.md
 %{_bindir}/radp-bf
 %{_bindir}/radp-bash-framework
-%{radp_root}
+%{_libdir}/radp-bash-framework/
 
 %changelog
-* Thu Jan 01 2026 xooooooooox <xozoz.sos@gmail.com> - 0.1.0-2
-- Initial OBS RPM package
+* Thu Jan 01 2026 xooooooooox <xozoz.sos@gmail.com> - 0.1.0-1
+- Initial RPM package
