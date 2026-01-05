@@ -2,6 +2,14 @@
 
 ## 安装
 
+安装后建议在当前 shell 加载入口：
+
+```bash
+source "$(radp-bf --print-run)"
+```
+
+如需每次启动自动加载，可将上述命令写入 `~/.bashrc` 或其它 shell 配置。
+
 ### Homebrew
 
 详情见: <https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb>.
@@ -9,12 +17,6 @@
 ```bash
 brew tap xooooooooox/radp
 brew install radp-bash-framework
-```
-
-安装后，可以通过以下方式获取 `run.sh` 的路径：
-
-```bash
-source "$(radp-bf --print-run)"
 ```
 
 ### rpm (dnf/yum)
@@ -61,12 +63,6 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-安装后，可以通过以下方式获取 `run.sh` 的路径：
-
-```bash
-source "$(radp-bf --print-run)"
-```
-
 ### apt-get
 
 ```bash
@@ -74,12 +70,6 @@ VERSION="<version>"
 curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
   "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
 sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
-```
-
-安装后，可以通过以下方式获取 `run.sh` 的路径：
-
-```bash
-source "$(radp-bf --print-run)"
 ```
 
 ### 本地直接使用

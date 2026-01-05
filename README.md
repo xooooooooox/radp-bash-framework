@@ -13,6 +13,14 @@
 
 ## Installation
 
+After installing, load the framework entrypoint in your shell:
+
+```shell
+source "$(radp-bf --print-run)"
+```
+
+You can place that command in your shell profile (e.g. `~/.bashrc`) for automatic loading.
+
 ### Homebrew
 
 Click [here](https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb) see details.
@@ -20,12 +28,6 @@ Click [here](https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp
 ```shell
 brew tap xooooooooox/radp
 brew install radp-bash-framework
-```
-
-After install, resolve the framework entrypoint:
-
-```shell
-source "$(radp-bf --print-run)"
 ```
 
 ### rpm (dnf/yum)
@@ -45,12 +47,6 @@ sudo yum install -y epel-release
 sudo yum install -y yum-plugin-copr
 sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
-```
-
-After install, resolve the framework entrypoint:
-
-```shell
-source "$(radp-bf --print-run)"
 ```
 
 ### OBS (zypper/apt/dnf)
@@ -78,12 +74,6 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-After install, resolve the framework entrypoint:
-
-```shell
-source "$(radp-bf --print-run)"
-```
-
 ### apt-get
 
 ```shell
@@ -91,12 +81,6 @@ VERSION="<version>"
 curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
   "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
 sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
-```
-
-After install, resolve the framework entrypoint:
-
-```shell
-source "$(radp-bf --print-run)"
 ```
 
 ### manual
