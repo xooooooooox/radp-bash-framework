@@ -84,6 +84,9 @@ __fw_context_setup() {
 
 __fw_context_finished() {
   # print banner with variable substitution
+  if [[ "$gr_radp_fw_banner_mode" == "off" ]]; then
+    return 0
+  fi
   eval "echo \"$(cat "$gr_fw_banner_file")\""
   radp_log_info "${gra_command_line[*]}"
 }
