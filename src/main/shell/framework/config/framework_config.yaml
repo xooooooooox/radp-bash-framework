@@ -1,6 +1,7 @@
 radp:
   env: default
   fw:
+    banner-mode: on
     log:
       debug: false
       level: info
