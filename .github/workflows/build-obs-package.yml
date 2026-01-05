@@ -126,7 +126,7 @@ jobs:
             exit 0
           fi
           echo "should_sync=true" >> "$GITHUB_OUTPUT"
-          tarball="radp-bash-framework-${version_no_prefix}.tar.gz"
+          tarball="v${version_no_prefix}.tar.gz"
           git archive --format=tar.gz --output="$tarball" "$version"
 
           export DEBEMAIL="xozoz.sos@gmail.com"
@@ -150,9 +150,9 @@ jobs:
             OSC_CONFIG="$osc_config" osc -A "$api_url" checkout --meta "$OBS_PROJECT" "$OBS_PACKAGE"
           fi
 
-          rm -f "$obs_dir"/radp-bash-framework-*.tar.gz
+          rm -f "$obs_dir"/v*.tar.gz "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -rf "$obs_dir"/debian
-          cp -a "radp-bash-framework-${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
+          cp -a "v${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
           cp -a debian "$obs_dir/"
