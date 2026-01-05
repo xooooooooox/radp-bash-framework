@@ -5,7 +5,7 @@ __radp_bf_usage() {
   cat <<'USAGE'
 radp-bash-framework
 Usage:
-  radp-bash-framework [--print-root|--print-run|--help]
+  radp-bf [--print|--print-root|--print-run|--help]
 
 Commands:
   --print       Print all default paths. (default)
