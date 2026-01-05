@@ -199,7 +199,7 @@ __fw_yaml_var_to_env_var() {
 # 当 radp.user.config.automap=true 时，自动将 radp.extend.*
 # 下的 YAML 配置映射为 shell 变量声明 YAML_RADP_EXTEND_*
 # Globals:
-#   gr_user_config_file - 用户配置文件路径
+#   gr_fw_user_config_file - 用户配置文件路径
 # Arguments:
 #   1 - vars_map_name: 包含所有 YAML 变量的关联数组名
 # Outputs:
@@ -275,10 +275,10 @@ __fw_autoconfigure() {
 
 #######################################
 # 初始化用户配置路径状态
-# 检查 user config path 是否存在，设置 gr_user_config_path_exists 标志
+# 检查 user config path 是否存在，设置 gr_fw_user_config_path_exists 标志
 # Globals:
-#   gr_user_config_path - 用户配置路径
-#   gr_user_config_path_exists - (写入) 用户配置路径是否存在的标志
+#   gr_fw_user_config_path - 用户配置路径
+#   gr_fw_user_config_path_exists - (写入) 用户配置路径是否存在的标志
 # Arguments:
 #   None
 # Outputs:
@@ -300,8 +300,8 @@ __fw_init_user_config_path_status() {
 # 3) 解析 YAML 内部引用并导出变量
 # Globals:
 #   gr_fw_yaml_config_file - framework yaml 配置文件路径
-#   gr_user_yaml_config_file - user yaml 配置文件路径
-#   gr_user_config_path_exists - 用户配置路径是否存在
+#   gr_fw_user_yaml_config_file - user yaml 配置文件路径
+#   gr_fw_user_config_path_exists - 用户配置路径是否存在
 # Arguments:
 #   1 - result_var_name: 用于存储合并结果的关联数组变量名
 # Outputs:
@@ -362,9 +362,9 @@ __fw_init_radp_env() {
 # 根据 gr_radp_env 加载对应的 config-{env}.yaml 文件
 # 如果 env=default, 则无需加载 env 配置
 # Globals:
-#   gr_user_config_path - 用户配置路径
-#   gr_user_config_filename - 用户配置文件名
-#   gr_user_config_path_exists - 用户配置路径是否存在
+#   gr_fw_user_config_path - 用户配置路径
+#   gr_fw_user_config_filename - 用户配置文件名
+#   gr_fw_user_config_path_exists - 用户配置路径是否存在
 #   gr_radp_env - 当前环境标识
 #   gw_final_yaml_vars - (写入) 最终合并后的 YAML 变量
 # Arguments:
@@ -413,8 +413,8 @@ __fw_load_env_specific_config() {
 # Globals:
 #   gr_fw_yaml_config_file - framework yaml config
 #   gr_fw_config_file - finally framework config
-#   gr_user_yaml_config_file - user yaml config
-#   gr_user_config_file - finally user config
+#   gr_fw_user_yaml_config_file - user yaml config
+#   gr_fw_user_config_file - finally user config
 # Arguments:
 #   None
 # Outputs:
