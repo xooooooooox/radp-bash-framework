@@ -127,7 +127,11 @@ jobs:
           fi
           echo "should_sync=true" >> "$GITHUB_OUTPUT"
           tarball="v${version_no_prefix}.tar.gz"
-          git archive --format=tar.gz --output="$tarball" "$version"
+          git archive \
+            --format=tar.gz \
+            --prefix="radp-bash-framework-${version_no_prefix}/" \
+            --output="$tarball" \
+            "$version"
 
           export DEBEMAIL="xozoz.sos@gmail.com"
           export DEBFULLNAME="xooooooooox"
