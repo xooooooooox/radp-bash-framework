@@ -4,7 +4,7 @@
     <param name="url">https://github.com/xooooooooox/radp-bash-framework.git</param>
     <param name="revision">HEAD</param>
     <param name="versionformat">0.1.0</param>
-    <param name="file">radp-bash-framework-*.tar</param>
+    <param name="file">radp-bash-framework</param>
     <param name="compression">gz</param>
   </service>
 </services>
