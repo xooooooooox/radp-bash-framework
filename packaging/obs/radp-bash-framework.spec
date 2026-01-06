@@ -15,7 +15,7 @@ Summary:        Modular Bash framework with structured context
 
 License:        MIT
 URL:            https://github.com/xooooooooox/radp-bash-framework
-Source0:        %{name}-%{version}.tar.gz
+Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildArch:      noarch
 Requires:       bash
