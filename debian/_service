@@ -5,6 +5,5 @@
     <param name="revision">HEAD</param>
     <param name="versionformat">0.1.0</param>
     <param name="filename">radp-bash-framework</param>
-    <param name="compression">gz</param>
   </service>
 </services>
