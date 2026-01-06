@@ -170,7 +170,7 @@ jobs:
             echo "Debian packaging directory missing in OBS working copy." >&2
             exit 1
           fi
-          OSC_CONFIG="$osc_config" osc -A "$api_url" add --recursive debian || true
+          OSC_CONFIG="$osc_config" osc -A "$api_url" add -r debian || true
           OSC_CONFIG="$osc_config" osc -A "$api_url" addremove
           OSC_CONFIG="$osc_config" osc -A "$api_url" status
           if [[ ! -f .osc/_files ]] || ! grep -q 'name="debian' .osc/_files; then
