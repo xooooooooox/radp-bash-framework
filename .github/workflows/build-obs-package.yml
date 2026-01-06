@@ -170,10 +170,12 @@ jobs:
             echo "Debian packaging directory missing in OBS working copy." >&2
             exit 1
           fi
-          OSC_CONFIG="$osc_config" osc -A "$api_url" add -r debian || true
+          while IFS= read -r -d '' file; do
+            OSC_CONFIG="$osc_config" osc -A "$api_url" add "$file" || true
+          done < <(find debian -type f -print0)
           OSC_CONFIG="$osc_config" osc -A "$api_url" addremove
           OSC_CONFIG="$osc_config" osc -A "$api_url" status
-          if [[ ! -f .osc/_files ]] || ! grep -q 'name="debian' .osc/_files; then
+          if [[ ! -f .osc/_files ]] || ! grep -q 'name="debian/' .osc/_files; then
             echo "Debian packaging not tracked in OBS working copy." >&2
             exit 1
           fi
