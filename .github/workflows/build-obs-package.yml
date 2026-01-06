@@ -174,7 +174,7 @@ jobs:
           OSC_CONFIG="$osc_config" osc -A "$api_url" addremove
           osc_status="$(OSC_CONFIG="$osc_config" osc -A "$api_url" status)"
           echo "$osc_status"
-          if ! printf '%s\n' "$osc_status" | grep -Eq '^A[[:space:]]+debian(\\.obscpio|/|$)'; then
+          if [[ ! -f debian.obscpio ]] && ! printf '%s\n' "$osc_status" | grep -Eq '^[A-Z][[:space:]]+debian(\\.obscpio|/|$)'; then
             echo "Debian packaging not tracked in OBS working copy." >&2
             exit 1
           fi
