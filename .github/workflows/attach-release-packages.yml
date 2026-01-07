@@ -288,14 +288,25 @@ jobs:
             for href in hrefs:
               if href in ("../", "./"):
                 continue
-              full_url = urllib.parse.urljoin(base_url, href)
-              if href.endswith("/"):
+              href_clean = href.split("?", 1)[0].split("#", 1)[0]
+              full_url = urllib.parse.urljoin(base_url, href_clean)
+              is_dir = href_clean.endswith("/")
+              if not is_dir:
+                has_ext = "." in href_clean.rsplit("/", 1)[-1]
+                if not has_ext and not href_clean.endswith(".rpm"):
+                  is_dir = True
+              if is_dir:
+                if not full_url.endswith("/"):
+                  full_url += "/"
                 if depth < max_depth:
                   queue.append((full_url, depth + 1))
                 continue
-              if not href.endswith(".rpm"):
+                if depth < max_depth:
+                  queue.append((full_url, depth + 1))
                 continue
-              filename = href.split("/")[-1]
+              if not href_clean.endswith(".rpm"):
+                continue
+              filename = href_clean.split("/")[-1]
               if package_name not in filename or version not in filename:
                 continue
               matched_rpms += 1
