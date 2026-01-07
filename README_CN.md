@@ -118,6 +118,7 @@ sudo apt-get install -y radp-bash-framework
 5. `create-version-tag` 以及 `update-spec-version` 会在版本变化时更新 spec versions。
 6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建(仅在版本标签存在时执行)。
 7. `build-obs-package` 会同步源码到 OBS 并触发 OBS 构建(仅在版本标签存在时执行)。
+8. `attach-release-artifacts` 会从 COPR/OBS 拉取构建产物及 Homebrew formula，并上传到 GitHub Release 便于手工安装。
 
 ## Github Actions
 
@@ -150,3 +151,8 @@ sudo apt-get install -y radp-bash-framework
 
 - **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
 - **用途：** 同步源码 tarball、spec 和 Debian 打包元数据到 OBS 并触发构建，若版本标签不存在则跳过(tarball 基于标签归档)。
+
+### 附加发布产物(`attach-release-artifacts.yml`)
+
+- **触发方式：** 发布 GitHub Release，或手动触发(`workflow_dispatch`，可指定 tag)。
+- **用途：** 从 COPR/OBS 下载构建好的包，以及 Homebrew tap 的 formula，并将它们上传为 Release 资产，方便手工安装。

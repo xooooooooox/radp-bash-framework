@@ -124,6 +124,7 @@ sudo apt install -y radp-bash-framework
 5. The `create-version-tag` and `update-spec-version` workflows sync spec versions when the version changes.
 6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main` (only when the release tag exists).
 7. The `build-obs-package` workflow syncs sources to OBS and triggers the OBS build (only when the release tag exists).
+8. The `attach-release-artifacts` workflow pulls built packages from COPR/OBS and the Homebrew formula and uploads them to the GitHub Release for manual installs.
 
 ## GitHub Actions
 
@@ -151,3 +152,8 @@ sudo apt install -y radp-bash-framework
 
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build, skipping the build when the release tag is missing (the tarball is created from the tag).
+
+### Attach release artifacts (`attach-release-artifacts.yml`)
+
+- **Trigger:** Published GitHub Release, or manual (`workflow_dispatch` with optional tag).
+- **Purpose:** Download built packages from COPR/OBS and the Homebrew tap formula, then upload them as Release assets for manual installation.
