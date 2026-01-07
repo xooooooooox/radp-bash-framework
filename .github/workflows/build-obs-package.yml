@@ -145,13 +145,12 @@ jobs:
 
           tarball_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/archive/refs/tags/${version}.tar.gz"
           tarball_name="v${version_no_prefix}.tar.gz"
-          curl -L --fail --show-error -o "$pkg_dir/${tarball_name}" "$tarball_url"
-          if [[ ! -s "$pkg_dir/${tarball_name}" ]]; then
+          tarball_path="$pkg_dir/${tarball_name}"
+          curl -L --fail --show-error -o "$tarball_path" "$tarball_url"
+          if [[ ! -s "$tarball_path" ]]; then
             echo "Failed to download tarball from $tarball_url" >&2
             exit 1
           fi
-          orig_tarball="${pkg_dir}/radp-bash-framework_${version_no_prefix}.orig.tar.gz"
-          cp "$pkg_dir/${tarball_name}" "$orig_tarball"
 
           if [[ -d "${GITHUB_WORKSPACE}/packaging/obs/debian" ]]; then
             cp -a "${GITHUB_WORKSPACE}/packaging/obs/debian" "$pkg_dir/debian"
@@ -170,7 +169,9 @@ jobs:
               printf ' -- xooooooooox <xozoz.sos@gmail.com>  %s\n' "$(date -R)"
             } > "$changelog_path"
             tmp_build="$(mktemp -d)"
-            tar -xzf "$orig_tarball" -C "$tmp_build"
+            orig_tarball="$tmp_build/radp-bash-framework_${version_no_prefix}.orig.tar.gz"
+            cp "$tarball_path" "$orig_tarball"
+            tar --force-local -xzf "$orig_tarball" -C "$tmp_build"
             src_dir="$tmp_build/radp-bash-framework-${version_no_prefix}"
             if [[ ! -d "$src_dir" ]]; then
               echo "Expected source dir not found: $src_dir" >&2
@@ -180,6 +181,7 @@ jobs:
             (cd "$src_dir" && dpkg-source -b .)
             find "$tmp_build" -maxdepth 1 -type f -name 'radp-bash-framework_*.dsc' -print0 | xargs -0 -I {} mv {} "$pkg_dir/"
             find "$tmp_build" -maxdepth 1 -type f -name 'radp-bash-framework_*.debian.tar.*' -print0 | xargs -0 -I {} mv {} "$pkg_dir/"
+            cp "$orig_tarball" "$pkg_dir/"
             rm -rf "$tmp_build"
           fi
 
