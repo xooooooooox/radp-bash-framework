@@ -127,10 +127,11 @@ jobs:
           fi
           echo "should_sync=true" >> "$GITHUB_OUTPUT"
           tarball="v${version_no_prefix}.tar.gz"
+          tarball_path="${RUNNER_TEMP:-/tmp}/${tarball}"
           git archive \
             --format=tar.gz \
             --prefix="radp-bash-framework-${version_no_prefix}/" \
-            --output="$tarball" \
+            --output="$tarball_path" \
             "$version"
 
           export DEBEMAIL="xozoz.sos@gmail.com"
@@ -146,7 +147,7 @@ jobs:
             exit 1
           fi
           mkdir -p "$deb_source_dir"
-          cp "$tarball" "../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
+          cp "$tarball_path" "../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
           dpkg-source -b .
           deb_source_prefix="${deb_source_name}_${deb_version}"
           deb_orig_tar="../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
@@ -167,6 +168,7 @@ jobs:
           echo "deb_source_dir=${deb_source_dir}" >> "$GITHUB_OUTPUT"
           echo "deb_version=${deb_version}" >> "$GITHUB_OUTPUT"
           echo "deb_source_name=${deb_source_name}" >> "$GITHUB_OUTPUT"
+          echo "tarball_path=${tarball_path}" >> "$GITHUB_OUTPUT"
 
 
       - name: Sync to OBS
@@ -188,10 +190,10 @@ jobs:
           rm -f "$obs_dir"/v*.tar.gz "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -f "$obs_dir"/_service
           rm -rf "$obs_dir"/debian
-          cp -a "v${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
-          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/radp-bash-framework_${{ steps.version.outputs.version_no_prefix }}.orig.tar.gz" "$obs_dir/"
-          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/radp-bash-framework_${{ steps.prepare.outputs.deb_version }}.dsc" "$obs_dir/"
-          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/radp-bash-framework_${{ steps.prepare.outputs.deb_version }}.debian.tar.xz" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.tarball_path }}" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/${{ steps.prepare.outputs.deb_source_name }}_${{ steps.version.outputs.version_no_prefix }}.orig.tar.gz" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/${{ steps.prepare.outputs.deb_source_name }}_${{ steps.prepare.outputs.deb_version }}.dsc" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/${{ steps.prepare.outputs.deb_source_name }}_${{ steps.prepare.outputs.deb_version }}.debian.tar.xz" "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
           cp -a debian "$obs_dir/"
