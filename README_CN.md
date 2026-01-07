@@ -19,9 +19,9 @@ brew tap xooooooooox/radp
 brew install radp-bash-framework
 ```
 
-### rpm (dnf/yum)
+### RPM（Fedora/RHEL/CentOS，COPR）
 
-- `dnf`:
+- dnf:
 
 ```shell
 sudo dnf install -y dnf-plugins-core
@@ -29,7 +29,7 @@ sudo dnf copr enable -y xooooooooox/radp
 sudo dnf install -y radp-bash-framework
 ```
 
-- `yum`:
+- yum:
 
 ```shell
 sudo yum install -y epel-release
@@ -38,9 +38,9 @@ sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
 ```
 
-### OBS (zypper/apt/dnf)
+### OBS 仓库（zypper / dnf / yum / apt）
 
-OBS 提供多发行版的 RPM/DEB 构建。添加对应 OBS 仓库后安装：
+OBS 提供多发行版的 RPM/DEB 构建。替换 `<DISTRO>` 为目标发行版路径（例如 `Fedora_39`、`openSUSE_Tumbleweed`、`xUbuntu_24.04`），添加仓库并安装：
 
 ```shell
 # openSUSE/SLES
@@ -63,7 +63,7 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### apt-get
+### Debian/Ubuntu（从 GitHub Release 下载安装包）
 
 ```bash
 VERSION="<version>"
@@ -74,15 +74,9 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 
 ### 本地直接使用
 
-将整个 `src/main/shell/framework` 目录拷贝到本地并使用：
-
 ```bash
 source /path/to/framework/run.sh
 ```
-
-### 手动安装
-
-TODO
 
 ## 升级
 
@@ -92,7 +86,7 @@ TODO
 brew upgrade radp-bash-framework
 ```
 
-### rpm (dnf/yum)
+### RPM（Fedora/RHEL/CentOS，COPR）
 
 ```bash
 sudo dnf clean metadata
@@ -101,7 +95,7 @@ sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
 
-### OBS (zypper/apt-get/yum/dnf)
+### OBS 仓库（zypper / dnf / yum / apt）
 
 ```shell
 # openSUSE/SLES
@@ -119,7 +113,7 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### apt-get
+### Debian/Ubuntu（从 GitHub Release 下载安装包）
 
 ```bash
 VERSION="<version>"

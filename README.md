@@ -30,36 +30,32 @@ brew tap xooooooooox/radp
 brew install radp-bash-framework
 ```
 
-### rpm (dnf/yum)
-
-- If use `dnf`:
+### RPM (Fedora/RHEL/CentOS via COPR)
 
 ```shell
+# dnf
 sudo dnf install -y dnf-plugins-core
 sudo dnf copr enable -y xooooooooox/radp
 sudo dnf install -y radp-bash-framework
-```
 
-- If use `yum`:
-
-```shell
+# yum
 sudo yum install -y epel-release
 sudo yum install -y yum-plugin-copr
 sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
 ```
 
-### OBS (zypper/apt/dnf)
+### OBS repository (zypper / dnf / yum / apt)
 
-OBS provides multi-distro builds for RPM/DEB. Add the repository from your OBS project, then install:
+OBS provides multi-distro builds. Replace `<DISTRO>` with the target path (e.g. `Fedora_39`, `openSUSE_Tumbleweed`, `xUbuntu_24.04`).
 
 ```shell
-# openSUSE/SLES
+# openSUSE/SLES (zypper)
 sudo zypper addrepo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
 sudo zypper refresh
 sudo zypper install radp-bash-framework
 
-# Fedora/RHEL/CentOS (replace <DISTRO> with your distro path, e.g. Fedora_39)
+# Fedora/RHEL/CentOS (dnf)
 sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
 sudo dnf install -y radp-bash-framework
 
@@ -67,14 +63,14 @@ sudo dnf install -y radp-bash-framework
 sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
 sudo yum install -y radp-bash-framework
 
-# Debian/Ubuntu (replace <DISTRO> with your distro codename)
+# Debian/Ubuntu (apt)
 echo "deb https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /" | sudo tee /etc/apt/sources.list.d/radp-bash-framework.list
 curl -fsSL https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/Release.key | sudo gpg --dearmor -o /usr/share/keyrings/radp-bash-framework.gpg
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### apt-get
+### Debian/Ubuntu (.deb from GitHub Release)
 
 ```shell
 VERSION="<version>"
@@ -83,9 +79,11 @@ curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
 sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ```
 
-### manual
+### Manual (from source)
 
-TODO
+```shell
+source /path/to/framework/run.sh
+```
 
 ## Upgrade
 
@@ -95,7 +93,7 @@ TODO
 brew upgrade radp-bash-framework
 ```
 
-### rpm (dnf/yum)
+### RPM (Fedora/RHEL/CentOS via COPR)
 
 ```shell
 sudo dnf clean metadata
@@ -104,7 +102,7 @@ sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
 
-### OBS (zypper/apt-get/yum/dnf)
+### OBS repository (zypper / dnf / yum / apt)
 
 ```shell
 # openSUSE/SLES
@@ -122,7 +120,7 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### apt-get
+### Debian/Ubuntu (.deb from GitHub Release)
 
 ```shell
 VERSION="<version>"
