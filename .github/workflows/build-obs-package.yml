@@ -143,6 +143,7 @@ jobs:
           fi
           mkdir -p "$deb_source_dir"
           deb_build_dir="${RUNNER_TEMP:-/tmp}/obs-debian-build"
+          deb_artifact_root="$(dirname "$deb_build_dir")"
           rm -rf "$deb_build_dir"
           git worktree add --detach "$deb_build_dir" "$version"
           deb_work_tree="$deb_build_dir"
@@ -154,14 +155,14 @@ jobs:
             cd "$deb_work_tree"
             dch --newversion "${deb_version}" --distribution stable --urgency medium \
               "Release ${version}" >/dev/null
-            cp "$tarball_path" "../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
+            cp "$tarball_path" "${deb_artifact_root}/${deb_source_name}_${version_no_prefix}.orig.tar.gz"
             dpkg-source -b .
           )
           git worktree remove --force "$deb_build_dir"
           deb_source_prefix="${deb_source_name}_${deb_version}"
-          deb_orig_tar="../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
-          deb_dsc="../${deb_source_prefix}.dsc"
-          deb_debian_tar="../${deb_source_prefix}.debian.tar.xz"
+          deb_orig_tar="${deb_artifact_root}/${deb_source_name}_${version_no_prefix}.orig.tar.gz"
+          deb_dsc="${deb_artifact_root}/${deb_source_prefix}.dsc"
+          deb_debian_tar="${deb_artifact_root}/${deb_source_prefix}.debian.tar.xz"
 
           for file in "$deb_orig_tar" "$deb_dsc" "$deb_debian_tar"; do
             if [[ ! -f "$file" ]]; then
