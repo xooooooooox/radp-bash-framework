@@ -33,13 +33,14 @@ jobs:
         id: tag
         run: |
           set -euo pipefail
+          repo="${GITHUB_REPOSITORY}"
           if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
             tag_name="${GITHUB_REF_NAME}"
           else
             tag_name="${{ github.event.inputs.tag_name }}"
           fi
           if [[ -z "${tag_name}" ]]; then
-            tag_name="$(gh release list --limit 1 --json tagName --jq '.[0].tagName')"
+            tag_name="$(gh release list --repo "${repo}" --limit 1 --json tagName --jq '.[0].tagName')"
           fi
           if [[ -z "${tag_name}" ]]; then
             echo "Unable to resolve tag name." >&2
