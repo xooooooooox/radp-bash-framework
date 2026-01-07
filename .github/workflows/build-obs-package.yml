@@ -140,10 +140,16 @@ jobs:
 
           deb_source_dir="${RUNNER_TEMP:-/tmp}/obs-debian-source"
           deb_version="${version_no_prefix}-1"
+          deb_source_name="$(sed -n 's/^Source:[[:space:]]*//p' debian/control | head -n 1)"
+          if [[ -z "$deb_source_name" ]]; then
+            echo "Failed to read Debian source name from debian/control" >&2
+            exit 1
+          fi
           mkdir -p "$deb_source_dir"
+          cp "$tarball" "../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
           dpkg-source -b .
-          deb_source_prefix="radp-bash-framework_${deb_version}"
-          deb_orig_tar="../radp-bash-framework_${version_no_prefix}.orig.tar.gz"
+          deb_source_prefix="${deb_source_name}_${deb_version}"
+          deb_orig_tar="../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
           deb_dsc="../${deb_source_prefix}.dsc"
           deb_debian_tar="../${deb_source_prefix}.debian.tar.xz"
 
@@ -160,6 +166,7 @@ jobs:
 
           echo "deb_source_dir=${deb_source_dir}" >> "$GITHUB_OUTPUT"
           echo "deb_version=${deb_version}" >> "$GITHUB_OUTPUT"
+          echo "deb_source_name=${deb_source_name}" >> "$GITHUB_OUTPUT"
 
 
       - name: Sync to OBS
