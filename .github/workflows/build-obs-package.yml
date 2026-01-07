@@ -30,12 +30,20 @@ jobs:
       - name: Validate OBS secrets
         run: |
           set -euo pipefail
-          for value in OBS_USERNAME OBS_PASSWORD OBS_PROJECT OBS_PACKAGE OBS_API_URL; do
+          for value in OBS_USERNAME OBS_PASSWORD OBS_PROJECT OBS_PACKAGE; do
             if [[ -z "${!value:-}" ]]; then
               echo "Missing required secret: ${value}" >&2
               exit 1
             fi
           done
+
+          default_api_url="https://api.opensuse.org"
+          if [[ -z "${OBS_API_URL:-}" ]]; then
+            echo "OBS_API_URL not set; using default ${default_api_url}"
+            echo "OBS_API_URL=${default_api_url}" >> "$GITHUB_ENV"
+          else
+            echo "OBS_API_URL=${OBS_API_URL}" >> "$GITHUB_ENV"
+          fi
 
       - name: Checkout
         uses: actions/checkout@v4
