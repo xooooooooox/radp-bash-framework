@@ -5,13 +5,14 @@ __radp_bf_usage() {
   cat <<'USAGE'
 radp-bash-framework
 Usage:
-  radp-bf [--print|--print-root|--print-run|--help]
+  radp-bf [options...]
 
 Commands:
-  --print       Print all default paths. (default)
   --print-run   Print full path to run.sh.
   --print-root  Print framework root directory.
-  --help        Show this help.
+  --print       Print all default paths.
+  -h, --help    Show this help.
+  -v, --version Show version number.
 
 Example:
   source "$(radp-bash-framework --print-run)"
@@ -44,7 +45,7 @@ __radp_bf_setup() {
   local project_src_root
   project_src_root=$(dirname "$bin_dir")
   # shellcheck source=../framework/run.sh
-  source "$project_src_root"/framework/run.sh
+  source "$project_src_root"/framework/run.sh "$@"
 }
 
 __radp_bf_main() {
@@ -52,7 +53,7 @@ __radp_bf_main() {
   __radp_bf_setup "$@" >/dev/null
 
   case "${1:-}" in
-  --help | -h)
+  --help | -h | "")
     __radp_bf_usage
     return 0
     ;;
@@ -64,7 +65,11 @@ __radp_bf_main() {
     echo "${gr_fw_root_path}"
     return 0
     ;;
-  --print | "")
+  --version | -v)
+    echo "$gr_fw_version"
+    return 0
+    ;;
+  --print)
     printf "%-17s %s\n" "Root path:" "$gr_fw_root_path"
     printf "%-17s %s\n" "Config path:" "$gr_fw_config_path"
     printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
