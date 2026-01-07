@@ -174,7 +174,12 @@ jobs:
           builds_url = "https://copr.fedorainfracloud.org/api_3/build/list?" + urllib.parse.urlencode(params)
           use_fallback = False
           try:
-            builds = api_json(builds_url).get("builds", [])
+            build_data = api_json(builds_url)
+            builds = build_data.get("builds") or build_data.get("items") or []
+            print(
+              f"COPR build list keys={list(build_data.keys())} count={len(builds)}",
+              file=sys.stderr,
+            )
           except Exception as exc:
             print(f"Failed to read COPR build list: {exc}", file=sys.stderr)
             builds = []
@@ -186,13 +191,14 @@ jobs:
           for build in builds:
             if build.get("state") != "succeeded":
               continue
-            if build.get("package_name") and build.get("package_name") != package_name:
-              continue
-            if build.get("package_name"):
-              match_package += 1
             source_pkg = build.get("source_package") or {}
+            source_name = source_pkg.get("name") or build.get("package_name")
+            if source_name and source_name != package_name:
+              continue
+            if source_name:
+              match_package += 1
             src_version = source_pkg.get("version")
-            if src_version and src_version != version:
+            if src_version and not (src_version == version or src_version.startswith(version + "-")):
               continue
             if src_version:
               match_version += 1
@@ -210,6 +216,22 @@ jobs:
 
           urls = []
           if candidates:
+            selected = max(candidates, key=lambda b: b.get("id", 0))
+            build_id = selected.get("id")
+            repo_url = (selected.get("repo_url") or "").rstrip("/")
+            chroots = selected.get("chroots") or []
+            if repo_url:
+              urls.append(repo_url + "/")
+              for chroot in chroots:
+                urls.append(f"{repo_url}/{chroot}/")
+              print(
+                f"COPR selected build_id={build_id} repo_url={repo_url} chroots={len(chroots)}",
+                file=sys.stderr,
+              )
+            else:
+              use_fallback = True
+
+          if candidates and (not urls or use_fallback):
             build_id = max(candidates, key=lambda b: b.get("id", 0)).get("id")
             try:
               build_info = api_json(f"https://copr.fedorainfracloud.org/api_3/build/get?build_id={build_id}")
