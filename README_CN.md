@@ -132,11 +132,11 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 
 1. 更新 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` 中的 `gr_fw_version`(格式：`vx.y.z`)。
 2. 推送到 `main` 分支。
-3. 手动触发 `create-version-tag` 工作流创建并推送版本标签(或直接推送合法的 `vX.Y.Z` 标签)。
+3. 手动触发 `create-version-tag` 工作流创建并推送版本标签.
 4. 等待标签相关工作流执行完成(由标签推送或 `create-version-tag` 工作流触发)：
     - `update-homebrew-tap` 更新 Homebrew 的 formula。
     - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
-5. `update-spec-version` 会在 `main` 分支版本变化时更新 `packaging/copr/radp-bash-framework.spec`。
+5. `create-version-tag` 以及 `update-spec-version` 会在版本变化时更新 spec versions。
 6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建(仅在版本标签存在时执行)。
 7. `build-obs-package` 会同步源码到 OBS 并触发 OBS 构建(仅在版本标签存在时执行)。
 
@@ -145,12 +145,12 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### 创建版本标签(`create-version-tag.yml`)
 
 - **触发方式：** 手动触发(`workflow_dispatch`)，仅在 `main` 分支运行。
-- **用途：** 从 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` 读取 `gr_fw_version`，校验是否符合 `vx.y.z`，并在不存在该标签时创建并推送。
+- **用途：** 从 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` 读取 `gr_fw_version`，校验是否符合 `vx.y.z`，同步 spec 版本，并在不存在该标签时创建并推送。
 
 ### 更新 spec 版本(`update-spec-version.yml`)
 
-- **触发方式：** `main` 分支推送、推送版本标签(`v*`)，或 `create-version-tag` 工作流在 `main` 分支成功完成后触发。
-- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，确保对应标签已存在，并与最新标签中的 `gr_fw_version` 对比，仅在版本不同的情况下更新 `packaging/copr/radp-bash-framework.spec` 的 `Version` 字段为 `x.y.z`。
+- **触发方式：** `main` 分支推送，或 `create-version-tag` 工作流在 `main` 分支成功完成后触发。
+- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，更新 spec 的 `Version` 字段为 `x.y.z`，在版本变化。
 
 ### 构建 COPR 包(`build-copr-package.yml`)
 
@@ -160,7 +160,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### 更新 Homebrew tap(`update-homebrew-tap.yml`)
 
 - **触发方式：** 推送版本标签(`v*`)、`create-version-tag` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
-- **用途：** 根据标签生成发布元数据，更新 Homebrew tap 的 formula，并将变更推送到 tap 仓库。
+- **用途：** 校验标签与 `gr_fw_version` 一致，生成发布元数据，更新 Homebrew tap 的 formula，并将变更推送到 tap 仓库。
 
 ### 构建 deb 包(`build-deb-package.yml`)
 

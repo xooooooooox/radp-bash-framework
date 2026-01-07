@@ -135,11 +135,11 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 
 1. Update `gr_fw_version` in `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` (format: `vx.y.z`).
 2. Push to `main`.
-3. Trigger the `create-version-tag` workflow to create/push the tag (or push a valid `vX.Y.Z` tag directly).
+3. Trigger the `create-version-tag` workflow to create/push the tag.
 4. Wait for tag workflows (triggered by tag push or by the `create-version-tag` workflow run):
     - `update-homebrew-tap` updates the Homebrew formula.
     - `build-deb-package` builds and uploads the `.deb` to the GitHub Release.
-5. The `update-spec-version` workflow updates `packaging/copr/radp-bash-framework.spec` on `main` when the version changes.
+5. The `create-version-tag` and `update-spec-version` workflows sync spec versions when the version changes.
 6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main` (only when the release tag exists).
 7. The `build-obs-package` workflow syncs sources to OBS and triggers the OBS build (only when the release tag exists).
 
@@ -148,12 +148,12 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### Create version tag (`create-version-tag.yml`)
 
 - **Trigger:** Manual (`workflow_dispatch`), only runs when the branch is `main`.
-- **Purpose:** Read `gr_fw_version` from `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh`, validate it matches `vx.y.z`, and create/push the Git tag if it does not already exist.
+- **Purpose:** Read `gr_fw_version` from `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh`, validate it matches `vx.y.z`, sync spec `Version`, and create/push the Git tag if it does not already exist.
 
 ### Update spec version (`update-spec-version.yml`)
 
-- **Trigger:** Push to `main`, push a version tag (`v*`), or successful completion of the `create-version-tag` workflow on `main`.
-- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, ensure the matching tag exists, compare it against the latest tag's `gr_fw_version`, and update `packaging/copr/radp-bash-framework.spec` to `x.y.z` only when the version differs.
+- **Trigger:** Push to `main`, or successful completion of the `create-version-tag` workflow on `main`.
+- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, update spec `Version` to `x.y.z` when the version changes.
 
 ### Build COPR package (`build-copr-package.yml`)
 
@@ -163,7 +163,7 @@ sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ### Update Homebrew tap (`update-homebrew-tap.yml`)
 
 - **Trigger:** On push of a version tag (`v*`), successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
-- **Purpose:** Build release metadata from the tag, update the Homebrew tap formula, and push the changes to the tap repository.
+- **Purpose:** Validate the tag matches `gr_fw_version`, build release metadata from the tag, update the Homebrew tap formula, and push the changes to the tap repository.
 
 ### Build deb package (`build-deb-package.yml`)
 
