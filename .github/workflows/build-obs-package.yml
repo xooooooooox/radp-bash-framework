@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y osc
+          sudo apt-get install -y osc dpkg-dev debhelper
 
       - name: Configure osc
         if: steps.tag.outputs.should_build == 'true'
@@ -150,6 +150,8 @@ jobs:
             echo "Failed to download tarball from $tarball_url" >&2
             exit 1
           fi
+          orig_tarball="${pkg_dir}/radp-bash-framework_${version_no_prefix}.orig.tar.gz"
+          cp "$pkg_dir/${tarball_name}" "$orig_tarball"
 
           if [[ -d "${GITHUB_WORKSPACE}/packaging/obs/debian" ]]; then
             cp -a "${GITHUB_WORKSPACE}/packaging/obs/debian" "$pkg_dir/debian"
@@ -162,13 +164,23 @@ jobs:
           if [[ -d "$pkg_dir/debian" ]]; then
             deb_version="${version_no_prefix}-1"
             changelog_path="$pkg_dir/debian/changelog"
-            cat > "$changelog_path" <<EOF
-          radp-bash-framework (${deb_version}) unstable; urgency=medium
-
-            * Automated OBS build for version ${deb_version}
-
-           -- xooooooooox <xozoz.sos@gmail.com>  $(date -R)
-          EOF
+            {
+              printf 'radp-bash-framework (%s) unstable; urgency=medium\n\n' "$deb_version"
+              printf '  * Automated OBS build for version %s\n\n' "$deb_version"
+              printf ' -- xooooooooox <xozoz.sos@gmail.com>  %s\n' "$(date -R)"
+            } > "$changelog_path"
+            tmp_build="$(mktemp -d)"
+            tar -xzf "$orig_tarball" -C "$tmp_build"
+            src_dir="$tmp_build/radp-bash-framework-${version_no_prefix}"
+            if [[ ! -d "$src_dir" ]]; then
+              echo "Expected source dir not found: $src_dir" >&2
+              exit 1
+            fi
+            cp -a "$pkg_dir/debian" "$src_dir/debian"
+            (cd "$src_dir" && dpkg-source -b .)
+            find "$tmp_build" -maxdepth 1 -type f -name 'radp-bash-framework_*.dsc' -print0 | xargs -0 -I {} mv {} "$pkg_dir/"
+            find "$tmp_build" -maxdepth 1 -type f -name 'radp-bash-framework_*.debian.tar.*' -print0 | xargs -0 -I {} mv {} "$pkg_dir/"
+            rm -rf "$tmp_build"
           fi
 
           pushd "$pkg_dir" >/dev/null
