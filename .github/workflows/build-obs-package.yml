@@ -158,13 +158,8 @@ jobs:
           cp -a "v${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
-          cp -a debian "$obs_dir/"
 
           pushd "$obs_dir" >/dev/null
-          if [[ ! -d debian ]]; then
-            echo "Debian packaging directory missing in OBS working copy." >&2
-            exit 1
-          fi
           printf 'y\n' | OSC_CONFIG="$osc_config" osc -A "$api_url" add debian
           OSC_CONFIG="$osc_config" osc -A "$api_url" addremove
           osc_status="$(OSC_CONFIG="$osc_config" osc -A "$api_url" status)"
