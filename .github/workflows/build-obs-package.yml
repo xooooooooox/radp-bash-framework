@@ -134,11 +134,6 @@ jobs:
             --output="$tarball_path" \
             "$version"
 
-          export DEBEMAIL="xozoz.sos@gmail.com"
-          export DEBFULLNAME="xooooooooox"
-          dch --newversion "${version_no_prefix}-1" --distribution stable --urgency medium \
-            "Release ${version}" >/dev/null
-
           deb_source_dir="${RUNNER_TEMP:-/tmp}/obs-debian-source"
           deb_version="${version_no_prefix}-1"
           deb_source_name="$(sed -n 's/^Source:[[:space:]]*//p' debian/control | head -n 1)"
@@ -147,8 +142,22 @@ jobs:
             exit 1
           fi
           mkdir -p "$deb_source_dir"
+          deb_build_dir="${RUNNER_TEMP:-/tmp}/obs-debian-build"
+          rm -rf "$deb_build_dir"
+          mkdir -p "$deb_build_dir"
+          tar -xzf "$tarball_path" -C "$deb_build_dir"
+          deb_work_tree="${deb_build_dir}/radp-bash-framework-${version_no_prefix}"
+          cp -a debian "$deb_work_tree/"
+
+          export DEBEMAIL="xozoz.sos@gmail.com"
+          export DEBFULLNAME="xooooooooox"
+          dch --newversion "${version_no_prefix}-1" --distribution stable --urgency medium \
+          pushd "$deb_work_tree" >/dev/null
+          dch --newversion "${deb_version}" --distribution stable --urgency medium \
+            "Release ${version}" >/dev/null
           cp "$tarball_path" "../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
           dpkg-source -b .
+          popd >/dev/null
           deb_source_prefix="${deb_source_name}_${deb_version}"
           deb_orig_tar="../${deb_source_name}_${version_no_prefix}.orig.tar.gz"
           deb_dsc="../${deb_source_prefix}.dsc"
