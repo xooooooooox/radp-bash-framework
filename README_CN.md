@@ -57,8 +57,11 @@ sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/ho
 sudo yum install -y radp-bash-framework
 
 # Debian/Ubuntu (replace <DISTRO> with your distro codename)
-echo "deb https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /" | sudo tee /etc/apt/sources.list.d/radp-bash-framework.list
-curl -fsSL https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/Release.key | sudo gpg --dearmor -o /usr/share/keyrings/radp-bash-framework.gpg
+echo 'deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /' \
+  | sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list
+curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/<DISTRO>/Release.key \
+  | gpg --dearmor \
+  | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg > /dev/null
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
@@ -108,7 +111,7 @@ sudo dnf upgrade -y radp-bash-framework
 # CentOS/RHEL (yum)
 sudo yum update -y radp-bash-framework
 
-# Debian/Ubuntu
+# Debian/Ubuntu(apt)
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
