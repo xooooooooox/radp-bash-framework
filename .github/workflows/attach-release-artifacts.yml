@@ -119,9 +119,9 @@ jobs:
           owner="${COPR_PROJECT%%/*}"
           project="${COPR_PROJECT#*/}"
           version="${{ steps.version.outputs.version_no_prefix }}"
-          if ! chroots=$(copr-cli list-chroots -- "${COPR_PROJECT}"); then
-            echo "copr-cli list-chroots failed, attempting fallback via copr-cli get ..." >&2
-            chroots=$(copr-cli get --output-format json "${COPR_PROJECT}" | python3 -c "import json,sys; data=json.load(sys.stdin); chs=data.get('chroot_repos') or {}; print(' '.join(sorted(chs.keys())))")
+          if ! chroots=$(copr-cli list-chroots "${COPR_PROJECT}"); then
+            echo "copr-cli list-chroots failed for project ${COPR_PROJECT}" >&2
+            exit 1
           fi
           base_url="https://download.copr.fedorainfracloud.org/results/${owner}/${project}"
           found=0
