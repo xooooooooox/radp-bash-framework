@@ -138,6 +138,30 @@ jobs:
           dch --newversion "${version_no_prefix}-1" --distribution stable --urgency medium \
             "Release ${version}" >/dev/null
 
+          deb_source_dir="${RUNNER_TEMP:-/tmp}/obs-debian-source"
+          deb_version="${version_no_prefix}-1"
+          mkdir -p "$deb_source_dir"
+          dpkg-source -b .
+          deb_source_prefix="radp-bash-framework_${deb_version}"
+          deb_orig_tar="../radp-bash-framework_${version_no_prefix}.orig.tar.gz"
+          deb_dsc="../${deb_source_prefix}.dsc"
+          deb_debian_tar="../${deb_source_prefix}.debian.tar.xz"
+
+          for file in "$deb_orig_tar" "$deb_dsc" "$deb_debian_tar"; do
+            if [[ ! -f "$file" ]]; then
+              echo "Missing Debian source artifact: $file" >&2
+              exit 1
+            fi
+          done
+
+          mv "$deb_orig_tar" "$deb_source_dir/"
+          mv "$deb_dsc" "$deb_source_dir/"
+          mv "$deb_debian_tar" "$deb_source_dir/"
+
+          echo "deb_source_dir=${deb_source_dir}" >> "$GITHUB_OUTPUT"
+          echo "deb_version=${deb_version}" >> "$GITHUB_OUTPUT"
+
+
       - name: Sync to OBS
         if: steps.prepare.outputs.should_sync == 'true'
         run: |
@@ -158,12 +182,12 @@ jobs:
           rm -f "$obs_dir"/_service
           rm -rf "$obs_dir"/debian
           cp -a "v${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/radp-bash-framework_${{ steps.version.outputs.version_no_prefix }}.orig.tar.gz" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/radp-bash-framework_${{ steps.prepare.outputs.deb_version }}.dsc" "$obs_dir/"
+          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/radp-bash-framework_${{ steps.prepare.outputs.deb_version }}.debian.tar.xz" "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
           cp -a debian "$obs_dir/"
-          if [[ -f "debian/_service" ]]; then
-            cp -a debian/_service "$obs_dir/_service"
-          fi
 
           pushd "$obs_dir" >/dev/null
           if [[ ! -d debian ]]; then
