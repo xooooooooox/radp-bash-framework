@@ -57,4 +57,3 @@ ln -s %{_libdir}/radp-bash-framework/bin/radp-bf %{buildroot}%{_bindir}/radp-bas
 %changelog
 * Thu Jan 01 2026 xooooooooox <xozoz.sos@gmail.com> - 0.1.0-1
 - Initial RPM package
-
