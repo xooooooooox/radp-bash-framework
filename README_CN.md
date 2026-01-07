@@ -66,15 +66,6 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### Debian/Ubuntu（从 GitHub Release 下载安装包）
-
-```bash
-VERSION="<version>"
-curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
-  "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
-sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
-```
-
 ### 本地直接使用
 
 ```bash
@@ -114,15 +105,6 @@ sudo yum update -y radp-bash-framework
 # Debian/Ubuntu(apt)
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
-```
-
-### Debian/Ubuntu（从 GitHub Release 下载安装包）
-
-```bash
-VERSION="<version>"
-curl -L -o "radp-bash-framework_${VERSION}_all.deb" \
-  "https://github.com/xooooooooox/radp-bash-framework/releases/download/v${VERSION}/radp-bash-framework_${VERSION}_all.deb"
-sudo apt-get install -y "./radp-bash-framework_${VERSION}_all.deb"
 ```
 
 ## 发布
