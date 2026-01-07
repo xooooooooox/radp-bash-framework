@@ -1,0 +1,329 @@
+name: Attach release packages
+
+on:
+  workflow_run:
+    workflows:
+      - Build COPR package
+      - Build OBS package
+      - Update Homebrew Tap
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  attach-release-packages:
+    if: >-
+      ${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main')
+      }}
+    runs-on: ubuntu-latest
+    env:
+      COPR_PROJECT: ${{ secrets.COPR_PROJECT }}
+      OBS_PROJECT: ${{ secrets.OBS_PROJECT }}
+      OBS_PACKAGE: ${{ secrets.OBS_PACKAGE }}
+      OBS_API_URL: ${{ secrets.OBS_API_URL }}
+      TAP_FORMULA_URL: https://raw.githubusercontent.com/xooooooooox/homebrew-radp/HEAD/Formula/radp-bash-framework.rb
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Resolve tag and package
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            head_sha="${{ github.event.workflow_run.head_sha }}"
+            tag_name="$(git tag --points-at "${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+          else
+            tag_name="${GITHUB_REF_NAME}"
+          fi
+          if [[ -z "${tag_name}" ]]; then
+            echo "Failed to resolve version tag for event ${GITHUB_EVENT_NAME}" >&2
+            exit 1
+          fi
+
+          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
+          version_from_tag="$(git show "${tag_name}:${constants_file}" | sed -n 's/^declare -gr gr_fw_version=//p' | head -n 1)"
+          if [[ -z "${version_from_tag}" ]]; then
+            echo "Failed to read gr_fw_version from ${constants_file} at ${tag_name}" >&2
+            exit 1
+          fi
+          if [[ "${version_from_tag}" != "${tag_name}" ]]; then
+            echo "Tag ${tag_name} does not match gr_fw_version (${version_from_tag})" >&2
+            exit 1
+          fi
+
+          version="${tag_name#v}"
+          package_name="$(awk -F': *' '/^Name:/{print $2; exit}' packaging/copr/radp-bash-framework.spec)"
+          if [[ -z "${package_name}" ]]; then
+            echo "Failed to read package name from packaging/copr/radp-bash-framework.spec" >&2
+            exit 1
+          fi
+
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "package_name=${package_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Download COPR packages
+        if: >-
+          ${{
+            github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build COPR package'
+          }}
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${COPR_PROJECT:-}" ]]; then
+            echo "COPR_PROJECT not set; skipping COPR download."
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          copr_project = os.environ["COPR_PROJECT"].strip()
+          version = os.environ["VERSION"].strip()
+          package_name = os.environ["PACKAGE_NAME"].strip()
+
+          if "/" not in copr_project:
+            print(f"Invalid COPR_PROJECT: {copr_project}", file=sys.stderr)
+            sys.exit(0)
+
+          owner, project = copr_project.split("/", 1)
+
+          def api_json(url: str) -> dict:
+            with urllib.request.urlopen(url) as resp:
+              return json.load(resp)
+
+          def download(url: str, dest: Path) -> None:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with urllib.request.urlopen(url) as resp, open(dest, "wb") as fh:
+              fh.write(resp.read())
+
+          params = {
+            "ownername": owner,
+            "projectname": project,
+            "limit": "50",
+          }
+          builds_url = "https://copr.fedorainfracloud.org/api_3/build/list?" + urllib.parse.urlencode(params)
+          builds = api_json(builds_url).get("builds", [])
+
+          candidates = []
+          for build in builds:
+            if build.get("state") != "succeeded":
+              continue
+            if build.get("package_name") and build.get("package_name") != package_name:
+              continue
+            source_pkg = build.get("source_package") or {}
+            src_version = source_pkg.get("version")
+            if src_version and src_version != version:
+              continue
+            candidates.append(build)
+
+          if not candidates:
+            print(f"No COPR builds found for {package_name} {version}", file=sys.stderr)
+            sys.exit(0)
+
+          build_id = max(candidates, key=lambda b: b.get("id", 0)).get("id")
+          build_info = api_json(f"https://copr.fedorainfracloud.org/api_3/build/get?build_id={build_id}")
+          build = build_info.get("build", {})
+          result_url = (build.get("result_url") or "").rstrip("/")
+          chroots = build.get("chroots") or []
+          if not result_url:
+            print("Missing COPR result_url in build details", file=sys.stderr)
+            sys.exit(0)
+
+          urls = [result_url + "/"]
+          for chroot in chroots:
+            urls.append(f"{result_url}/{chroot}/")
+
+          def fetch_listing(url: str) -> str:
+            with urllib.request.urlopen(url) as resp:
+              return resp.read().decode("utf-8", "ignore")
+
+          dest_dir = Path("release-assets/copr")
+          downloaded = set()
+
+          for base_url in urls:
+            try:
+              listing = fetch_listing(base_url)
+            except Exception:
+              continue
+            for href in re.findall(r'href="([^"]+)"', listing):
+              if not href.endswith(".rpm"):
+                continue
+              filename = href.split("/")[-1]
+              if version not in filename:
+                continue
+              if filename in downloaded:
+                continue
+              file_url = urllib.parse.urljoin(base_url, href)
+              download(file_url, dest_dir / f"copr-{filename}")
+              downloaded.add(filename)
+
+          if not downloaded:
+            print(f"No COPR RPMs downloaded for {package_name} {version}", file=sys.stderr)
+          else:
+            print(f"Downloaded {len(downloaded)} COPR RPMs")
+          PY
+
+      - name: Download OBS packages
+        if: >-
+          ${{
+            github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build OBS package'
+          }}
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${OBS_PROJECT:-}" ]]; then
+            echo "OBS_PROJECT not set; skipping OBS download."
+            exit 0
+          fi
+          python - <<'PY'
+          import os
+          import sys
+          import urllib.parse
+          import urllib.request
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          project = os.environ["OBS_PROJECT"].strip()
+          package = (os.environ.get("OBS_PACKAGE") or os.environ.get("PACKAGE_NAME") or "").strip()
+          version = os.environ["VERSION"].strip()
+          api_url = (os.environ.get("OBS_API_URL") or "https://api.opensuse.org").rstrip("/")
+
+          if not package:
+            print("OBS package name is missing", file=sys.stderr)
+            sys.exit(0)
+
+          def quote(segment: str) -> str:
+            return urllib.parse.quote(segment, safe="")
+
+          def fetch_xml(url: str) -> ET.Element:
+            with urllib.request.urlopen(url) as resp:
+              return ET.fromstring(resp.read())
+
+          def download(url: str, dest: Path) -> None:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with urllib.request.urlopen(url) as resp, open(dest, "wb") as fh:
+              fh.write(resp.read())
+
+          project_q = quote(project)
+          package_q = quote(package)
+          result_url = f"{api_url}/build/{project_q}/_result?package={package_q}"
+          try:
+            root = fetch_xml(result_url)
+          except Exception as exc:
+            print(f"Failed to query OBS results: {exc}", file=sys.stderr)
+            sys.exit(0)
+
+          candidates = []
+          for result in root.findall(".//result"):
+            repo = result.get("repository")
+            arch = result.get("arch")
+            if not repo or not arch:
+              continue
+            status_nodes = result.findall(f"./status[@package='{package}']")
+            if not status_nodes:
+              continue
+            status = status_nodes[0]
+            code = (status.get("code") or status.get("state") or "").lower()
+            if code not in {"succeeded", "published", "finished", "unchanged"}:
+              continue
+            candidates.append((repo, arch))
+
+          if not candidates:
+            print(f"No successful OBS results for {package}", file=sys.stderr)
+            sys.exit(0)
+
+          dest_dir = Path("release-assets/obs")
+          downloaded = set()
+
+          for repo, arch in candidates:
+            repo_q = quote(repo)
+            arch_q = quote(arch)
+            binarylist_url = f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}?view=binarylist"
+            try:
+              binaries_root = fetch_xml(binarylist_url)
+            except Exception:
+              continue
+            for binary in binaries_root.findall(".//binary"):
+              filename = binary.get("filename")
+              if not filename:
+                continue
+              if version not in filename:
+                continue
+              if filename in downloaded:
+                continue
+              file_url = (
+                f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}/"
+                f"{urllib.parse.quote(filename, safe='')}"
+              )
+              download(file_url, dest_dir / f"obs-{filename}")
+              downloaded.add(filename)
+
+          if not downloaded:
+            print(f"No OBS binaries downloaded for {package} {version}", file=sys.stderr)
+          else:
+            print(f"Downloaded {len(downloaded)} OBS binaries")
+          PY
+
+      - name: Download Homebrew formula
+        if: >-
+          ${{
+            github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Update Homebrew Tap'
+          }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${TAP_FORMULA_URL:-}" ]]; then
+            echo "TAP_FORMULA_URL not set; skipping formula download."
+            exit 0
+          fi
+          mkdir -p release-assets/homebrew
+          curl -L --fail --show-error -o release-assets/homebrew/homebrew-radp-bash-framework.rb "${TAP_FORMULA_URL}"
+
+      - name: Upload assets to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.release.outputs.tag_name }}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "$tag" --generate-notes
+          fi
+          if [[ ! -d release-assets ]]; then
+            echo "No assets directory to upload."
+            exit 0
+          fi
+          mapfile -t assets < <(find release-assets -maxdepth 3 -type f | sort)
+          if [[ ${#assets[@]} -eq 0 ]]; then
+            echo "No assets to upload."
+            exit 0
+          fi
+          gh release upload "$tag" "${assets[@]}" --clobber
