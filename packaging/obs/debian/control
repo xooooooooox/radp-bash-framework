@@ -1,0 +1,15 @@
+Source: radp-bash-framework
+Section: utils
+Priority: optional
+Maintainer: xooooooooox <xozoz.sos@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/xooooooooox/radp-bash-framework
+Rules-Requires-Root: no
+
+Package: radp-bash-framework
+Architecture: all
+Depends: ${misc:Depends}, bash, coreutils
+Description: Modular Bash framework with structured context.
+ radp-bash-framework provides a modular Bash framework with structured
+ context, logging, and bootstrap helpers for building shell tooling.

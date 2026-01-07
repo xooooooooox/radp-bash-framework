@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	:
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_install:
+	:
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0755 debian/radp-bash-framework/usr/lib/radp-bash-framework/bin/radp-bf
+	find debian/radp-bash-framework/usr/lib/radp-bash-framework/framework -type f -name '*.sh' -exec chmod 0755 {} \;
