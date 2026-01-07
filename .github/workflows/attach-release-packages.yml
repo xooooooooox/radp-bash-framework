@@ -224,6 +224,7 @@ jobs:
               urls.append(repo_url + "/")
               for chroot in chroots:
                 urls.append(f"{repo_url}/{chroot}/")
+                urls.append(f"{repo_url}/{chroot}/{package_name}/")
               print(
                 f"COPR selected build_id={build_id} repo_url={repo_url} chroots={len(chroots)}",
                 file=sys.stderr,
@@ -266,6 +267,7 @@ jobs:
           max_depth = 3
           max_pages = 120
           matched_rpms = 0
+          href_log_budget = 6
 
           while queue and max_pages > 0:
             base_url, depth = queue.pop(0)
@@ -278,7 +280,12 @@ jobs:
               listing = fetch_listing(base_url)
             except Exception:
               continue
-            for href in re.findall(r'href="([^"]+)"', listing):
+            hrefs = re.findall(r'href=["\']([^"\']+)["\']', listing)
+            if href_log_budget > 0 and hrefs:
+              sample = ", ".join(hrefs[:5])
+              print(f"COPR href sample: {sample}", file=sys.stderr)
+              href_log_budget -= 1
+            for href in hrefs:
               if href in ("../", "./"):
                 continue
               full_url = urllib.parse.urljoin(base_url, href)
