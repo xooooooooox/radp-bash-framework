@@ -309,6 +309,8 @@ jobs:
               if not href_clean.endswith(".rpm"):
                 continue
               filename = href_clean.split("/")[-1]
+              if filename.endswith(".src.rpm"):
+                continue
               if package_name not in filename or version not in filename:
                 continue
               matched_rpms += 1
