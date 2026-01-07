@@ -120,16 +120,25 @@ jobs:
           project="${COPR_PROJECT#*/}"
           version="${{ steps.version.outputs.version_no_prefix }}"
           base_url="https://download.copr.fedorainfracloud.org/results/${owner}/${project}"
-          html=$(curl -fsSL "${base_url}/" || true)
-          if [[ -z "${html}" ]]; then
-            echo "Failed to list ${base_url}/" >&2
-            exit 1
-          fi
-          chroots=$(printf "%s" "${html}" | grep -oE 'href=\"[^\"/]+/' | sed 's/^href=\"//;s/\/$//' | sort -u)
-          if [[ -z "${chroots}" ]]; then
-            echo "No chroots discovered under ${base_url}/" >&2
-            exit 1
-          fi
+          chroots=$(python3 - "$owner" "$project" <<'PY'
+            import json, sys, urllib.request, urllib.error
+
+            owner, project = sys.argv[1], sys.argv[2]
+            url = f"https://copr.fedorainfracloud.org/api_3/project?ownername={owner}&name={project}"
+            try:
+                with urllib.request.urlopen(url) as resp:
+                    data = json.load(resp)
+            except urllib.error.HTTPError as e:
+                sys.stderr.write(f"Failed to fetch COPR project info from {url}: {e}\n")
+                sys.exit(1)
+
+            chroots = sorted((data.get("chroot_repos") or {}).keys())
+            if not chroots:
+                sys.stderr.write(f"No chroots found in COPR project metadata at {url}\n")
+                sys.exit(1)
+            print(" ".join(chroots))
+          PY
+          )
           found=0
           for chroot in $chroots; do
             repo_url="${base_url}/${chroot}"
