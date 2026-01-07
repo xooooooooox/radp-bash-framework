@@ -48,20 +48,31 @@ jobs:
           else
             tag_name="${GITHUB_REF_NAME}"
           fi
+
+          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
+          if [[ -z "${tag_name}" && "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            version_from_commit="$(git show "${head_sha}:${constants_file}" | sed -n 's/^declare -gr gr_fw_version=//p' | head -n 1)"
+            if [[ -z "${version_from_commit}" ]]; then
+              echo "Failed to read gr_fw_version from ${constants_file} at ${head_sha}" >&2
+              exit 1
+            fi
+            tag_name="${version_from_commit}"
+          fi
+
           if [[ -z "${tag_name}" ]]; then
             echo "Failed to resolve version tag for event ${GITHUB_EVENT_NAME}" >&2
             exit 1
           fi
 
-          constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
-          version_from_tag="$(git show "${tag_name}:${constants_file}" | sed -n 's/^declare -gr gr_fw_version=//p' | head -n 1)"
-          if [[ -z "${version_from_tag}" ]]; then
-            echo "Failed to read gr_fw_version from ${constants_file} at ${tag_name}" >&2
+          if [[ ! "${tag_name}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Resolved tag '${tag_name}' does not match vx.y.z" >&2
             exit 1
           fi
-          if [[ "${version_from_tag}" != "${tag_name}" ]]; then
-            echo "Tag ${tag_name} does not match gr_fw_version (${version_from_tag})" >&2
-            exit 1
+
+          should_upload=true
+          if ! git rev-parse "${tag_name}" >/dev/null 2>&1; then
+            echo "Tag ${tag_name} does not exist yet; skipping release attachment."
+            should_upload=false
           fi
 
           version="${tag_name#v}"
@@ -74,12 +85,14 @@ jobs:
           echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "package_name=${package_name}" >> "$GITHUB_OUTPUT"
+          echo "should_upload=${should_upload}" >> "$GITHUB_OUTPUT"
 
       - name: Download COPR packages
         if: >-
           ${{
-            github.event_name != 'workflow_run' ||
-            github.event.workflow_run.name == 'Build COPR package'
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build COPR package')
           }}
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -189,8 +202,9 @@ jobs:
       - name: Download OBS packages
         if: >-
           ${{
-            github.event_name != 'workflow_run' ||
-            github.event.workflow_run.name == 'Build OBS package'
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build OBS package')
           }}
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -294,8 +308,9 @@ jobs:
       - name: Download Homebrew formula
         if: >-
           ${{
-            github.event_name != 'workflow_run' ||
-            github.event.workflow_run.name == 'Update Homebrew Tap'
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Update Homebrew Tap')
           }}
         shell: bash
         run: |
@@ -308,6 +323,7 @@ jobs:
           curl -L --fail --show-error -o release-assets/homebrew/homebrew-radp-bash-framework.rb "${TAP_FORMULA_URL}"
 
       - name: Upload assets to release
+        if: steps.release.outputs.should_upload == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
