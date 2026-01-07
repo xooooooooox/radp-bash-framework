@@ -119,11 +119,23 @@ jobs:
           owner="${COPR_PROJECT%%/*}"
           project="${COPR_PROJECT#*/}"
           version="${{ steps.version.outputs.version_no_prefix }}"
-          if ! chroots=$(copr-cli list-chroots "${COPR_PROJECT}"); then
-            echo "copr-cli list-chroots failed for project ${COPR_PROJECT}" >&2
+          base_url="https://download.copr.fedorainfracloud.org/results/${owner}/${project}"
+          chroots=$(python3 - <<'PY'
+          import re, sys, urllib.request
+          base = sys.argv[1]
+          try:
+              html = urllib.request.urlopen(base + "/").read().decode()
+          except Exception as e:
+              sys.stderr.write(f"Failed to list {base}/: {e}\n")
+              sys.exit(1)
+          chroots = sorted(set(m.group(1).rstrip("/") for m in re.finditer(r'href="([^"/]+)/"', html)))
+          print(" ".join(chroots))
+          PY
+          "${base_url}")
+          if [[ -z "${chroots}" ]]; then
+            echo "No chroots discovered under ${base_url}/" >&2
             exit 1
           fi
-          base_url="https://download.copr.fedorainfracloud.org/results/${owner}/${project}"
           found=0
           for chroot in $chroots; do
             repo_url="${base_url}/${chroot}"
