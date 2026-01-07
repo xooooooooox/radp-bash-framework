@@ -9,7 +9,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 
 Name:           radp-bash-framework
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Summary:        Modular Bash framework with structured context
 
@@ -55,5 +55,5 @@ ln -s %{_libdir}/radp-bash-framework/bin/radp-bf %{buildroot}%{_bindir}/radp-bas
 %{_libdir}/radp-bash-framework/
 
 %changelog
-* Thu Jan 01 2026 xooooooooox <xozoz.sos@gmail.com> - 0.1.0-1
+* Thu Jan 07 2026 xooooooooox <xozoz.sos@gmail.com> - 0.1.1-1
 - Initial RPM package

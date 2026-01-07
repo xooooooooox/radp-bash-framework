@@ -127,59 +127,16 @@ jobs:
           fi
           echo "should_sync=true" >> "$GITHUB_OUTPUT"
           tarball="v${version_no_prefix}.tar.gz"
-          tarball_path="${RUNNER_TEMP:-/tmp}/${tarball}"
           git archive \
             --format=tar.gz \
             --prefix="radp-bash-framework-${version_no_prefix}/" \
-            --output="$tarball_path" \
+            --output="$tarball" \
             "$version"
-
-          deb_source_dir="${RUNNER_TEMP:-/tmp}/obs-debian-source"
-          deb_version="${version_no_prefix}-1"
-          deb_source_name="$(sed -n 's/^Source:[[:space:]]*//p' debian/control | head -n 1)"
-          if [[ -z "$deb_source_name" ]]; then
-            echo "Failed to read Debian source name from debian/control" >&2
-            exit 1
-          fi
-          mkdir -p "$deb_source_dir"
-          deb_build_dir="${RUNNER_TEMP:-/tmp}/obs-debian-build"
-          deb_artifact_root="$(dirname "$deb_build_dir")"
-          rm -rf "$deb_build_dir"
-          git worktree add --detach "$deb_build_dir" "$version"
-          deb_work_tree="$deb_build_dir"
-          cp -a debian "$deb_work_tree/"
 
           export DEBEMAIL="xozoz.sos@gmail.com"
           export DEBFULLNAME="xooooooooox"
-          (
-            cd "$deb_work_tree"
-            dch --newversion "${deb_version}" --distribution stable --urgency medium \
-              "Release ${version}" >/dev/null
-            cp "$tarball_path" "${deb_artifact_root}/${deb_source_name}_${version_no_prefix}.orig.tar.gz"
-            dpkg-source -b .
-          )
-          git worktree remove --force "$deb_build_dir"
-          deb_source_prefix="${deb_source_name}_${deb_version}"
-          deb_orig_tar="${deb_artifact_root}/${deb_source_name}_${version_no_prefix}.orig.tar.gz"
-          deb_dsc="${deb_artifact_root}/${deb_source_prefix}.dsc"
-          deb_debian_tar="${deb_artifact_root}/${deb_source_prefix}.debian.tar.xz"
-
-          for file in "$deb_orig_tar" "$deb_dsc" "$deb_debian_tar"; do
-            if [[ ! -f "$file" ]]; then
-              echo "Missing Debian source artifact: $file" >&2
-              exit 1
-            fi
-          done
-
-          mv "$deb_orig_tar" "$deb_source_dir/"
-          mv "$deb_dsc" "$deb_source_dir/"
-          mv "$deb_debian_tar" "$deb_source_dir/"
-
-          echo "deb_source_dir=${deb_source_dir}" >> "$GITHUB_OUTPUT"
-          echo "deb_version=${deb_version}" >> "$GITHUB_OUTPUT"
-          echo "deb_source_name=${deb_source_name}" >> "$GITHUB_OUTPUT"
-          echo "tarball_path=${tarball_path}" >> "$GITHUB_OUTPUT"
-
+          dch --newversion "${version_no_prefix}-1" --distribution stable --urgency medium \
+            "Release ${version}" >/dev/null
 
       - name: Sync to OBS
         if: steps.prepare.outputs.should_sync == 'true'
@@ -200,13 +157,13 @@ jobs:
           rm -f "$obs_dir"/v*.tar.gz "$obs_dir"/radp-bash-framework-*.tar.gz
           rm -f "$obs_dir"/_service
           rm -rf "$obs_dir"/debian
-          cp -a "${{ steps.prepare.outputs.tarball_path }}" "$obs_dir/"
-          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/${{ steps.prepare.outputs.deb_source_name }}_${{ steps.version.outputs.version_no_prefix }}.orig.tar.gz" "$obs_dir/"
-          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/${{ steps.prepare.outputs.deb_source_name }}_${{ steps.prepare.outputs.deb_version }}.dsc" "$obs_dir/"
-          cp -a "${{ steps.prepare.outputs.deb_source_dir }}/${{ steps.prepare.outputs.deb_source_name }}_${{ steps.prepare.outputs.deb_version }}.debian.tar.xz" "$obs_dir/"
+          cp -a "v${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
           cp -a debian "$obs_dir/"
+          if [[ -f "debian/_service" ]]; then
+            cp -a debian/_service "$obs_dir/_service"
+          fi
 
           pushd "$obs_dir" >/dev/null
           if [[ ! -d debian ]]; then
