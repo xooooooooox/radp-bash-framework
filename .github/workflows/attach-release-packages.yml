@@ -175,10 +175,9 @@ jobs:
             candidates.append(build)
 
           if not candidates:
-            if not use_fallback:
-              print(f"No COPR builds found for {package_name} {version}", file=sys.stderr)
-              sys.exit(0)
+            print(f"No COPR builds found for {package_name} {version}; falling back to result crawl.", file=sys.stderr)
             candidates = []
+            use_fallback = True
 
           urls = []
           if candidates:
