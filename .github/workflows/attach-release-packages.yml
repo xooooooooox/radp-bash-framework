@@ -132,22 +132,40 @@ jobs:
               },
             )
 
-          def api_json(url: str) -> dict:
-            with urllib.request.urlopen(request(url)) as resp:
+          def fetch(url: str) -> tuple[bytes, int, str]:
+            req = request(url)
+            with urllib.request.urlopen(req) as resp:
               data = resp.read()
-              if not data:
-                raise ValueError(f"Empty response from {url}")
-              try:
-                return json.loads(data.decode("utf-8"))
-              except json.JSONDecodeError as exc:
-                snippet = data[:200].decode("utf-8", "ignore")
-                raise ValueError(f"Invalid JSON from {url}: {snippet}") from exc
+              status = getattr(resp, "status", None) or resp.getcode()
+              content_type = resp.headers.get("Content-Type", "")
+              return data, int(status), content_type
+
+          def api_json(url: str) -> dict:
+            data, status, content_type = fetch(url)
+            print(
+              f"COPR api GET {url} status={status} content-type={content_type} bytes={len(data)}",
+              file=sys.stderr,
+            )
+            if not data:
+              raise ValueError(f"Empty response from {url}")
+            try:
+              return json.loads(data.decode("utf-8"))
+            except json.JSONDecodeError as exc:
+              snippet = data[:200].decode("utf-8", "ignore")
+              raise ValueError(f"Invalid JSON from {url}: {snippet}") from exc
 
           def download(url: str, dest: Path) -> None:
             dest.parent.mkdir(parents=True, exist_ok=True)
-            with urllib.request.urlopen(request(url)) as resp, open(dest, "wb") as fh:
-              fh.write(resp.read())
+            data, status, content_type = fetch(url)
+            if status >= 400:
+              raise ValueError(f"Download failed: {url} status={status} content-type={content_type}")
+            with open(dest, "wb") as fh:
+              fh.write(data)
 
+          print(
+            f"COPR lookup owner={owner} project={project} package={package_name} version={version}",
+            file=sys.stderr,
+          )
           params = {
             "ownername": owner,
             "projectname": project,
@@ -163,21 +181,32 @@ jobs:
             use_fallback = True
 
           candidates = []
+          match_package = 0
+          match_version = 0
           for build in builds:
             if build.get("state") != "succeeded":
               continue
             if build.get("package_name") and build.get("package_name") != package_name:
               continue
+            if build.get("package_name"):
+              match_package += 1
             source_pkg = build.get("source_package") or {}
             src_version = source_pkg.get("version")
             if src_version and src_version != version:
               continue
+            if src_version:
+              match_version += 1
             candidates.append(build)
 
           if not candidates:
             print(f"No COPR builds found for {package_name} {version}; falling back to result crawl.", file=sys.stderr)
             candidates = []
             use_fallback = True
+          else:
+            print(
+              f"COPR build list size={len(builds)} package_matches={match_package} version_matches={match_version} candidates={len(candidates)}",
+              file=sys.stderr,
+            )
 
           urls = []
           if candidates:
@@ -200,10 +229,13 @@ jobs:
 
           if use_fallback or not urls:
             urls = [f"https://download.copr.fedorainfracloud.org/results/{owner}/{project}/"]
+            print(f"COPR fallback crawl roots: {urls}", file=sys.stderr)
 
           def fetch_listing(url: str) -> str:
-            with urllib.request.urlopen(request(url)) as resp:
-              return resp.read().decode("utf-8", "ignore")
+            data, status, content_type = fetch(url)
+            if status >= 400:
+              raise ValueError(f"Listing failed: {url} status={status} content-type={content_type}")
+            return data.decode("utf-8", "ignore")
 
           dest_dir = Path("release-assets/copr")
           downloaded = set()
@@ -211,6 +243,7 @@ jobs:
           queue = [(url, 0) for url in urls]
           max_depth = 3
           max_pages = 120
+          matched_rpms = 0
 
           while queue and max_pages > 0:
             base_url, depth = queue.pop(0)
@@ -218,6 +251,7 @@ jobs:
               continue
             visited.add(base_url)
             max_pages -= 1
+            print(f"COPR crawl url={base_url} depth={depth}", file=sys.stderr)
             try:
               listing = fetch_listing(base_url)
             except Exception:
@@ -235,6 +269,7 @@ jobs:
               filename = href.split("/")[-1]
               if package_name not in filename or version not in filename:
                 continue
+              matched_rpms += 1
               if filename in downloaded:
                 continue
               download(full_url, dest_dir / f"copr-{filename}")
@@ -243,7 +278,10 @@ jobs:
           if not downloaded:
             print(f"No COPR RPMs downloaded for {package_name} {version}", file=sys.stderr)
           else:
-            print(f"Downloaded {len(downloaded)} COPR RPMs")
+            print(
+              f"Downloaded {len(downloaded)} COPR RPMs (matched={matched_rpms} visited={len(visited)} pages)",
+              file=sys.stderr,
+            )
           PY
 
       - name: Download OBS packages
