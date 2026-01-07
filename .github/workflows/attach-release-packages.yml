@@ -125,7 +125,14 @@ jobs:
 
           def api_json(url: str) -> dict:
             with urllib.request.urlopen(url) as resp:
-              return json.load(resp)
+              data = resp.read()
+              if not data:
+                raise ValueError(f"Empty response from {url}")
+              try:
+                return json.loads(data.decode("utf-8"))
+              except json.JSONDecodeError as exc:
+                snippet = data[:200].decode("utf-8", "ignore")
+                raise ValueError(f"Invalid JSON from {url}: {snippet}") from exc
 
           def download(url: str, dest: Path) -> None:
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -138,7 +145,11 @@ jobs:
             "limit": "50",
           }
           builds_url = "https://copr.fedorainfracloud.org/api_3/build/list?" + urllib.parse.urlencode(params)
-          builds = api_json(builds_url).get("builds", [])
+          try:
+            builds = api_json(builds_url).get("builds", [])
+          except Exception as exc:
+            print(f"Failed to read COPR build list: {exc}", file=sys.stderr)
+            sys.exit(0)
 
           candidates = []
           for build in builds:
