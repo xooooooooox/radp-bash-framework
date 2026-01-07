@@ -155,15 +155,10 @@ jobs:
           fi
 
           rm -f "$obs_dir"/v*.tar.gz "$obs_dir"/radp-bash-framework-*.tar.gz
-          rm -f "$obs_dir"/_service
-          rm -rf "$obs_dir"/debian
           cp -a "v${{ steps.version.outputs.version_no_prefix }}.tar.gz" "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.spec "$obs_dir/"
           cp -a packaging/obs/radp-bash-framework.changes "$obs_dir/"
           cp -a debian "$obs_dir/"
-          if [[ -f "debian/_service" ]]; then
-            cp -a debian/_service "$obs_dir/_service"
-          fi
 
           pushd "$obs_dir" >/dev/null
           if [[ ! -d debian ]]; then
