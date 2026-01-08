@@ -66,7 +66,25 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### 本地直接使用
+### 手动安装（Release 资产 / 源码）
+
+每次发布都会附带可直接安装的包：
+<https://github.com/xooooooooox/radp-bash-framework/releases/latest>
+
+下载 `.rpm` 或 `.deb` 资产（文件名前缀通常为 `obs-` 或 `copr-`）后安装：
+
+```shell
+# RPM（Fedora/RHEL/CentOS）
+sudo rpm -Uvh ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
+# or
+sudo dnf install ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
+
+# DEB（Debian/Ubuntu）
+sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
+sudo apt-get -f install
+```
+
+或直接从源码运行：
 
 ```bash
 source /path/to/framework/run.sh
@@ -105,6 +123,19 @@ sudo yum update -y radp-bash-framework
 # Debian/Ubuntu(apt)
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
+```
+
+### 手动升级（Release 资产）
+
+从最新 Release 下载新的 `.rpm`/`.deb` 包后安装即可升级：
+
+```shell
+# RPM
+sudo rpm -Uvh ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
+
+# DEB
+sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
+sudo apt-get -f install
 ```
 
 ## 发布

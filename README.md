@@ -73,7 +73,25 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### Manual (from source)
+### Manual (Release assets / source)
+
+Prebuilt installable packages are attached to each release:
+<https://github.com/xooooooooox/radp-bash-framework/releases/latest>
+
+Download the `.rpm` or `.deb` asset (prefixed with `obs-` or `copr-`) and install:
+
+```shell
+# RPM (Fedora/RHEL/CentOS)
+sudo rpm -Uvh ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
+# or
+sudo dnf install ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
+
+# DEB (Debian/Ubuntu)
+sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
+sudo apt-get -f install
+```
+
+Or run directly from source:
 
 ```shell
 source /path/to/framework/run.sh
@@ -112,6 +130,19 @@ sudo yum update -y radp-bash-framework
 # Debian/Ubuntu(apt)
 sudo apt update
 sudo apt install -y radp-bash-framework
+```
+
+### Manual (Release assets)
+
+Download the new `.rpm`/`.deb` from the latest release and install it:
+
+```shell
+# RPM
+sudo rpm -Uvh ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
+
+# DEB
+sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
+sudo apt-get -f install
 ```
 
 ## Release
