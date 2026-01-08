@@ -87,7 +87,9 @@ __fw_context_finished() {
   if [[ "$gr_radp_fw_banner_mode" == "off" ]]; then
     return 0
   fi
-  eval "echo \"$(cat "$gr_fw_banner_file")\""
+  local banner
+  banner="$(eval "printf '%s' \"$(cat "$gr_fw_banner_file")\"")"
+  radp_log_raw "$banner"
   radp_log_info "${gra_command_line[*]}"
 }
 
