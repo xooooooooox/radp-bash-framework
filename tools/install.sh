@@ -101,7 +101,8 @@ resolve_ref() {
   fi
 
   local tag
-  tag="$(printf "%s\n" "${json}" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  tag="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<< "${json}")"
+  tag="${tag%%$'\n'*}"
   if [[ -z "${tag}" ]]; then
     die "Failed to parse latest tag; set RADP_BF_VERSION or RADP_BF_REF."
   fi
@@ -141,8 +142,9 @@ main() {
     die "Failed to download ${tar_url}"
   fi
 
-  local root_dir
-  root_dir="$(tar -tzf "${tarball}" | sed -n '1p' | cut -d/ -f1)"
+  local tar_listing
+  tar_listing="$(tar -tzf "${tarball}")"
+  local root_dir="${tar_listing%%/*}"
   if [[ -z "${root_dir}" ]]; then
     die "Unable to read archive structure."
   fi
