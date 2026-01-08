@@ -274,6 +274,37 @@ jobs:
               raise ValueError(f"Listing failed: {url} status={status} content-type={content_type}")
             return data.decode("utf-8", "ignore")
 
+          def download_rpms_from_listing(base_url: str) -> int:
+            try:
+              listing = fetch_listing(base_url)
+            except Exception as exc:
+              print(f"COPR listing fetch failed url={base_url}: {exc}", file=sys.stderr)
+              return 0
+            hrefs = re.findall(r'href=["\']([^"\']+)["\']', listing)
+            count = 0
+            for href in hrefs:
+              if href in ("../", "./"):
+                continue
+              href_clean = href.split("?", 1)[0].split("#", 1)[0]
+              if not href_clean.endswith(".rpm"):
+                continue
+              filename = href_clean.split("/")[-1]
+              if filename.endswith(".src.rpm"):
+                continue
+              if package_name not in filename or version not in filename:
+                continue
+              if filename in downloaded:
+                continue
+              full_url = urllib.parse.urljoin(base_url, href_clean)
+              try:
+                download(full_url, dest_dir / f"copr-{filename}")
+              except Exception as exc:
+                print(f"Failed to download COPR RPM {filename}: {exc}", file=sys.stderr)
+                continue
+              downloaded.add(filename)
+              count += 1
+            return count
+
           dest_dir = Path("release-assets/copr")
           downloaded = set()
           visited = set()
@@ -290,6 +321,21 @@ jobs:
           build_dir_matches = 0
           package_dir_matches = 0
           build_page_downloaded = 0
+          direct_downloaded = 0
+
+          chroot_urls = [u for u, scope in urls if scope == "chroot"]
+          if build_id and package_name and chroot_urls:
+            build_dir_candidates = [f"{int(build_id):08d}-{package_name}", f"{build_id}-{package_name}"]
+            for chroot_url in chroot_urls:
+              if not chroot_url.endswith("/"):
+                chroot_url = chroot_url + "/"
+              for build_dir in build_dir_candidates:
+                direct_url = f"{chroot_url}{build_dir}/"
+                downloaded_now = download_rpms_from_listing(direct_url)
+                if downloaded_now:
+                  direct_downloaded += downloaded_now
+            if direct_downloaded:
+              print(f"Downloaded {direct_downloaded} COPR RPMs from direct build dirs", file=sys.stderr)
 
           while queue and max_pages > 0:
             base_url, depth, scope = queue.pop(0)
