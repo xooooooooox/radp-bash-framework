@@ -3,9 +3,19 @@ name: Release prep
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Release version tag (vX.Y.Z)"
+      bump_type:
+        description: "Release version bump type"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - manual
+        default: patch
         required: true
+      version:
+        description: "Manual release version tag (vX.Y.Z) when bump_type=manual"
+        required: false
 
 permissions:
   contents: write
@@ -27,15 +37,61 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags --force
 
-      - name: Create release branch
-        id: branch
+      - name: Resolve version
+        id: version
         run: |
           set -euo pipefail
-          version="${{ inputs.version }}"
+          bump_type="${{ inputs.bump_type }}"
+          manual_version="${{ inputs.version }}"
+          latest_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          if [[ -z "${latest_tag}" ]]; then
+            echo "No tags found; cannot compute version bump." >&2
+            exit 1
+          fi
+          if [[ ! "${latest_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Latest tag '${latest_tag}' does not match vX.Y.Z" >&2
+            exit 1
+          fi
+          major="${BASH_REMATCH[1]}"
+          minor="${BASH_REMATCH[2]}"
+          patch="${BASH_REMATCH[3]}"
+
+          case "${bump_type}" in
+            patch)
+              version="v${major}.${minor}.$((patch + 1))"
+              ;;
+            minor)
+              version="v${major}.$((minor + 1)).0"
+              ;;
+            major)
+              version="v$((major + 1)).0.0"
+              ;;
+            manual)
+              if [[ -z "${manual_version}" ]]; then
+                echo "Manual bump_type requires inputs.version." >&2
+                exit 1
+              fi
+              version="${manual_version}"
+              ;;
+            *)
+              echo "Unsupported bump_type: ${bump_type}" >&2
+              exit 1
+              ;;
+          esac
+
           if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Version '${version}' does not match vX.Y.Z" >&2
             exit 1
           fi
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "latest=${latest_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release branch
+        id: branch
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
           if git rev-parse "${version}" >/dev/null 2>&1; then
             echo "Tag ${version} already exists. Aborting release prep." >&2
             exit 1
@@ -54,7 +110,7 @@ jobs:
 
       - name: Update versions and changelog
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -222,7 +278,7 @@ jobs:
             packaging/copr/radp-bash-framework.spec \
             packaging/obs/radp-bash-framework.spec \
             CHANGELOG.md
-          git commit -m "Release prep ${{ inputs.version }}"
+          git commit -m "Release prep ${{ steps.version.outputs.version }}"
 
       - name: Push branch
         run: |
@@ -235,7 +291,7 @@ jobs:
           HAS_RELEASE_PREP_TOKEN: ${{ secrets.RELEASE_PREP_TOKEN != '' }}
         run: |
           set -euo pipefail
-          version="${{ inputs.version }}"
+          version="${{ steps.version.outputs.version }}"
           branch="${{ steps.branch.outputs.branch }}"
           title="Release ${version}"
           body_file="$(mktemp)"
