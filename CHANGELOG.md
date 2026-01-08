@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.3.0 - 2026-01-08
+
+### feat
+
+- Optimize logger
+  - Add radp_log_raw func
+  - Optimize banner print
+  - Support disable/enable console log and logfile
+  - Refactor log config var name, `radp.fw.log.file` to `radp.fw.log.file.name`
+
 ## v0.2.4 - 2026-01-08
 
 ### chore
