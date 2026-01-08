@@ -47,41 +47,29 @@ jobs:
             exit 1
           fi
 
-      - name: Sync spec version
+      - name: Validate spec versions
         run: |
           set -euo pipefail
           version="${{ steps.version.outputs.version }}"
           version_no_prefix="${version#v}"
           copr_spec_file="packaging/copr/radp-bash-framework.spec"
-          if [[ -f "$copr_spec_file" ]]; then
-            sed -i "s/^Version:.*/Version:        ${version_no_prefix}/" "$copr_spec_file"
-          else
-            echo "COPR spec file not found: $copr_spec_file" >&2
-            exit 1
-          fi
           obs_spec_file="packaging/obs/radp-bash-framework.spec"
-          if [[ -f "$obs_spec_file" ]]; then
-            sed -i "s/^Version:.*/Version:        ${version_no_prefix}/" "$obs_spec_file"
-          else
-            echo "OBS spec file not found: $obs_spec_file" >&2
-            exit 1
-          fi
-
-      - name: Commit spec updates
-        run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo "No spec updates to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packaging/copr/radp-bash-framework.spec
-          if [[ -f "packaging/obs/radp-bash-framework.spec" ]]; then
-            git add packaging/obs/radp-bash-framework.spec
-          fi
-          git commit -m "Sync spec version to ${{ steps.version.outputs.version }}"
-          git push
+          for spec_file in "$copr_spec_file" "$obs_spec_file"; do
+            if [[ ! -f "$spec_file" ]]; then
+              echo "Spec file not found: $spec_file" >&2
+              exit 1
+            fi
+            spec_version="$(awk -F'[: ]+' '/^Version:/{print $2; exit}' "$spec_file")"
+            if [[ -z "$spec_version" ]]; then
+              echo "Failed to read Version from $spec_file" >&2
+              exit 1
+            fi
+            if [[ "$spec_version" != "$version_no_prefix" ]]; then
+              echo "Spec version mismatch in $spec_file: expected $version_no_prefix, got $spec_version" >&2
+              echo "Run release-prep to sync spec versions before tagging." >&2
+              exit 1
+            fi
+          done
 
       - name: Create and push tag
         run: |
