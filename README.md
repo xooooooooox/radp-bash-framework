@@ -147,26 +147,31 @@ sudo apt-get -f install
 
 ## Release
 
-1. Update `gr_fw_version` in `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` (format: `vx.y.z`).
-2. Push to `main`.
-3. Trigger the `create-version-tag` workflow to create/push the tag.
-4. Wait for tag workflows (triggered by tag push or by the `create-version-tag` workflow run):
+1. Trigger `release-prep` with `vX.Y.Z` to update `gr_fw_version`, sync spec versions, and add a changelog entry (branch `workflow/vX.Y.Z` + PR).
+2. Review/edit the changelog in the PR and merge to `main`.
+3. Trigger `create-version-tag` to validate the version/changelog and create/push the tag.
+4. Tag workflows run:
     - `update-homebrew-tap` updates the Homebrew formula.
-5. The `create-version-tag` and `update-spec-version` workflows sync spec versions when the version changes.
-6. The `build-copr-package` workflow triggers a COPR SCM build after `update-spec-version` completes successfully on `main` (only when the release tag exists).
-7. The `build-obs-package` workflow syncs sources to OBS and triggers the OBS build (only when the release tag exists).
-8. The `attach-release-artifacts` workflow pulls built packages from COPR/OBS and the Homebrew formula and uploads them to the GitHub Release for manual installs.
+5. `update-spec-version` runs after `create-version-tag` (or manually if needed).
+6. `build-copr-package` triggers after `update-spec-version` completes on `main` (only when the release tag points to the workflow run commit).
+7. `build-obs-package` syncs sources to OBS and triggers the build (only when the release tag points to the workflow run commit).
+8. `attach-release-packages` pulls built packages from COPR/OBS and the Homebrew formula and uploads them to the GitHub Release for manual installs.
 
 ## GitHub Actions
+
+### Release prep (`release-prep.yml`)
+
+- **Trigger:** Manual (`workflow_dispatch`) on `main`.
+- **Purpose:** Create a release branch (`workflow/vX.Y.Z`), update `gr_fw_version`, sync spec versions, insert a changelog entry with a TODO list of commits, and open a PR for review.
 
 ### Create version tag (`create-version-tag.yml`)
 
 - **Trigger:** Manual (`workflow_dispatch`), only runs when the branch is `main`.
-- **Purpose:** Read `gr_fw_version` from `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh`, validate it matches `vx.y.z`, sync spec `Version`, and create/push the Git tag if it does not already exist.
+- **Purpose:** Read `gr_fw_version`, validate `vx.y.z`, the changelog entry, and spec versions, then create/push the Git tag if it does not already exist.
 
 ### Update spec version (`update-spec-version.yml`)
 
-- **Trigger:** Push to `main`, or successful completion of the `create-version-tag` workflow on `main`.
+- **Trigger:** Successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, update spec `Version` to `x.y.z` when the version changes.
 
 ### Build COPR package (`build-copr-package.yml`)
@@ -184,7 +189,7 @@ sudo apt-get -f install
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build, skipping the build when the release tag is missing (the tarball is created from the tag).
 
-### Attach release artifacts (`attach-release-artifacts.yml`)
+### Attach release packages (`attach-release-packages.yml`)
 
 - **Trigger:** Published GitHub Release, or manual (`workflow_dispatch` with optional tag).
 - **Purpose:** Download built packages from COPR/OBS and the Homebrew tap formula, then upload them as Release assets for manual installation.

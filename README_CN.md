@@ -140,27 +140,31 @@ sudo apt-get -f install
 
 ## 发布
 
-1. 更新 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` 中的 `gr_fw_version`(格式：`vx.y.z`)。
-2. 推送到 `main` 分支。
-3. 手动触发 `create-version-tag` 工作流创建并推送版本标签.
-4. 等待标签相关工作流执行完成(由标签推送或 `create-version-tag` 工作流触发)：
+1. 触发 `release-prep`（输入 `vX.Y.Z`）生成发布分支 `workflow/vX.Y.Z` 并创建 PR：更新 `gr_fw_version`、同步 spec、插入 changelog 条目。
+2. 在 PR 中补充/整理 changelog 后合并到 `main`。
+3. 手动触发 `create-version-tag` 工作流校验版本与 changelog 并创建/推送标签。
+4. 标签相关工作流执行：
     - `update-homebrew-tap` 更新 Homebrew 的 formula。
-    - `build-deb-package` 构建并上传 `.deb` 到 GitHub Release。
-5. `create-version-tag` 以及 `update-spec-version` 会在版本变化时更新 spec versions。
-6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建(仅在版本标签存在时执行)。
-7. `build-obs-package` 会同步源码到 OBS 并触发 OBS 构建(仅在版本标签存在时执行)。
-8. `attach-release-artifacts` 会从 COPR/OBS 拉取构建产物及 Homebrew formula，并上传到 GitHub Release 便于手工安装。
+5. `update-spec-version` 在 `create-version-tag` 成功完成后执行（必要时可手动触发）。
+6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建（仅当标签指向本次 workflow 运行提交）。
+7. `build-obs-package` 会同步源码到 OBS 并触发构建（仅当标签指向本次 workflow 运行提交）。
+8. `attach-release-packages` 会从 COPR/OBS 拉取构建产物及 Homebrew formula，并上传到 GitHub Release 便于手工安装。
 
 ## Github Actions
+
+### 发布准备(`release-prep.yml`)
+
+- **触发方式：** 手动触发(`workflow_dispatch`)，仅在 `main` 分支运行。
+- **用途：** 创建发布分支 `workflow/vX.Y.Z` 并生成 PR：更新 `gr_fw_version`、同步 spec、插入带 TODO 的 changelog 条目供审阅。
 
 ### 创建版本标签(`create-version-tag.yml`)
 
 - **触发方式：** 手动触发(`workflow_dispatch`)，仅在 `main` 分支运行。
-- **用途：** 从 `src/main/shell/framework/bootstrap/context/vars/constants/constants.sh` 读取 `gr_fw_version`，校验是否符合 `vx.y.z`，同步 spec 版本，并在不存在该标签时创建并推送。
+- **用途：** 读取 `gr_fw_version`，校验 `vx.y.z`、changelog 条目与 spec 版本一致性，并在不存在该标签时创建并推送。
 
 ### 更新 spec 版本(`update-spec-version.yml`)
 
-- **触发方式：** `main` 分支推送，或 `create-version-tag` 工作流在 `main` 分支成功完成后触发。
+- **触发方式：** `create-version-tag` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
 - **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，更新 spec 的 `Version` 字段为 `x.y.z`，在版本变化。
 
 ### 构建 COPR 包(`build-copr-package.yml`)
@@ -173,17 +177,12 @@ sudo apt-get -f install
 - **触发方式：** 推送版本标签(`v*`)、`create-version-tag` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
 - **用途：** 校验标签与 `gr_fw_version` 一致，生成发布元数据，更新 Homebrew tap 的 formula，并将变更推送到 tap 仓库。
 
-### 构建 deb 包(`build-deb-package.yml`)
-
-- **触发方式：** 推送版本标签(`v*`)、`create-version-tag` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
-- **用途：** 基于标签源码构建 `.deb` 包，并上传到 GitHub Release。
-
 ### 构建 OBS 包(`build-obs-package.yml`)
 
 - **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
 - **用途：** 同步源码 tarball、spec 和 Debian 打包元数据到 OBS 并触发构建，若版本标签不存在则跳过(tarball 基于标签归档)。
 
-### 附加发布产物(`attach-release-artifacts.yml`)
+### 附加发布产物(`attach-release-packages.yml`)
 
 - **触发方式：** 发布 GitHub Release，或手动触发(`workflow_dispatch`，可指定 tag)。
 - **用途：** 从 COPR/OBS 下载构建好的包，以及 Homebrew tap 的 formula，并将它们上传为 Release 资产，方便手工安装。
