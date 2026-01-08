@@ -468,25 +468,23 @@ jobs:
               binarylist_url = f"{base_url}?view=binarylist"
               binaries_root = None
               try:
-                binaries_root = fetch_xml(binarylist_url)
+                binaries_root = fetch_xml(base_url)
               except Exception as exc:
-                msg = str(exc).lower()
                 print(
-                  f"Failed to query OBS binary list repo={repo} arch={arch} url={binarylist_url}: {exc}",
+                  f"Failed to query OBS binary list repo={repo} arch={arch} url={base_url}: {exc}",
                   file=sys.stderr,
                 )
-                if "unsupported view" in msg or "http 400" in msg:
-                  try:
-                    binaries_root = fetch_xml(base_url)
-                    print(
-                      f"OBS binary list fallback succeeded repo={repo} arch={arch} url={base_url}",
-                      file=sys.stderr,
-                    )
-                  except Exception as fallback_exc:
-                    print(
-                      f"OBS binary list fallback failed repo={repo} arch={arch} url={base_url}: {fallback_exc}",
-                      file=sys.stderr,
-                    )
+                try:
+                  binaries_root = fetch_xml(binarylist_url)
+                  print(
+                    f"OBS binary list fallback succeeded repo={repo} arch={arch} url={binarylist_url}",
+                    file=sys.stderr,
+                  )
+                except Exception as fallback_exc:
+                  print(
+                    f"OBS binary list fallback failed repo={repo} arch={arch} url={binarylist_url}: {fallback_exc}",
+                    file=sys.stderr,
+                  )
               if binaries_root is None:
                 continue
               for binary in binaries_root.findall(".//binary"):
