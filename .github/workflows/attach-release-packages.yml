@@ -349,6 +349,7 @@ jobs:
           import os
           import sys
           import base64
+          import urllib.error
           import urllib.parse
           import urllib.request
           import xml.etree.ElementTree as ET
@@ -368,6 +369,13 @@ jobs:
             print("OBS package name is missing", file=sys.stderr)
             sys.exit(0)
 
+          print(
+            "OBS download config "
+            f"api_url={api_url} project={project} package={package} version={version} "
+            f"wait={max_wait_seconds}s poll={poll_interval}s auth={'yes' if username and password else 'no'}",
+            file=sys.stderr,
+          )
+
           def quote(segment: str) -> str:
             return urllib.parse.quote(segment, safe="")
 
@@ -384,9 +392,36 @@ jobs:
               req.add_header("Authorization", f"Basic {token}")
             return req
 
+          def fetch(url: str) -> tuple[bytes, int, str]:
+            req = request(url)
+            try:
+              with urllib.request.urlopen(req) as resp:
+                data = resp.read()
+                status = getattr(resp, "status", None) or resp.getcode()
+                content_type = resp.headers.get("Content-Type", "")
+                return data, int(status), content_type
+            except urllib.error.HTTPError as exc:
+              data = exc.read() if exc.fp else b""
+              status = exc.code or 0
+              content_type = exc.headers.get("Content-Type", "") if exc.headers else ""
+              snippet = data[:200].decode("utf-8", "ignore")
+              raise ValueError(
+                f"HTTP {status} for {url} content-type={content_type} body={snippet}"
+              ) from exc
+            except urllib.error.URLError as exc:
+              raise ValueError(f"Failed to reach {url}: {exc}") from exc
+
           def fetch_xml(url: str) -> ET.Element:
-            with urllib.request.urlopen(request(url)) as resp:
-              return ET.fromstring(resp.read())
+            data, status, content_type = fetch(url)
+            if not data:
+              raise ValueError(f"Empty response from {url} status={status} content-type={content_type}")
+            try:
+              return ET.fromstring(data)
+            except ET.ParseError as exc:
+              snippet = data[:200].decode("utf-8", "ignore")
+              raise ValueError(
+                f"Invalid XML from {url} status={status} content-type={content_type} body={snippet}"
+              ) from exc
 
           def download(url: str, dest: Path) -> None:
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -396,10 +431,14 @@ jobs:
           project_q = quote(project)
           package_q = quote(package)
           result_url = f"{api_url}/build/{project_q}/_result?package={package_q}"
-          def gather_candidates() -> list[tuple[str, str]]:
+          print(f"OBS result URL: {result_url}", file=sys.stderr)
+          def gather_candidates(attempt: int) -> list[tuple[str, str]]:
             root = fetch_xml(result_url)
             candidates_local = []
+            total_results = 0
+            package_results = 0
             for result in root.findall(".//result"):
+              total_results += 1
               repo = result.get("repository")
               arch = result.get("arch")
               if not repo or not arch:
@@ -407,25 +446,48 @@ jobs:
               status_nodes = result.findall(f"./status[@package='{package}']")
               if not status_nodes:
                 continue
+              package_results += 1
               status = status_nodes[0]
               code = (status.get("code") or status.get("state") or "").lower()
               if code not in {"succeeded", "published", "finished", "unchanged"}:
                 continue
               candidates_local.append((repo, arch))
+            if attempt == 1:
+              print(
+                f"OBS result summary total={total_results} package_results={package_results} "
+                f"candidates={len(candidates_local)}",
+                file=sys.stderr,
+              )
             return candidates_local
 
           def fetch_binaries(candidates_list: list[tuple[str, str]], downloaded_set: set[str]) -> None:
             for repo, arch in candidates_list:
               repo_q = quote(repo)
               arch_q = quote(arch)
-              binarylist_url = f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}?view=binarylist"
+              base_url = f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}"
+              binarylist_url = f"{base_url}?view=binarylist"
+              binaries_root = None
               try:
                 binaries_root = fetch_xml(binarylist_url)
               except Exception as exc:
+                msg = str(exc).lower()
                 print(
-                  f"Failed to query OBS binary list repo={repo} arch={arch}: {exc}",
+                  f"Failed to query OBS binary list repo={repo} arch={arch} url={binarylist_url}: {exc}",
                   file=sys.stderr,
                 )
+                if "unsupported view" in msg or "http 400" in msg:
+                  try:
+                    binaries_root = fetch_xml(base_url)
+                    print(
+                      f"OBS binary list fallback succeeded repo={repo} arch={arch} url={base_url}",
+                      file=sys.stderr,
+                    )
+                  except Exception as fallback_exc:
+                    print(
+                      f"OBS binary list fallback failed repo={repo} arch={arch} url={base_url}: {fallback_exc}",
+                      file=sys.stderr,
+                    )
+              if binaries_root is None:
                 continue
               for binary in binaries_root.findall(".//binary"):
                 filename = binary.get("filename")
@@ -454,7 +516,7 @@ jobs:
           while True:
             attempt += 1
             try:
-              candidates = gather_candidates()
+              candidates = gather_candidates(attempt)
             except Exception as exc:
               print(f"Failed to query OBS results: {exc}", file=sys.stderr)
               candidates = []
