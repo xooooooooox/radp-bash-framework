@@ -3,6 +3,8 @@ radp:
     log:
       debug: false
       level: info
+      console:
+        enabled: true
       file:
         enabled: true
         name: $HOME/logs/radp/radp_bash.log
