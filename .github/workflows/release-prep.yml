@@ -40,12 +40,13 @@ jobs:
             echo "Tag ${version} already exists. Aborting release prep." >&2
             exit 1
           fi
-          branch="release/${version}"
+          branch="workflow/${version}"
           if git ls-remote --exit-code --heads origin "${branch}" >/dev/null 2>&1; then
-            echo "Branch ${branch} already exists. Delete or reuse it before retrying." >&2
-            exit 1
+            git checkout -b "${branch}" "origin/${branch}"
+            echo "Reusing existing branch ${branch}"
+          else
+            git checkout -b "${branch}"
           fi
-          git checkout -b "${branch}"
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
 
       - name: Update versions and changelog
