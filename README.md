@@ -11,12 +11,17 @@
 
 [![COPR build status](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/status_image/last_build.png)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
+
 [![OBS package build status](https://build.opensuse.org/projects/home:xooooooooox:radp/packages/radp-bash-framework/badge.svg)](https://build.opensuse.org/package/show/home:xooooooooox:radp/radp-bash-framework)
+[![OBS packages](https://img.shields.io/badge/OBS-packages-4b8bbe)](https://software.opensuse.org//download.html?project=home%3Axooooooooox%3Aradp&package=radp-bash-framework)
+
 [![CI: COPR](https://img.shields.io/github/actions/workflow/status/xooooooooox/radp-bash-framework/build-copr-package.yml?label=CI%3A%20COPR)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/build-copr-package.yml)
 [![CI: OBS](https://img.shields.io/github/actions/workflow/status/xooooooooox/radp-bash-framework/build-obs-package.yml?label=CI%3A%20OBS)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/build-obs-package.yml)
 [![CI: Homebrew](https://img.shields.io/github/actions/workflow/status/xooooooooox/radp-bash-framework/update-homebrew-tap.yml?label=Homebrew%20tap)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/update-homebrew-tap.yml)
 
-## Installation
+## QuickStart
+
+### Installation
 
 After installing, load the framework entrypoint in your shell:
 
@@ -26,7 +31,7 @@ source "$(radp-bf --print-run)"
 
 You can place that command in your shell profile (e.g. `~/.bashrc`) for automatic loading.
 
-### Homebrew
+#### Homebrew
 
 Click [here](https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb) see details.
 
@@ -35,7 +40,7 @@ brew tap xooooooooox/radp
 brew install radp-bash-framework
 ```
 
-### RPM (Fedora/RHEL/CentOS via COPR)
+#### RPM (Fedora/RHEL/CentOS via COPR)
 
 ```shell
 # dnf
@@ -50,7 +55,7 @@ sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
 ```
 
-### OBS repository (zypper / dnf / yum / apt)
+#### OBS repository (zypper / dnf / yum / apt)
 
 OBS provides multi-distro builds. Replace `<DISTRO>` with the target path (e.g. `Fedora_39`, `openSUSE_Tumbleweed`, `xUbuntu_24.04`).
 
@@ -78,10 +83,9 @@ sudo apt-get update
 sudo apt-get install -y radp-bash-framework
 ```
 
-### Manual (Release assets / source)
+#### Manual (Release assets / source)
 
-Prebuilt installable packages are attached to each release:
-<https://github.com/xooooooooox/radp-bash-framework/releases/latest>
+Prebuilt installable packages are attached to each release: <https://github.com/xooooooooox/radp-bash-framework/releases/latest>
 
 Download the `.rpm` or `.deb` asset (prefixed with `obs-` or `copr-`) and install:
 
@@ -102,15 +106,15 @@ Or run directly from source:
 source /path/to/framework/run.sh
 ```
 
-## Upgrade
+### Upgrade
 
-### Homebrew
+#### Homebrew
 
 ```shell
 brew upgrade radp-bash-framework
 ```
 
-### RPM (Fedora/RHEL/CentOS via COPR)
+#### RPM (Fedora/RHEL/CentOS via COPR)
 
 ```shell
 sudo dnf clean metadata
@@ -119,7 +123,7 @@ sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
 
-### OBS repository (zypper / dnf / yum / apt)
+#### OBS repository (zypper / dnf / yum / apt)
 
 ```shell
 # openSUSE/SLES
@@ -137,7 +141,7 @@ sudo apt update
 sudo apt install -y radp-bash-framework
 ```
 
-### Manual (Release assets)
+#### Manual (Release assets)
 
 Download the new `.rpm`/`.deb` from the latest release and install it:
 
@@ -150,7 +154,9 @@ sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
 sudo apt-get -f install
 ```
 
-## Release
+## CI
+
+### How to release
 
 1. Trigger `release-prep` with `vX.Y.Z` to update `gr_fw_version`, sync spec versions, and add a changelog entry (branch `workflow/vX.Y.Z` + PR).
 2. Review/edit the changelog in the PR and merge to `main`.
@@ -162,39 +168,39 @@ sudo apt-get -f install
 7. `build-obs-package` syncs sources to OBS and triggers the build (only when the release tag points to the workflow run commit).
 8. `attach-release-packages` pulls built packages from COPR/OBS and the Homebrew formula and uploads them to the GitHub Release for manual installs.
 
-## GitHub Actions
+### GitHub Actions
 
-### Release prep (`release-prep.yml`)
+#### Release prep (`release-prep.yml`)
 
 - **Trigger:** Manual (`workflow_dispatch`) on `main`.
 - **Purpose:** Create a release branch (`workflow/vX.Y.Z`), update `gr_fw_version`, sync spec versions, insert a changelog entry with a TODO list of commits, and open a PR for review.
 
-### Create version tag (`create-version-tag.yml`)
+#### Create version tag (`create-version-tag.yml`)
 
 - **Trigger:** Manual (`workflow_dispatch`) on `main`, or merge of a `workflow/vX.Y.Z` PR.
 - **Purpose:** Read `gr_fw_version`, validate `vx.y.z`, the changelog entry, and spec versions, then create/push the Git tag if it does not already exist.
 
-### Update spec version (`update-spec-version.yml`)
+#### Update spec version (`update-spec-version.yml`)
 
 - **Trigger:** Successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, update spec `Version` to `x.y.z` when the version changes.
 
-### Build COPR package (`build-copr-package.yml`)
+#### Build COPR package (`build-copr-package.yml`)
 
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`.
 - **Purpose:** Trigger a COPR SCM build using the updated spec at `packaging/copr/radp-bash-framework.spec`, skipping the build when the release tag is missing (the SCM source is generated from the tag).
 
-### Update Homebrew tap (`update-homebrew-tap.yml`)
+#### Update Homebrew tap (`update-homebrew-tap.yml`)
 
 - **Trigger:** On push of a version tag (`v*`), successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Validate the tag matches `gr_fw_version`, build release metadata from the tag, update the Homebrew tap formula, and push the changes to the tap repository.
 
-### Build OBS package (`build-obs-package.yml`)
+#### Build OBS package (`build-obs-package.yml`)
 
 - **Trigger:** Successful completion of the `update-spec-version` workflow on `main`, or manual (`workflow_dispatch`).
 - **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build, skipping the build when the release tag is missing (the tarball is created from the tag).
 
-### Attach release packages (`attach-release-packages.yml`)
+#### Attach release packages (`attach-release-packages.yml`)
 
 - **Trigger:** Published GitHub Release, or manual (`workflow_dispatch` with optional tag).
 - **Purpose:** Download built packages from COPR/OBS and the Homebrew tap formula, then upload them as Release assets for manual installation.
