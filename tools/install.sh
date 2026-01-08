@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_OWNER="xooooooooox"
 REPO_NAME="radp-bash-framework"
+tmp_dir=""
 
 log() {
   printf "%s\n" "$*"
@@ -107,6 +108,12 @@ resolve_ref() {
   echo "${tag}"
 }
 
+cleanup() {
+  if [[ -n "${tmp_dir:-}" ]]; then
+    rm -rf "${tmp_dir}"
+  fi
+}
+
 main() {
   FETCH_TOOL="$(detect_fetcher)" || die "Requires curl, wget, or fetch."
 
@@ -125,17 +132,14 @@ main() {
   fi
 
   local tar_url="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/${ref}.tar.gz"
-  local tmp_dir
   tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t "${REPO_NAME}")"
   local tarball="${tmp_dir}/${REPO_NAME}.tar.gz"
-
-  cleanup() {
-    rm -rf "${tmp_dir}"
-  }
   trap cleanup EXIT
 
   log "Downloading ${tar_url}"
-  fetch_url "${FETCH_TOOL}" "${tar_url}" "${tarball}"
+  if ! fetch_url "${FETCH_TOOL}" "${tar_url}" "${tarball}"; then
+    die "Failed to download ${tar_url}"
+  fi
 
   local root_dir
   root_dir="$(tar -tzf "${tarball}" | head -n 1 | cut -d/ -f1)"
