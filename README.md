@@ -10,6 +10,10 @@
 ```
 
 [![Copr build status](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/)
+[![Build COPR package](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/build-copr-package.yml/badge.svg)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/build-copr-package.yml)
+[![Build OBS package](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/build-obs-package.yml/badge.svg)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/build-obs-package.yml)
+[![Update Homebrew Tap](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/update-homebrew-tap.yml/badge.svg)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/update-homebrew-tap.yml)
+[![Attach release packages](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/attach-release-packages.yml/badge.svg)](https://github.com/xooooooooox/radp-bash-framework/actions/workflows/attach-release-packages.yml)
 
 ## Installation
 
