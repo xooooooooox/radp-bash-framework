@@ -289,6 +289,7 @@ jobs:
           chroots_set = set(chroots)
           build_dir_matches = 0
           package_dir_matches = 0
+          build_page_downloaded = 0
 
           while queue and max_pages > 0:
             base_url, depth, scope = queue.pop(0)
@@ -356,6 +357,42 @@ jobs:
               download(full_url, dest_dir / f"copr-{filename}")
               downloaded.add(filename)
 
+          def supplement_from_build_page() -> int:
+            if not build_id:
+              return 0
+            build_url = f"https://copr.fedorainfracloud.org/coprs/{owner}/{project}/build/{build_id}/"
+            print(f"COPR build page crawl url={build_url}", file=sys.stderr)
+            try:
+              listing = fetch_listing(build_url)
+            except Exception as exc:
+              print(f"COPR build page fetch failed: {exc}", file=sys.stderr)
+              return 0
+            hrefs = re.findall(r'href=["\']([^"\']+)["\']', listing)
+            downloaded_count = 0
+            for href in hrefs:
+              href_clean = href.split("?", 1)[0].split("#", 1)[0]
+              if not href_clean.endswith(".rpm"):
+                continue
+              filename = href_clean.split("/")[-1]
+              if filename.endswith(".src.rpm"):
+                continue
+              if package_name not in filename or version not in filename:
+                continue
+              if filename in downloaded:
+                continue
+              full_url = urllib.parse.urljoin(build_url, href_clean)
+              try:
+                download(full_url, dest_dir / f"copr-{filename}")
+              except Exception as exc:
+                print(f"Failed to download COPR RPM {filename}: {exc}", file=sys.stderr)
+                continue
+              downloaded.add(filename)
+              downloaded_count += 1
+            return downloaded_count
+
+          if build_id and ((not downloaded and not chroots_set) or (chroots_set and len(downloaded) < len(chroots_set))):
+            build_page_downloaded = supplement_from_build_page()
+
           if not downloaded:
             print(f"No COPR RPMs downloaded for {package_name} {version}", file=sys.stderr)
           else:
@@ -363,9 +400,11 @@ jobs:
               f"Downloaded {len(downloaded)} COPR RPMs (matched={matched_rpms} visited={len(visited)} pages)",
               file=sys.stderr,
             )
+          if build_page_downloaded:
+            print(f"Downloaded {build_page_downloaded} COPR RPMs from build page", file=sys.stderr)
           if build_id_markers and build_dir_matches == 0:
             print(f"No COPR build dirs matched build_id {build_id_markers[0]}", file=sys.stderr)
-          if package_name and build_dir_matches > 0 and package_dir_matches == 0:
+          if not downloaded and package_name and build_dir_matches > 0 and package_dir_matches == 0:
             print(f"No COPR package dirs matched {package_name}", file=sys.stderr)
           PY
 
