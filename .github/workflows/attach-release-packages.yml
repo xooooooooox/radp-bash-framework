@@ -491,6 +491,13 @@ jobs:
                 filename = binary.get("filename")
                 if not filename:
                   continue
+                lower = filename.lower()
+                if lower.endswith((".src.rpm", ".nosrc.rpm", ".ddeb")):
+                  non_installable_count.append(filename)
+                  continue
+                if not (lower.endswith(".rpm") or lower.endswith(".deb")):
+                  non_installable_count.append(filename)
+                  continue
                 if version not in filename:
                   continue
                 if filename in downloaded_set:
@@ -508,6 +515,7 @@ jobs:
 
           dest_dir = Path("release-assets/obs")
           downloaded: set[str] = set()
+          non_installable_count: list[str] = []
           deadline = time.time() + max_wait_seconds
           attempt = 0
 
@@ -543,6 +551,11 @@ jobs:
             print(f"No OBS binaries downloaded for {package} {version}", file=sys.stderr)
           else:
             print(f"Downloaded {len(downloaded)} OBS binaries")
+          if non_installable_count:
+            print(
+              f"Skipped {len(non_installable_count)} non-installable OBS artifacts",
+              file=sys.stderr,
+            )
           PY
 
       - name: Download Homebrew formula
