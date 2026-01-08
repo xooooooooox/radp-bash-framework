@@ -239,6 +239,8 @@ __fw_format_log_message() {
 #   gr_radp_log_level - 配置的日志级别
 #   gr_radp_log_pattern_console - 控制台日志格式
 #   gr_radp_log_pattern_file - 文件日志格式
+#   gr_radp_fw_log_console_enabled - 是否开启控制台日志
+#   gr_radp_fw_log_file_enabled - 是否写日志文件
 # Arguments:
 #   1 - log_level: 日志级别 (DEBUG, INFO, WARN, ERROR)
 #   2 - message: 日志消息
@@ -303,6 +305,35 @@ __fw_logger() {
         echo -e "${formatted_console}" >&4 2>/dev/null || true
       fi
     } &>/dev/null
+  fi
+}
+
+#######################################
+# 直接输出日志内容(不经过 pattern 格式化)
+# Globals:
+#   gr_radp_fw_log_console_enabled - 是否开启控制台日志
+#   gr_radp_fw_log_file_enabled - 是否开启文件日志
+# Arguments:
+#   1 - message: 要输出的内容
+# Outputs:
+#   原始内容到 fd3(文件) 和 fd4(控制台)
+# Returns:
+#   0 - Success
+#######################################
+__fw_logger_raw() {
+  local message=${1:-}
+  local console_enabled="${gr_radp_fw_log_console_enabled:-true}"
+  local file_enabled="${gr_radp_fw_log_file_enabled:-true}"
+
+  if [[ "${console_enabled}" != "true" && "${file_enabled}" != "true" ]]; then
+    return 0
+  fi
+
+  if [[ "${file_enabled}" == "true" ]]; then
+    printf "%s\n" "${message}" >&3 2>/dev/null || true
+  fi
+  if [[ "${console_enabled}" == "true" ]]; then
+    printf "%s\n" "${message}" >&4 2>/dev/null || true
   fi
 }
 
@@ -398,6 +429,20 @@ radp_log_error() {
   __fw_logger "ERROR" "$msg" "$script_name" "$func_name" "$line_no"
 }
 
+#######################################
+# 原样输出内容(不做格式化和级别过滤)
+# Globals:
+#   None
+# Arguments:
+#   1 - msg: 要输出的内容
+# Returns:
+#   0 - Success
+#######################################
+radp_log_raw() {
+  local msg=${1:-}
+  __fw_logger_raw "$msg"
+}
+
 #----------------------------------------------------------------------------------------------------------------------#
 #######################################
 # 初始化日志框架.
@@ -408,6 +453,8 @@ radp_log_error() {
 # Globals:
 #   gr_radp_log_debug - 是否为 debug 模式
 #   gr_radp_log_file - 日志文件绝对路径
+#   gr_radp_fw_log_console_enabled - 是否开启控制台日志
+#   gr_radp_fw_log_file_enabled - 是否写日志文件
 # Arguments:
 #   None
 # Outputs:
