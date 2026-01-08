@@ -1,8 +1,9 @@
 # CHANGELOG
 
-## v0.2.3 - 2026-01-08
+## v0.2.4 - 2026-01-08
 
 ### chore
+- Support multi install/upgrade method.
 - Add Github workflow
   - Support auto-update version and changelog before release.
   - Support auto-create a valid tag.
