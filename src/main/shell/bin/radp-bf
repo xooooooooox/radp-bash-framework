@@ -44,13 +44,14 @@ __radp_bf_setup() {
 
   local project_src_root
   project_src_root=$(dirname "$bin_dir")
+
   # shellcheck source=../framework/run.sh
   source "$project_src_root"/framework/run.sh "$@"
 }
 
 __radp_bf_main() {
   # 丢弃打印 banner 等信息
-  __radp_bf_setup "$@" >/dev/null
+  __radp_bf_setup "$@"
 
   case "${1:-}" in
   --help | -h | "")
@@ -83,5 +84,9 @@ __radp_bf_main() {
     ;;
   esac
 }
+
+# disable log and banner
+GX_RADP_FW_LOG_CONSOLE_ENABLED=false
+GX_RADP_FW_LOG_FILE_ENABLED=false
 
 __radp_bf_main "$@"
