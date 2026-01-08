@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.2.2 - 2026-01-08
+## v0.2.3 - 2026-01-08
 
 ### chore
 - Add Github workflow
