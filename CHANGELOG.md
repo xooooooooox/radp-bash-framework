@@ -3,11 +3,12 @@
 ## v0.3.0 - 2026-01-08
 
 ### feat
-- eca31cd disable log
-- 3a3e217 optimize banner print
-- e4e713c Add radp_log_raw func
-- c33d72b Support disable/enable console log and logfile
-- 51b5968 Optimize log config var name
+
+- Optimize logger
+  - Add radp_log_raw func
+  - Optimize banner print
+  - Support disable/enable console log and logfile
+  - Refactor log config var name, `radp.fw.log.file` to `radp.fw.log.file.name`
 
 ## v0.2.4 - 2026-01-08
 
