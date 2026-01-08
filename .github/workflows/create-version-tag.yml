@@ -19,6 +19,7 @@ jobs:
       - name: Read version
         id: version
         run: |
+          set -euo pipefail
           constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
           version=$(sed -n 's/^declare -gr gr_fw_version=//p' "$constants_file" | head -n 1)
           if [[ -z "$version" ]]; then
@@ -30,6 +31,21 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate changelog
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          version_no_prefix="${version#v}"
+          changelog_file="CHANGELOG.md"
+          if [[ ! -f "$changelog_file" ]]; then
+            echo "CHANGELOG.md not found; update changelog before tagging." >&2
+            exit 1
+          fi
+          if ! grep -Eq "^##[[:space:]]+v?${version_no_prefix}([[:space:]]|$)" "$changelog_file"; then
+            echo "CHANGELOG.md missing entry for ${version}; update changelog before tagging." >&2
+            exit 1
+          fi
 
       - name: Sync spec version
         run: |

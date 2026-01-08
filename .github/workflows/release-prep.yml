@@ -1,0 +1,179 @@
+name: Release prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version tag (vX.Y.Z)"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-prep:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Create release branch
+        id: branch
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '${version}' does not match vX.Y.Z" >&2
+            exit 1
+          fi
+          if git rev-parse "${version}" >/dev/null 2>&1; then
+            echo "Tag ${version} already exists. Aborting release prep." >&2
+            exit 1
+          fi
+          branch="release/${version}"
+          if git ls-remote --exit-code --heads origin "${branch}" >/dev/null 2>&1; then
+            echo "Branch ${branch} already exists. Delete or reuse it before retrying." >&2
+            exit 1
+          fi
+          git checkout -b "${branch}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+      - name: Update versions and changelog
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import datetime as dt
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          version = os.environ["VERSION"].strip()
+          if not re.match(r"^v[0-9]+\.[0-9]+\.[0-9]+$", version):
+            raise SystemExit(f"Invalid version: {version}")
+          version_no_prefix = version[1:]
+
+          def git(*args: str) -> str:
+            return subprocess.check_output(["git", *args], text=True, errors="replace").strip()
+
+          def try_git(*args: str) -> str:
+            try:
+              return git(*args)
+            except subprocess.CalledProcessError:
+              return ""
+
+          constants_path = Path("src/main/shell/framework/bootstrap/context/vars/constants/constants.sh")
+          if not constants_path.exists():
+            raise SystemExit(f"Missing constants file: {constants_path}")
+          constants_text = constants_path.read_text()
+          constants_text, count = re.subn(
+            r"^declare -gr gr_fw_version=.*$",
+            f"declare -gr gr_fw_version={version}",
+            constants_text,
+            flags=re.M,
+          )
+          if count == 0:
+            raise SystemExit("Failed to update gr_fw_version in constants.sh")
+          constants_path.write_text(constants_text)
+
+          for spec_path in [
+            Path("packaging/copr/radp-bash-framework.spec"),
+            Path("packaging/obs/radp-bash-framework.spec"),
+          ]:
+            if not spec_path.exists():
+              raise SystemExit(f"Missing spec file: {spec_path}")
+            spec_text = spec_path.read_text()
+            spec_text, count = re.subn(
+              r"^Version:\s*.*$",
+              f"Version:        {version_no_prefix}",
+              spec_text,
+              flags=re.M,
+            )
+            if count == 0:
+              raise SystemExit(f"Failed to update Version in {spec_path}")
+            spec_path.write_text(spec_text)
+
+          changelog_path = Path("CHANGELOG.md")
+          if not changelog_path.exists():
+            raise SystemExit("CHANGELOG.md not found.")
+          changelog_text = changelog_path.read_text()
+          if re.search(rf"^##\s+v?{re.escape(version_no_prefix)}(\s|$)", changelog_text, re.M):
+            raise SystemExit(f"CHANGELOG.md already has an entry for {version}")
+
+          last_tag = try_git("describe", "--tags", "--abbrev=0", "--match", "v*")
+          log_range = f"{last_tag}..HEAD" if last_tag else "HEAD"
+          log_output = try_git("log", "--no-merges", "--pretty=%h %s", log_range)
+          entries = []
+          for line in log_output.splitlines():
+            line = line.strip()
+            if not line:
+              continue
+            parts = line.split(" ", 1)
+            sha = parts[0]
+            subject = parts[1] if len(parts) > 1 else ""
+            subject_ascii = subject.encode("ascii", "ignore").decode("ascii").strip()
+            if not subject_ascii:
+              subject_ascii = "<non-ascii subject>"
+            entries.append(f"{sha} {subject_ascii}")
+
+          today = dt.datetime.utcnow().strftime("%Y-%m-%d")
+          header = f"## {version} - {today}"
+          base = f"### Changes (since {last_tag})" if last_tag else "### Changes"
+          new_lines = ["", header, base, "- TODO: curate and rewrite this list before release."]
+          if entries:
+            new_lines.extend([f"- {entry}" for entry in entries])
+          else:
+            new_lines.append("- TODO: no commits found; add summary manually.")
+
+          lines = changelog_text.splitlines()
+          insert_at = 1 if lines and lines[0].strip() == "# CHANGELOG" else 0
+          updated = lines[:insert_at] + new_lines + lines[insert_at:]
+          changelog_path.write_text("\n".join(updated).rstrip() + "\n")
+
+          print(f"Updated version to {version} (last tag: {last_tag or 'none'})")
+          PY
+
+      - name: Commit changes
+        id: commit
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No changes to commit; aborting release prep." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/main/shell/framework/bootstrap/context/vars/constants/constants.sh \
+            packaging/copr/radp-bash-framework.spec \
+            packaging/obs/radp-bash-framework.spec \
+            CHANGELOG.md
+          git commit -m "Release prep ${{ inputs.version }}"
+
+      - name: Push branch
+        run: |
+          set -euo pipefail
+          git push --set-upstream origin "${{ steps.branch.outputs.branch }}"
+
+      - name: Create pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          branch="${{ steps.branch.outputs.branch }}"
+          title="Release ${version}"
+          body="Release prep for ${version}.\n\n- Update gr_fw_version\n- Sync spec versions\n- Add changelog entry (please review and edit)\n"
+          gh pr create --base main --head "${branch}" --title "${title}" --body "${body}"
