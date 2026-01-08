@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.2.1 - 2026-01-08
+
+### chore
+- 4ff9952 fix attach-release-package.yml
+
 ## v0.2.0 - 2026-01-08
 
 ### chore
