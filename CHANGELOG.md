@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## v1.0.5 - 2026-01-08
+## v0.1.6 - 2026-01-08
 
 ### chore
-- Suuport use GitHub workflow to auto build COPR/OBS pacakge
+- Add Github workflow
+  - Support auto-update version and changelog before release.
+  - Support auto-create a valid tag.
+  - Support auto-build copr/obs package.
+  - Support auto-upload pre-built package to release assets.
