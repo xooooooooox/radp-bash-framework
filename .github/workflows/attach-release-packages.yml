@@ -75,6 +75,12 @@ jobs:
           if ! git rev-parse "${tag_name}" >/dev/null 2>&1; then
             echo "Tag ${tag_name} does not exist yet; skipping release attachment."
             should_upload=false
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            tag_sha="$(git rev-parse "${tag_name}^{commit}")"
+            if [[ -n "${head_sha}" && "${tag_sha}" != "${head_sha}" ]]; then
+              echo "Tag ${tag_name} points to ${tag_sha}, workflow head is ${head_sha}; skipping release attachment."
+              should_upload=false
+            fi
           fi
 
           version="${tag_name#v}"
