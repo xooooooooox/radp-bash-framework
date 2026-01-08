@@ -353,6 +353,7 @@ jobs:
           import urllib.request
           import xml.etree.ElementTree as ET
           from pathlib import Path
+          import time
 
           project = os.environ["OBS_PROJECT"].strip()
           package = (os.environ.get("OBS_PACKAGE") or os.environ.get("PACKAGE_NAME") or "").strip()
@@ -360,6 +361,8 @@ jobs:
           api_url = (os.environ.get("OBS_API_URL") or "https://api.opensuse.org").rstrip("/")
           username = (os.environ.get("OBS_USERNAME") or "").strip()
           password = (os.environ.get("OBS_PASSWORD") or "").strip()
+          max_wait_seconds = int(os.environ.get("OBS_WAIT_SECONDS", "1200"))
+          poll_interval = int(os.environ.get("OBS_POLL_INTERVAL", "30"))
 
           if not package:
             print("OBS package name is missing", file=sys.stderr)
@@ -393,56 +396,88 @@ jobs:
           project_q = quote(project)
           package_q = quote(package)
           result_url = f"{api_url}/build/{project_q}/_result?package={package_q}"
-          try:
+          def gather_candidates() -> list[tuple[str, str]]:
             root = fetch_xml(result_url)
-          except Exception as exc:
-            print(f"Failed to query OBS results: {exc}", file=sys.stderr)
-            sys.exit(0)
+            candidates_local = []
+            for result in root.findall(".//result"):
+              repo = result.get("repository")
+              arch = result.get("arch")
+              if not repo or not arch:
+                continue
+              status_nodes = result.findall(f"./status[@package='{package}']")
+              if not status_nodes:
+                continue
+              status = status_nodes[0]
+              code = (status.get("code") or status.get("state") or "").lower()
+              if code not in {"succeeded", "published", "finished", "unchanged"}:
+                continue
+              candidates_local.append((repo, arch))
+            return candidates_local
 
-          candidates = []
-          for result in root.findall(".//result"):
-            repo = result.get("repository")
-            arch = result.get("arch")
-            if not repo or not arch:
-              continue
-            status_nodes = result.findall(f"./status[@package='{package}']")
-            if not status_nodes:
-              continue
-            status = status_nodes[0]
-            code = (status.get("code") or status.get("state") or "").lower()
-            if code not in {"succeeded", "published", "finished", "unchanged"}:
-              continue
-            candidates.append((repo, arch))
-
-          if not candidates:
-            print(f"No successful OBS results for {package}", file=sys.stderr)
-            sys.exit(0)
+          def fetch_binaries(candidates_list: list[tuple[str, str]], downloaded_set: set[str]) -> None:
+            for repo, arch in candidates_list:
+              repo_q = quote(repo)
+              arch_q = quote(arch)
+              binarylist_url = f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}?view=binarylist"
+              try:
+                binaries_root = fetch_xml(binarylist_url)
+              except Exception as exc:
+                print(
+                  f"Failed to query OBS binary list repo={repo} arch={arch}: {exc}",
+                  file=sys.stderr,
+                )
+                continue
+              for binary in binaries_root.findall(".//binary"):
+                filename = binary.get("filename")
+                if not filename:
+                  continue
+                if version not in filename:
+                  continue
+                if filename in downloaded_set:
+                  continue
+                file_url = (
+                  f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}/"
+                  f"{urllib.parse.quote(filename, safe='')}"
+                )
+                try:
+                  download(file_url, dest_dir / f"obs-{filename}")
+                except Exception as exc:
+                  print(f"Failed to download OBS binary {filename}: {exc}", file=sys.stderr)
+                  continue
+                downloaded_set.add(filename)
 
           dest_dir = Path("release-assets/obs")
-          downloaded = set()
+          downloaded: set[str] = set()
+          deadline = time.time() + max_wait_seconds
+          attempt = 0
 
-          for repo, arch in candidates:
-            repo_q = quote(repo)
-            arch_q = quote(arch)
-            binarylist_url = f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}?view=binarylist"
+          while True:
+            attempt += 1
             try:
-              binaries_root = fetch_xml(binarylist_url)
-            except Exception:
-              continue
-            for binary in binaries_root.findall(".//binary"):
-              filename = binary.get("filename")
-              if not filename:
-                continue
-              if version not in filename:
-                continue
-              if filename in downloaded:
-                continue
-              file_url = (
-                f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}/"
-                f"{urllib.parse.quote(filename, safe='')}"
-              )
-              download(file_url, dest_dir / f"obs-{filename}")
-              downloaded.add(filename)
+              candidates = gather_candidates()
+            except Exception as exc:
+              print(f"Failed to query OBS results: {exc}", file=sys.stderr)
+              candidates = []
+
+            if candidates:
+              if attempt == 1:
+                summary = ", ".join([f"{repo}/{arch}" for repo, arch in candidates])
+                print(f"OBS candidates: {summary}", file=sys.stderr)
+              fetch_binaries(candidates, downloaded)
+            else:
+              print(f"No successful OBS results for {package}", file=sys.stderr)
+
+            if downloaded:
+              break
+
+            if time.time() + poll_interval > deadline:
+              break
+
+            print(
+              f"OBS binaries not ready; retrying in {poll_interval}s (attempt {attempt})",
+              file=sys.stderr,
+            )
+            time.sleep(poll_interval)
 
           if not downloaded:
             print(f"No OBS binaries downloaded for {package} {version}", file=sys.stderr)
