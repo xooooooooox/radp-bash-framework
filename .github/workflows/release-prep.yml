@@ -238,8 +238,17 @@ jobs:
           version="${{ inputs.version }}"
           branch="${{ steps.branch.outputs.branch }}"
           title="Release ${version}"
-          body="Release prep for ${version}.\n\n- Update gr_fw_version\n- Sync spec versions\n- Add changelog entry (please review and edit)\n\nWhen this PR is merged, create-version-tag will run automatically to validate and tag the release."
-          if gh pr create --base main --head "${branch}" --title "${title}" --body "${body}"; then
+          body_file="$(mktemp)"
+          cat > "${body_file}" <<EOF
+          Release prep for ${version}.
+
+          - Update gr_fw_version
+          - Sync spec versions
+          - Add changelog entry (please review and edit)
+
+          When this PR is merged, create-version-tag will run automatically to validate and tag the release.
+          EOF
+          if gh pr create --base main --head "${branch}" --title "${title}" --body-file "${body_file}"; then
             exit 0
           fi
           if gh pr view --head "${branch}" >/dev/null 2>&1; then
