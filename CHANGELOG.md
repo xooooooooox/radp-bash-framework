@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.1.6 - 2026-01-08
+
+### feat
+- d619bee Optimize workflow
+
 ## v1.0.5 - 2026-01-08
 
 ### chore
