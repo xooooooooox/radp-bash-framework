@@ -41,13 +41,16 @@ jobs:
             exit 1
           fi
           branch="workflow/${version}"
+          reused=false
           if git ls-remote --exit-code --heads origin "${branch}" >/dev/null 2>&1; then
             git checkout -b "${branch}" "origin/${branch}"
             echo "Reusing existing branch ${branch}"
+            reused=true
           else
             git checkout -b "${branch}"
           fi
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          echo "reused=${reused}" >> "$GITHUB_OUTPUT"
 
       - name: Update versions and changelog
         env:
@@ -110,8 +113,7 @@ jobs:
           if not changelog_path.exists():
             raise SystemExit("CHANGELOG.md not found.")
           changelog_text = changelog_path.read_text()
-          if re.search(rf"^##\s+v?{re.escape(version_no_prefix)}(\s|$)", changelog_text, re.M):
-            raise SystemExit(f"CHANGELOG.md already has an entry for {version}")
+          header_pattern = re.compile(rf"^##\s+v?{re.escape(version_no_prefix)}(\s|$)")
 
           last_tag = try_git("describe", "--tags", "--abbrev=0", "--match", "v*")
           log_range = f"{last_tag}..HEAD" if last_tag else "HEAD"
@@ -145,28 +147,58 @@ jobs:
             entries_by_type[commit_type].append(f"{sha} {desc}")
 
           today = dt.datetime.utcnow().strftime("%Y-%m-%d")
-          header = f"## {version} - {today}"
-          new_lines = ["", header, ""]
+          default_header = f"## {version} - {today}"
           include_types = [t for t in standard_types if entries_by_type[t]]
           if entries_by_type[other_key]:
             include_types.append(other_key)
 
-          if not include_types:
-            new_lines.append("- TODO: no commits found; add summary manually.")
-          else:
+          def build_section_lines(header_line: str, leading_blank: bool) -> list[str]:
+            section = []
+            if leading_blank:
+              section.append("")
+            section.append(header_line)
+            section.append("")
+            if not include_types:
+              section.append("- TODO: no commits found; add summary manually.")
+              return section
             for commit_type in include_types:
-              new_lines.append(f"### {commit_type}")
+              section.append(f"### {commit_type}")
               for entry in entries_by_type.get(commit_type, []):
-                new_lines.append(f"- {entry}")
-              new_lines.append("")
-
-          while new_lines and new_lines[-1] == "":
-            new_lines.pop()
+                section.append(f"- {entry}")
+              section.append("")
+            while section and section[-1] == "":
+              section.pop()
+            return section
 
           lines = changelog_text.splitlines()
-          insert_at = 1 if lines and lines[0].strip() == "# CHANGELOG" else 0
-          updated = lines[:insert_at] + new_lines + lines[insert_at:]
-          changelog_path.write_text("\n".join(updated).rstrip() + "\n")
+          start = None
+          for idx, line in enumerate(lines):
+            if header_pattern.match(line):
+              start = idx
+              break
+          if start is not None:
+            end = len(lines)
+            for idx in range(start + 1, len(lines)):
+              if lines[idx].startswith("## "):
+                end = idx
+                break
+            existing_section = "\n".join(lines[start:end])
+            todo_markers = (
+              "TODO: curate and rewrite this list before release.",
+              "TODO: no commits found; add summary manually.",
+            )
+            if any(marker in existing_section for marker in todo_markers):
+              header_line = lines[start]
+              new_lines = build_section_lines(header_line, leading_blank=False)
+              lines = lines[:start] + new_lines + lines[end:]
+            else:
+              print("CHANGELOG entry exists and appears edited; leaving it unchanged.")
+          else:
+            insert_at = 1 if lines and lines[0].strip() == "# CHANGELOG" else 0
+            new_lines = build_section_lines(default_header, leading_blank=True)
+            lines = lines[:insert_at] + new_lines + lines[insert_at:]
+
+          changelog_path.write_text("\n".join(lines).rstrip() + "\n")
 
           print(f"Updated version to {version} (last tag: {last_tag or 'none'})")
           PY
@@ -176,6 +208,10 @@ jobs:
         run: |
           set -euo pipefail
           if git diff --quiet; then
+            if [[ "${{ steps.branch.outputs.reused }}" == "true" ]]; then
+              echo "No changes to commit; branch already exists."
+              exit 0
+            fi
             echo "No changes to commit; aborting release prep." >&2
             exit 1
           fi
@@ -204,6 +240,10 @@ jobs:
           title="Release ${version}"
           body="Release prep for ${version}.\n\n- Update gr_fw_version\n- Sync spec versions\n- Add changelog entry (please review and edit)\n\nWhen this PR is merged, create-version-tag will run automatically to validate and tag the release."
           if gh pr create --base main --head "${branch}" --title "${title}" --body "${body}"; then
+            exit 0
+          fi
+          if gh pr view --head "${branch}" >/dev/null 2>&1; then
+            echo "PR already exists for ${branch}."
             exit 0
           fi
           if [[ "${HAS_RELEASE_PREP_TOKEN}" == "true" ]]; then
