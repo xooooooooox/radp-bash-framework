@@ -148,7 +148,7 @@ sudo apt-get -f install
 
 ### How to release
 
-1. Trigger `release-prep` with `vX.Y.Z` to update `gr_fw_version`, sync spec versions, and add a changelog entry (branch `workflow/vX.Y.Z` + PR).
+1. Trigger `release-prep` with a `bump_type` (patch/minor/major/manual, default patch). For manual, provide `vX.Y.Z`. This updates `gr_fw_version`, syncs spec versions, and adds a changelog entry (branch `workflow/vX.Y.Z` + PR).
 2. Review/edit the changelog in the PR and merge to `main`.
 3. `create-version-tag` runs automatically on merge (or trigger it manually) to validate the version/changelog/spec and create/push the tag.
 4. Tag workflows run:
@@ -163,7 +163,7 @@ sudo apt-get -f install
 #### Release prep (`release-prep.yml`)
 
 - **Trigger:** Manual (`workflow_dispatch`) on `main`.
-- **Purpose:** Create a release branch (`workflow/vX.Y.Z`), update `gr_fw_version`, sync spec versions, insert a changelog entry with a TODO list of commits, and open a PR for review.
+- **Purpose:** Create a release branch (`workflow/vX.Y.Z`) from the resolved version (patch/minor/major bump, or manual `vX.Y.Z`), update `gr_fw_version`, sync spec versions, insert a changelog entry with a TODO list of commits, and open a PR for review.
 
 #### Create version tag (`create-version-tag.yml`)
 

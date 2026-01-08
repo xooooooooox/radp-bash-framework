@@ -145,7 +145,7 @@ sudo apt-get -f install
 
 ### 发布流程
 
-1. 触发 `release-prep`（输入 `vX.Y.Z`）生成发布分支 `workflow/vX.Y.Z` 并创建 PR：更新 `gr_fw_version`、同步 spec、插入 changelog 条目。
+1. 触发 `release-prep` 选择 `bump_type`（patch/minor/major/manual，默认 patch）。手动模式需输入 `vX.Y.Z`。该流程会生成发布分支 `workflow/vX.Y.Z` 并创建 PR：更新 `gr_fw_version`、同步 spec、插入 changelog 条目。
 2. 在 PR 中补充/整理 changelog 后合并到 `main`。
 3. PR 合并后会自动触发 `create-version-tag`（或手动触发）校验版本/changelog/spec 并创建/推送标签。
 4. 标签相关工作流执行：
@@ -160,7 +160,7 @@ sudo apt-get -f install
 #### 发布准备 (`release-prep.yml`)
 
 - **触发方式：** 手动触发(`workflow_dispatch`)，仅在 `main` 分支运行。
-- **用途：** 创建发布分支 `workflow/vX.Y.Z` 并生成 PR：更新 `gr_fw_version`、同步 spec、插入带 TODO 的 changelog 条目供审阅。
+- **用途：** 根据 `bump_type`（patch/minor/major 或手动 `vX.Y.Z`）创建发布分支 `workflow/vX.Y.Z` 并生成 PR：更新 `gr_fw_version`、同步 spec、插入带 TODO 的 changelog 条目供审阅。
 
 #### 创建版本标签 (`create-version-tag.yml`)
 
