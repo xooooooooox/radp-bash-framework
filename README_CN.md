@@ -1,5 +1,14 @@
 # radp-bash-framework
 
+```
+    ____  ___    ____  ____     ____  ___   _____ __  __
+   / __ \/   |  / __ \/ __ \   / __ )/   | / ___// / / /
+  / /_/ / /| | / / / / /_/ /  / __  / /| | \__ \/ /_/ /
+ / _, _/ ___ |/ /_/ / ____/  / /_/ / ___ |___/ / __  /
+/_/ |_/_/  |_/_____/_/      /_____/_/  |_/____/_/ /_/
+
+```
+
 [![COPR build status](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/status_image/last_build.png)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 
