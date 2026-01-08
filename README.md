@@ -64,13 +64,10 @@ sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/ho
 sudo yum install -y radp-bash-framework
 
 # Debian/Ubuntu (apt)
-echo 'deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /' \
-  | sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list
-curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/<DISTRO>/Release.key \
-  | gpg --dearmor \
-  | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg > /dev/null
-sudo apt-get update
-sudo apt-get install -y radp-bash-framework
+echo 'deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /' | sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list
+curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/<DISTRO>/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg > /dev/null
+sudo apt update
+sudo apt install radp-bash-framework
 
 # Fedora/RHEL/CentOS (dnf)
 sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
@@ -111,8 +108,11 @@ brew upgrade radp-bash-framework
 #### RPM (Fedora/RHEL/CentOS via COPR)
 
 ```shell
+# dnf
 sudo dnf clean metadata
 sudo dnf upgrade --refresh -y radp-bash-framework
+
+# yum
 sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
