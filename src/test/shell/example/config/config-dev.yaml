@@ -3,7 +3,9 @@ radp:
     log:
       debug: false
       level: info
-      file: $HOME/logs/radp/radp_bash.log
+      file:
+        enabled: true
+        name: $HOME/logs/radp/radp_bash.log
       rolling-policy:
         enabled: true
         max-history: 7

@@ -12,7 +12,9 @@ declare -gr gr_radp_fw_banner_mode="${GX_RADP_FW_BANNER_MODE:-${YAML_RADP_FW_BAN
 #--------------------------------------------- logger config ----------------------------------------------------------#
 declare -gr gr_radp_fw_log_debug="${GX_RADP_FW_LOG_DEBUG:-${YAML_RADP_FW_LOG_DEBUG:-false}}"
 declare -gr gr_radp_fw_log_level="${GX_RADP_FW_LOG_LEVEL:-${YAML_RADP_FW_LOG_LEVEL:-info}}"
-declare -gr gr_radp_fw_log_file="${GX_RADP_FW_LOG_FILE:-${YAML_RADP_FW_LOG_FILE:-"${HOME}/logs/radp/${gra_command_line[0]:-radp_bash}.log"}}"
+declare -gr gr_radp_fw_log_console_enabled="${GX_RADP_FW_LOG_CONSOLE_ENABLED:-${YAML_RADP_FW_LOG_CONSOLE_ENABLED:-true}}"
+declare -gr gr_radp_fw_log_file_enabled="${GX_RADP_FW_LOG_FILE_ENABLED:-${YAML_RADP_FW_LOG_FILE_ENABLED:-true}}"
+declare -gr gr_radp_fw_log_file_name="${GX_RADP_FW_LOG_FILE_NAME:-${YAML_RADP_FW_LOG_FILE_NAME:-"${HOME}/logs/radp/${gra_command_line[0]:-radp_bash}.log"}}"
 # rolling policy
 declare -gr gr_radp_fw_log_rolling_policy_enabled="${GX_RADP_FW_LOG_ROLLING_POLICY_ENABLED:-${YAML_RADP_FW_LOG_ROLLING_POLICY_ENABLED:-true}}"
 declare -gr gr_radp_fw_log_rolling_policy_max_history="${GX_RADP_FW_LOG_ROLLING_POLICY_MAX_HISTORY:-${YAML_RADP_FW_LOG_ROLLING_POLICY_MAX_HISTORY:-7}}"

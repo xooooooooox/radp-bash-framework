@@ -407,13 +407,13 @@ radp_log_error() {
 #   - 函数内部对重定向操作进行了错误检查，任何重定向失败都会导致脚本退出，
 #######################################
 __fw_logger_setup() {
-  local logfile="${gr_radp_fw_log_file:?}"
+  local logfile="${gr_radp_fw_log_file_name:?}"
   if [[ -z "$gr_log_file_path" ]]; then
-    gr_log_file_path=$(dirname "$gr_radp_fw_log_file")
+    gr_log_file_path=$(dirname "$gr_radp_fw_log_file_name")
     readonly gr_log_file_path
   fi
   if [[ -z "$gr_log_filename" ]]; then
-    gr_log_filename=$(basename "$gr_radp_fw_log_file")
+    gr_log_filename=$(basename "$gr_radp_fw_log_file_name")
     readonly gr_log_filename
   fi
   if [[ -z "$gr_log_rolling_path" ]]; then
@@ -545,7 +545,7 @@ __fw_logger_rolling() {
     return 0
   fi
 
-  local log_file="${gr_radp_fw_log_file:?}"
+  local log_file="${gr_radp_fw_log_file_name:?}"
 
   # 检查日志文件是否存在
   if [[ ! -f "$log_file" ]]; then

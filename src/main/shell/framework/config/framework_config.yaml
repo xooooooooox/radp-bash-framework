@@ -5,7 +5,14 @@ radp:
     log:
       debug: false
       level: info
-      file: $HOME/logs/radp/radp_bash.log
+      console:
+        # 是否关闭控制台日志
+        enabled: true
+      file:
+        # 是否写日志文件,默认true
+        enabled: true
+        # 日志文件完整路径
+        name: $HOME/logs/radp/radp_bash.log
       rolling-policy:
         enabled: true
         max-history: 7
