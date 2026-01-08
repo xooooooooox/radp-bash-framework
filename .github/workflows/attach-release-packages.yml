@@ -224,16 +224,19 @@ jobs:
             )
 
           urls = []
+          build_id = None
+          chroots = []
           if candidates:
             selected = max(candidates, key=lambda b: b.get("id", 0))
             build_id = selected.get("id")
             repo_url = (selected.get("repo_url") or "").rstrip("/")
             chroots = selected.get("chroots") or []
             if repo_url:
-              urls.append(repo_url + "/")
-              for chroot in chroots:
-                urls.append(f"{repo_url}/{chroot}/")
-                urls.append(f"{repo_url}/{chroot}/{package_name}/")
+              if chroots:
+                for chroot in chroots:
+                  urls.append((f"{repo_url}/{chroot}/", "chroot"))
+              else:
+                urls.append((repo_url + "/", "project"))
               print(
                 f"COPR selected build_id={build_id} repo_url={repo_url} chroots={len(chroots)}",
                 file=sys.stderr,
@@ -253,15 +256,17 @@ jobs:
             result_url = (build.get("result_url") or "").rstrip("/")
             chroots = build.get("chroots") or []
             if result_url:
-              urls.append(result_url + "/")
-              for chroot in chroots:
-                urls.append(f"{result_url}/{chroot}/")
+              if chroots:
+                for chroot in chroots:
+                  urls.append((f"{result_url}/{chroot}/", "chroot"))
+              else:
+                urls.append((result_url + "/", "project"))
             else:
               use_fallback = True
 
           if use_fallback or not urls:
-            urls = [f"https://download.copr.fedorainfracloud.org/results/{owner}/{project}/"]
-            print(f"COPR fallback crawl roots: {urls}", file=sys.stderr)
+            urls = [(f"https://download.copr.fedorainfracloud.org/results/{owner}/{project}/", "project")]
+            print(f"COPR fallback crawl roots: {[u for u, _ in urls]}", file=sys.stderr)
 
           def fetch_listing(url: str) -> str:
             data, status, content_type = fetch(url)
@@ -272,17 +277,25 @@ jobs:
           dest_dir = Path("release-assets/copr")
           downloaded = set()
           visited = set()
-          queue = [(url, 0) for url in urls]
+          queue = [(url, 0, scope) for url, scope in urls]
           max_depth = 3
           max_pages = 120
           matched_rpms = 0
           href_log_budget = 6
+          build_id_markers = []
+          if build_id:
+            build_id_str = str(build_id)
+            build_id_markers = [build_id_str, build_id_str.zfill(8)]
+          chroots_set = set(chroots)
+          build_dir_matches = 0
+          package_dir_matches = 0
 
           while queue and max_pages > 0:
-            base_url, depth = queue.pop(0)
-            if base_url in visited:
+            base_url, depth, scope = queue.pop(0)
+            visit_key = f"{base_url}|{scope}"
+            if visit_key in visited:
               continue
-            visited.add(base_url)
+            visited.add(visit_key)
             max_pages -= 1
             print(f"COPR crawl url={base_url} depth={depth}", file=sys.stderr)
             try:
@@ -305,13 +318,30 @@ jobs:
                 if not has_ext and not href_clean.endswith(".rpm"):
                   is_dir = True
               if is_dir:
+                next_depth = depth + 1
+                if scope == "project":
+                  if next_depth == 1 and chroots_set:
+                    href_dir = href_clean.rstrip("/")
+                    if href_dir not in chroots_set:
+                      continue
+                  build_depth = 2
+                  package_depth = 3
+                else:
+                  build_depth = 1
+                  package_depth = 2
+
+                if build_id_markers and next_depth == build_depth:
+                  if not any(marker in href_clean for marker in build_id_markers):
+                    continue
+                  build_dir_matches += 1
+                if package_name and next_depth == package_depth:
+                  if package_name not in href_clean:
+                    continue
+                  package_dir_matches += 1
                 if not full_url.endswith("/"):
                   full_url += "/"
                 if depth < max_depth:
-                  queue.append((full_url, depth + 1))
-                continue
-                if depth < max_depth:
-                  queue.append((full_url, depth + 1))
+                  queue.append((full_url, depth + 1, scope))
                 continue
               if not href_clean.endswith(".rpm"):
                 continue
@@ -333,6 +363,10 @@ jobs:
               f"Downloaded {len(downloaded)} COPR RPMs (matched={matched_rpms} visited={len(visited)} pages)",
               file=sys.stderr,
             )
+          if build_id_markers and build_dir_matches == 0:
+            print(f"No COPR build dirs matched build_id {build_id_markers[0]}", file=sys.stderr)
+          if package_name and build_dir_matches > 0 and package_dir_matches == 0:
+            print(f"No COPR package dirs matched {package_name}", file=sys.stderr)
           PY
 
       - name: Download OBS packages
