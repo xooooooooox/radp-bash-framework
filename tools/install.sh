@@ -44,18 +44,18 @@ fetch_url() {
   local out="$3"
 
   case "${tool}" in
-    curl)
-      curl -fsSL "${url}" -o "${out}"
-      ;;
-    wget)
-      wget -qO "${out}" "${url}"
-      ;;
-    fetch)
-      fetch -qo "${out}" "${url}"
-      ;;
-    *)
-      return 1
-      ;;
+  curl)
+    curl -fsSL "${url}" -o "${out}"
+    ;;
+  wget)
+    wget -qO "${out}" "${url}"
+    ;;
+  fetch)
+    fetch -qo "${out}" "${url}"
+    ;;
+  *)
+    return 1
+    ;;
   esac
 }
 
@@ -64,18 +64,18 @@ fetch_text() {
   local url="$2"
 
   case "${tool}" in
-    curl)
-      curl -fsSL "${url}"
-      ;;
-    wget)
-      wget -qO- "${url}"
-      ;;
-    fetch)
-      fetch -qo- "${url}"
-      ;;
-    *)
-      return 1
-      ;;
+  curl)
+    curl -fsSL "${url}"
+    ;;
+  wget)
+    wget -qO- "${url}"
+    ;;
+  fetch)
+    fetch -qo- "${url}"
+    ;;
+  *)
+    return 1
+    ;;
   esac
 }
 
@@ -101,7 +101,7 @@ resolve_ref() {
   fi
 
   local tag
-  tag="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<< "${json}")"
+  tag="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<<"${json}")"
   tag="${tag%%$'\n'*}"
   if [[ -z "${tag}" ]]; then
     die "Failed to parse latest tag; set RADP_BF_VERSION or RADP_BF_REF."
