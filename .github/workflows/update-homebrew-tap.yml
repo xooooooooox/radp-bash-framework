@@ -48,12 +48,21 @@ jobs:
           set -euo pipefail
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
             head_sha="${{ github.event.workflow_run.head_sha }}"
-            tag_name="$(git tag --points-at "${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+            head_branch="${{ github.event.workflow_run.head_branch }}"
+            if [[ "${head_branch}" == workflow/v* ]]; then
+              tag_name="${head_branch#workflow/}"
+            else
+              tag_name="$(git tag --points-at "${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+            fi
           else
             tag_name="${GITHUB_REF_NAME}"
           fi
           if [[ -z "${tag_name}" ]]; then
             echo "Failed to resolve version tag for event ${GITHUB_EVENT_NAME}" >&2
+            exit 1
+          fi
+          if ! git rev-parse "${tag_name}" >/dev/null 2>&1; then
+            echo "Resolved tag ${tag_name} does not exist in repository." >&2
             exit 1
           fi
           constants_file="src/main/shell/framework/bootstrap/context/vars/constants/constants.sh"
