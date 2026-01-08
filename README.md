@@ -55,20 +55,11 @@ sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
 ```
 
-#### OBS repository (zypper / dnf / yum / apt)
+#### OBS repository (dnf / yum / apt)
 
-OBS provides multi-distro builds. Replace `<DISTRO>` with the target path (e.g. `Fedora_39`, `openSUSE_Tumbleweed`, `xUbuntu_24.04`).
+OBS provides multi-distro builds. Replace `<DISTRO>` with the target path (e.g. `CentOS_7`, `openSUSE_Tumbleweed`, `xUbuntu_24.04`).
 
 ```shell
-# openSUSE/SLES (zypper)
-sudo zypper addrepo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
-sudo zypper refresh
-sudo zypper install radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
-sudo dnf install -y radp-bash-framework
-
 # CentOS/RHEL (yum)
 sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
 sudo yum install -y radp-bash-framework
@@ -81,6 +72,10 @@ curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/<DIS
   | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg > /dev/null
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
+
+# Fedora/RHEL/CentOS (dnf)
+sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo dnf install -y radp-bash-framework
 ```
 
 #### Manual (Release assets / source)
@@ -123,22 +118,18 @@ sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
 
-#### OBS repository (zypper / dnf / yum / apt)
+#### OBS repository (dnf / yum / apt)
 
 ```shell
-# openSUSE/SLES
-sudo zypper refresh
-sudo zypper update radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf upgrade -y radp-bash-framework
-
 # CentOS/RHEL (yum)
 sudo yum update -y radp-bash-framework
 
 # Debian/Ubuntu(apt)
 sudo apt update
 sudo apt install -y radp-bash-framework
+
+# Fedora/RHEL/CentOS (dnf)
+sudo dnf upgrade -y radp-bash-framework
 ```
 
 #### Manual (Release assets)

@@ -46,20 +46,11 @@ sudo yum copr enable -y xooooooooox/radp
 sudo yum install -y radp-bash-framework
 ```
 
-#### OBS 仓库 (zypper / dnf / yum / apt)
+#### OBS 仓库 (dnf / yum / apt)
 
-OBS 提供多发行版的 RPM/DEB 构建。替换 `<DISTRO>` 为目标发行版路径（例如 `Fedora_39`、`openSUSE_Tumbleweed`、`xUbuntu_24.04`）。
+OBS 提供多发行版的 RPM/DEB 构建。替换 `<DISTRO>` 为目标发行版路径（例如 `CentOS_7`、`openSUSE_Tumbleweed`、`xUbuntu_24.04`）。
 
 ```shell
-# openSUSE/SLES (zypper)
-sudo zypper addrepo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
-sudo zypper refresh
-sudo zypper install radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
-sudo dnf install -y radp-bash-framework
-
 # CentOS/RHEL (yum)
 sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
 sudo yum install -y radp-bash-framework
@@ -72,13 +63,17 @@ curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/<DIS
   | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg > /dev/null
 sudo apt-get update
 sudo apt-get install -y radp-bash-framework
+
+# Fedora/RHEL/CentOS (dnf)
+sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/radp.repo
+sudo dnf install -y radp-bash-framework
 ```
 
-#### 手动安装（Release 资产 / 源码）
+#### 手动安装（Release 制品 / 源码）
 
 每次发布都会附带可直接安装的包：<https://github.com/xooooooooox/radp-bash-framework/releases/latest>
 
-下载 `.rpm` 或 `.deb` 资产（文件名前缀通常为 `obs-` 或 `copr-`）后安装：
+下载 `.rpm` 或 `.deb` 制品（文件名前缀通常为 `obs-` 或 `copr-`）后安装：
 
 ```shell
 # RPM (Fedora/RHEL/CentOS)
@@ -114,25 +109,21 @@ sudo yum clean expire-cache
 sudo yum update -y radp-bash-framework
 ```
 
-#### OBS 仓库 (zypper / dnf / yum / apt)
+#### OBS 仓库 (dnf / yum / apt)
 
 ```shell
-# openSUSE/SLES
-sudo zypper refresh
-sudo zypper update radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf upgrade -y radp-bash-framework
-
 # CentOS/RHEL (yum)
 sudo yum update -y radp-bash-framework
 
 # Debian/Ubuntu(apt)
 sudo apt update
 sudo apt install -y radp-bash-framework
+
+# Fedora/RHEL/CentOS (dnf)
+sudo dnf upgrade -y radp-bash-framework
 ```
 
-#### 手动升级（Release 资产）
+#### 手动升级（Release 制品）
 
 从最新 Release 下载新的 `.rpm`/`.deb` 包后安装即可升级：
 
@@ -194,4 +185,4 @@ sudo apt-get -f install
 #### 附加发布产物 (`attach-release-packages.yml`)
 
 - **触发方式：** 发布 GitHub Release，或手动触发(`workflow_dispatch`，可指定 tag)。
-- **用途：** 从 COPR/OBS 下载构建好的包，以及 Homebrew tap 的 formula，并将它们上传为 Release 资产，方便手工安装。
+- **用途：** 从 COPR/OBS 下载构建好的包，以及 Homebrew tap 的 formula，并将它们上传为 Release 制品，方便手工安装。
