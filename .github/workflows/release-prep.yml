@@ -116,7 +116,13 @@ jobs:
           last_tag = try_git("describe", "--tags", "--abbrev=0", "--match", "v*")
           log_range = f"{last_tag}..HEAD" if last_tag else "HEAD"
           log_output = try_git("log", "--no-merges", "--pretty=%h %s", log_range)
-          entries = []
+          base_types = ["feat", "fix", "chore"]
+          standard_types = base_types + ["docs", "refactor", "perf", "test", "build", "ci"]
+          other_key = "other"
+          entries_by_type = {t: [] for t in standard_types}
+          entries_by_type[other_key] = []
+          type_pattern = re.compile(r"^(?P<type>[A-Za-z][A-Za-z0-9_-]*)(\([^\)]*\))?:\s+(?P<desc>.+)$")
+
           for line in log_output.splitlines():
             line = line.strip()
             if not line:
@@ -127,16 +133,35 @@ jobs:
             subject_ascii = subject.encode("ascii", "ignore").decode("ascii").strip()
             if not subject_ascii:
               subject_ascii = "<non-ascii subject>"
-            entries.append(f"{sha} {subject_ascii}")
+            match = type_pattern.match(subject_ascii)
+            if match:
+              commit_type = match.group("type").lower()
+              desc = match.group("desc").strip() or subject_ascii
+            else:
+              commit_type = other_key
+              desc = subject_ascii
+            if commit_type not in entries_by_type:
+              commit_type = other_key
+            entries_by_type[commit_type].append(f"{sha} {desc}")
 
           today = dt.datetime.utcnow().strftime("%Y-%m-%d")
           header = f"## {version} - {today}"
-          base = f"### Changes (since {last_tag})" if last_tag else "### Changes"
-          new_lines = ["", header, base, "- TODO: curate and rewrite this list before release."]
-          if entries:
-            new_lines.extend([f"- {entry}" for entry in entries])
-          else:
+          new_lines = ["", header, ""]
+          include_types = [t for t in standard_types if entries_by_type[t]]
+          if entries_by_type[other_key]:
+            include_types.append(other_key)
+
+          if not include_types:
             new_lines.append("- TODO: no commits found; add summary manually.")
+          else:
+            for commit_type in include_types:
+              new_lines.append(f"### {commit_type}")
+              for entry in entries_by_type.get(commit_type, []):
+                new_lines.append(f"- {entry}")
+              new_lines.append("")
+
+          while new_lines and new_lines[-1] == "":
+            new_lines.pop()
 
           lines = changelog_text.splitlines()
           insert_at = 1 if lines and lines[0].strip() == "# CHANGELOG" else 0
