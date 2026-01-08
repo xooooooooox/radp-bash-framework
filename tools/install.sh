@@ -142,7 +142,7 @@ main() {
   fi
 
   local root_dir
-  root_dir="$(tar -tzf "${tarball}" | head -n 1 | cut -d/ -f1)"
+  root_dir="$(tar -tzf "${tarball}" | sed -n '1p' | cut -d/ -f1)"
   if [[ -z "${root_dir}" ]]; then
     die "Unable to read archive structure."
   fi
