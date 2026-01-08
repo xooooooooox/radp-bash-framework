@@ -30,6 +30,36 @@ source "$(radp-bf --print-run)"
 
 You can place that command in your shell profile (e.g. `~/.bashrc`) for automatic loading.
 
+#### Script (curl / wget / fetch)
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+```
+
+Or:
+
+```shell
+wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+```
+
+Optional variables:
+
+```shell
+RADP_BF_VERSION=vX.Y.Z \
+RADP_BF_REF=main \
+RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
+RADP_BF_BIN_DIR="$HOME/.local/bin" \
+RADP_BF_ALLOW_ANY_DIR=1 \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh)"
+```
+
+`RADP_BF_REF` can be a branch, tag, or commit and takes precedence over `RADP_BF_VERSION`.
+If you set a custom install dir that does not end with `radp-bash-framework`, also set `RADP_BF_ALLOW_ANY_DIR=1`.
+Defaults: `~/.local/lib/radp-bash-framework` and `~/.local/bin`.
+
+Re-run the script to upgrade.
+
 #### Homebrew
 
 Click [here](https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb) see details.

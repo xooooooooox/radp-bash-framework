@@ -30,6 +30,36 @@ source "$(radp-bf --print-run)"
 
 如需每次启动自动加载，可将上述命令写入 `~/.bashrc` 或其它 shell 配置。
 
+#### 脚本安装（curl / wget / fetch）
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+```
+
+或：
+
+```shell
+wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+```
+
+可选变量：
+
+```shell
+RADP_BF_VERSION=vX.Y.Z \
+RADP_BF_REF=main \
+RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
+RADP_BF_BIN_DIR="$HOME/.local/bin" \
+RADP_BF_ALLOW_ANY_DIR=1 \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh)"
+```
+
+`RADP_BF_REF` 支持分支、标签或 commit，并且优先级高于 `RADP_BF_VERSION`。
+如果自定义安装目录不以 `radp-bash-framework` 结尾，请同时设置 `RADP_BF_ALLOW_ANY_DIR=1`。
+默认路径：`~/.local/lib/radp-bash-framework` 和 `~/.local/bin`。
+
+重复执行脚本可完成升级。
+
 #### Homebrew
 
 详情见: <https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb>.
