@@ -1,1 +1,47 @@
 # CHANGELOG
+
+## v1.0.4 - 2026-01-08
+### Changes (since v0.1.3)
+- TODO: curate and rewrite this list before release.
+- 6e3bd14 feat(ci): Optimize release workflow
+- 4c38d81 docs: Update README
+- 75e5b68 feat(ci): Optimize create-veresion-tag
+- 2dbf0f0 feat(ci): fix workflow release-prep.yml
+- 08c1d6f feat(ci): Add workflow release-prep.yml
+- c8f4f85 feat(ci): Optimize ci workflow
+- 6ca5c14 feat(ci): optimize ci flow
+- 93371af docs: Update README
+- e479628 feat(ci): fix workflow attach-release-packages.yml
+- df69d14 feat(ci): fix workflow attach-release-packages.yml
+- 89782da feat(ci): fix workflow attach-release-packages.yml
+- 880f2bf feat(ci): fix workflow attach-release-packages.yml
+- 90d6f57 feat(ci): fix workflow attach-release-packages.yml
+- c51c518 feat(ci): fix workflow attach-release-packages.yml
+- 11cd234 feat(ci): fix workflow attach-release-packages.yml
+- 15e8794 feat(ci): fix workflow attach-release-packages.yml
+- 1999e4a feat(ci): fix workflow attach-release-packages.yml
+- 1c65616 feat(ci): fix workflow attach-release-packages.yml
+- 6ccc025 feat(ci): fix workflow attach-release-packages.yml
+- a607374 feat(ci): fix workflow attach-release-packages.yml
+- 3c56003 feat(ci): fix workflow attach-release-packages.yml
+- 23056b7 feat(ci): fix workflow attach-release-packages.yml
+- 7335483 feat(ci): Add workflow attach-release-packages.yml
+- 804f263 rollback
+- ec76f71 chore(ci): fix workflow attach-release-artifacts.yml
+- 2a43066 chore(ci): fix workflow attach-release-artifacts.yml
+- 99e98f6 chore(ci): fix workflow attach-release-artifacts.yml
+- 52c144c chore(ci): fix workflow attach-release-artifacts.yml
+- bd522f0 chore(ci): fix workflow attach-release-artifacts.yml
+- 66aef7f chore(ci): fix workflow attach-release-artifacts.yml
+- 119ba19 chore(ci): fix workflow attach-release-artifacts.yml
+- 38fc673 chore(ci): Add workflow attach-release-artifacts.yml
+- a38c4c9 docs: Update README
+- 2f6a44a chore(ci): Remove workflow build-deb-package.yml
+- 422e993 docs: Update README
+- 177f205 docs: Update README
+- 423d1d0 feat(ci): Support obs build
+- 91c8ff1 feat(ci): Support obs build
+- 6b8d6d7 feat(ci): Support obs build
+- 14acc35 feat(ci): Support obs build
+- ee1048e chore(ci): rollback
+- 2693cdd chore(ci): rollback
