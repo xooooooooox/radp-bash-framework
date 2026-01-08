@@ -149,7 +149,7 @@ sudo apt-get -f install
 
 1. Trigger `release-prep` with `vX.Y.Z` to update `gr_fw_version`, sync spec versions, and add a changelog entry (branch `workflow/vX.Y.Z` + PR).
 2. Review/edit the changelog in the PR and merge to `main`.
-3. Trigger `create-version-tag` to validate the version/changelog and create/push the tag.
+3. `create-version-tag` runs automatically on merge (or trigger it manually) to validate the version/changelog/spec and create/push the tag.
 4. Tag workflows run:
     - `update-homebrew-tap` updates the Homebrew formula.
 5. `update-spec-version` runs after `create-version-tag` (or manually if needed).
@@ -166,7 +166,7 @@ sudo apt-get -f install
 
 ### Create version tag (`create-version-tag.yml`)
 
-- **Trigger:** Manual (`workflow_dispatch`), only runs when the branch is `main`.
+- **Trigger:** Manual (`workflow_dispatch`) on `main`, or merge of a `workflow/vX.Y.Z` PR.
 - **Purpose:** Read `gr_fw_version`, validate `vx.y.z`, the changelog entry, and spec versions, then create/push the Git tag if it does not already exist.
 
 ### Update spec version (`update-spec-version.yml`)

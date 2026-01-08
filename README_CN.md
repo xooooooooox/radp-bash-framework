@@ -142,7 +142,7 @@ sudo apt-get -f install
 
 1. 触发 `release-prep`（输入 `vX.Y.Z`）生成发布分支 `workflow/vX.Y.Z` 并创建 PR：更新 `gr_fw_version`、同步 spec、插入 changelog 条目。
 2. 在 PR 中补充/整理 changelog 后合并到 `main`。
-3. 手动触发 `create-version-tag` 工作流校验版本与 changelog 并创建/推送标签。
+3. PR 合并后会自动触发 `create-version-tag`（或手动触发）校验版本/changelog/spec 并创建/推送标签。
 4. 标签相关工作流执行：
     - `update-homebrew-tap` 更新 Homebrew 的 formula。
 5. `update-spec-version` 在 `create-version-tag` 成功完成后执行（必要时可手动触发）。
@@ -159,7 +159,7 @@ sudo apt-get -f install
 
 ### 创建版本标签(`create-version-tag.yml`)
 
-- **触发方式：** 手动触发(`workflow_dispatch`)，仅在 `main` 分支运行。
+- **触发方式：** `main` 分支手动触发(`workflow_dispatch`)，或合并 `workflow/vX.Y.Z` 的 PR 时自动触发。
 - **用途：** 读取 `gr_fw_version`，校验 `vx.y.z`、changelog 条目与 spec 版本一致性，并在不存在该标签时创建并推送。
 
 ### 更新 spec 版本(`update-spec-version.yml`)

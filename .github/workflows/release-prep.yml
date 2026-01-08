@@ -170,11 +170,21 @@ jobs:
 
       - name: Create pull request
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_PREP_TOKEN || github.token }}
+          HAS_RELEASE_PREP_TOKEN: ${{ secrets.RELEASE_PREP_TOKEN != '' }}
         run: |
           set -euo pipefail
           version="${{ inputs.version }}"
           branch="${{ steps.branch.outputs.branch }}"
           title="Release ${version}"
-          body="Release prep for ${version}.\n\n- Update gr_fw_version\n- Sync spec versions\n- Add changelog entry (please review and edit)\n"
-          gh pr create --base main --head "${branch}" --title "${title}" --body "${body}"
+          body="Release prep for ${version}.\n\n- Update gr_fw_version\n- Sync spec versions\n- Add changelog entry (please review and edit)\n\nWhen this PR is merged, create-version-tag will run automatically to validate and tag the release."
+          if gh pr create --base main --head "${branch}" --title "${title}" --body "${body}"; then
+            exit 0
+          fi
+          if [[ "${HAS_RELEASE_PREP_TOKEN}" == "true" ]]; then
+            echo "PR creation failed even with RELEASE_PREP_TOKEN; check token scopes and repo settings." >&2
+            exit 1
+          fi
+          echo "PR creation not permitted for GitHub Actions token." >&2
+          echo "Enable 'Allow GitHub Actions to create and approve pull requests' or create the PR manually:" >&2
+          echo "  gh pr create --base main --head \"${branch}\" --title \"${title}\" --body \"${body}\"" >&2
