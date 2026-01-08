@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.2.3 - 2026-01-08
+
+### chore
+- cf04333 fix workflow attach-release-packages.yml
+
+### docs
+- dc427cc Update README
+
 ## v0.2.2 - 2026-01-08
 
 ### chore
