@@ -80,17 +80,6 @@ __main
 EOF
 }
 
-#######################################
-# 入口方法
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   None
-# Returns:
-#   0 - Success
-#######################################
 __main() {
   __fw_setup_user_completion
 }
