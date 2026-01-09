@@ -201,7 +201,6 @@ __fw_format_log_message() {
   else
     timestamp=$(date +'%Y-%m-%d %H:%M:%S')
   fi
-  # TODO v1.0-2025/12/31: 这里是否有必要从 gr_command_line[0] 中获取 thread_name
   thread_name=$(basename "$0")
   pid=$$
 
