@@ -1,4 +1,5 @@
 config-local.yaml
+src/main/shell/framework/bootstrap/context/cache
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

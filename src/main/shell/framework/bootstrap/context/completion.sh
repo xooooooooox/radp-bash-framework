@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
+set -e
+
+__fw_setup_user_completion_hint() {
+  # shellcheck source=./cache/completion.user.hint.sh
+  cat >"$gr_fw_user_completion_hint_file" <<EOF
+#!/usr/bin/env bash
+set -e
+
+# shellcheck source=$gr_fw_user_completion_file
+__fw_source_scripts "$gr_fw_user_completion_file"
+EOF
+}
 
 __fw_setup_user_completion() {
   if [[ ! -d "$gr_fw_user_config_path" ]]; then
     return 0
   fi
+
+  __fw_setup_user_completion_hint
 
   cat >"$gr_fw_user_completion_file" <<'EOF'
 set -e
@@ -45,4 +59,5 @@ __main() {
 
 #----------------------------------------------------------------------------------------------------------------------#
 declare -gr gr_fw_user_completion_file="$gr_fw_user_config_path"/completion.sh
+declare -gr gr_fw_user_completion_hint_file="$gr_fw_context_cache_path"/completion.user.hint.sh
 __main

@@ -91,5 +91,6 @@ __main() {
 declare -gr gr_fw_context_path="$gr_fw_bootstrap_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
+declare -gr gr_fw_context_cache_path="$gr_fw_context_path"/cache
 declare -gr gr_fw_context_completion_file="$gr_fw_context_path"/completion.sh
 __main "$@"
