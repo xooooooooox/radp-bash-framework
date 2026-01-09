@@ -14,6 +14,14 @@ set -e
 #   0 - Success
 #######################################
 __fw_setup_user_completion_hint() {
+  if [[ ! -f "$gr_fw_user_completion_hint_file" ]]; then
+    local dir
+    dir="$(dirname "$gr_fw_user_completion_hint_file")"
+
+    [[ ! -d "$dir" ]] && mkdir -p "$dir"
+    touch "$gr_fw_user_completion_hint_file" || radp_log_warn "Failed to create user completion hint file '$gr_fw_user_completion_hint_file'"
+  fi
+
   # shellcheck source=./cache/completion.user.hint.sh
   cat >"$gr_fw_user_completion_hint_file" <<EOF
 #!/usr/bin/env bash
