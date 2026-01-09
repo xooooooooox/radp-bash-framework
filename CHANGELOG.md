@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.3.1 - 2026-01-09
+
+### fix
+
+- fix user custom config and lib completion not work
+
 ## v0.3.0 - 2026-01-08
 
 ### feat
