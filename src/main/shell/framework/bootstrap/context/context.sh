@@ -77,8 +77,8 @@ __fw_context_setup_libs() {
 #   None
 #######################################
 __fw_context_setup() {
-  __fw_context_setup_code_completion
   __fw_context_setup_global_vars "$@"
+  __fw_context_setup_code_completion
   __fw_context_setup_libs
 }
 
