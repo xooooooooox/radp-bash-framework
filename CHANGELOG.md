@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.3.2 - 2026-01-09
+
+### fix
+- e60f260 fix failed to create user completion hint file
+
+### test
+- d21800c Optimize example
+
 ## v0.3.1 - 2026-01-09
 
 ### fix
