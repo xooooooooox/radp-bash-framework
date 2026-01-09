@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
+#######################################
+# 生成静态 hint 文件，用于 IDE/ShellCheck 追踪用户 completion 文件
+# Globals:
+#   gr_fw_user_completion_hint_file
+#   gr_fw_user_completion_file
+# Arguments:
+#   None
+# Outputs:
+#   None (写入 hint 文件)
+# Returns:
+#   0 - Success
+#######################################
 __fw_setup_user_completion_hint() {
   # shellcheck source=./cache/completion.user.hint.sh
   cat >"$gr_fw_user_completion_hint_file" <<EOF
@@ -12,6 +24,21 @@ __fw_source_scripts "$gr_fw_user_completion_file"
 EOF
 }
 
+#######################################
+# 生成用户 completion 文件及其 hint 文件
+# Globals:
+#   gr_fw_user_config_path
+#   gr_fw_user_config_file
+#   gr_fw_user_completion_file
+#   gr_fw_user_completion_hint_file
+#   gr_radp_fw_user_lib_path
+# Arguments:
+#   None
+# Outputs:
+#   None (写入 completion 与 hint 文件)
+# Returns:
+#   0 - Success
+#######################################
 __fw_setup_user_completion() {
   if [[ ! -d "$gr_fw_user_config_path" ]]; then
     return 0
@@ -53,6 +80,17 @@ __main
 EOF
 }
 
+#######################################
+# 入口方法
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
 __main() {
   __fw_setup_user_completion
 }
