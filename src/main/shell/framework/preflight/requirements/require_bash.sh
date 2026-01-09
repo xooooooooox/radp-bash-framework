@@ -31,5 +31,168 @@ __fw_requirements_check_bash() {
 __fw_requirements_prepare_bash() {
   __req_ver=${1:-}
   __install_ver=${2:-}
-  # TODO v1.0-2025/12/31: 待实现
+
+  __target_ver=${__install_ver:-${__req_ver:-5.2}}
+  __major=$(printf '%s' "$__target_ver" | cut -d. -f1)
+  __minor=$(printf '%s' "$__target_ver" | cut -d. -f2)
+  __patch=$(printf '%s' "$__target_ver" | cut -d. -f3)
+  [ -z "$__minor" ] && __minor=0
+  [ -z "$__patch" ] && __patch=0
+  case "$__major" in
+  ''|*[!0-9]*) __major=5 ;;
+  esac
+  case "$__minor" in
+  ''|*[!0-9]*) __minor=0 ;;
+  esac
+  case "$__patch" in
+  ''|*[!0-9]*) __patch=0 ;;
+  esac
+  __base_ver="${__major}.${__minor}"
+
+  __sudo=""
+  if [ "$(id -u)" -ne 0 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      __sudo="sudo"
+    else
+      echo "Error: Installing bash requires root or sudo." >&2
+      return 1
+    fi
+  fi
+
+  __fw_requirements_prepare_bash_run() {
+    if [ -n "$__sudo" ]; then
+      $__sudo "$@"
+    else
+      "$@"
+    fi
+  }
+
+  __fw_requirements_prepare_bash_install_deps() {
+    if command -v apt-get >/dev/null 2>&1; then
+      __fw_requirements_prepare_bash_run apt-get update >/dev/null 2>&1 || return 1
+      DEBIAN_FRONTEND=noninteractive __fw_requirements_prepare_bash_run apt-get install -y \
+        build-essential bison libreadline-dev libncurses-dev \
+        ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
+      return 0
+    fi
+    if command -v dnf >/dev/null 2>&1; then
+      __fw_requirements_prepare_bash_run dnf install -y \
+        gcc make bison readline-devel ncurses-devel \
+        ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
+      return 0
+    fi
+    if command -v yum >/dev/null 2>&1; then
+      __fw_requirements_prepare_bash_run yum install -y \
+        gcc make bison readline-devel ncurses-devel \
+        ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
+      return 0
+    fi
+    echo "Error: Unsupported OS. Please install build dependencies manually." >&2
+    return 1
+  }
+
+  __fw_requirements_prepare_bash_download() {
+    __url=${1:-}
+    __out=${2:-}
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "$__url" -o "$__out"
+      return $?
+    fi
+    if command -v wget >/dev/null 2>&1; then
+      wget -q -O "$__out" "$__url"
+      return $?
+    fi
+    return 1
+  }
+
+  __fw_requirements_prepare_bash_install_deps || {
+    echo "Error: Failed to install build dependencies." >&2
+    return 1
+  }
+
+  __tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t radp_bash_build)
+  if [ -z "$__tmpdir" ] || [ ! -d "$__tmpdir" ]; then
+    echo "Error: Failed to create temp directory." >&2
+    return 1
+  fi
+  __fw_requirements_prepare_bash_cleanup() {
+    if [ -n "$__tmpdir" ] && [ -d "$__tmpdir" ]; then
+      rm -rf "$__tmpdir"
+    fi
+  }
+  trap '__fw_requirements_prepare_bash_cleanup' 0 2 15
+
+  __tarball="bash-${__base_ver}.tar.gz"
+  __tarpath="$__tmpdir/$__tarball"
+  __url_primary="https://ftp.gnu.org/gnu/bash/$__tarball"
+  __url_mirror="https://mirrors.edge.kernel.org/gnu/bash/$__tarball"
+  if ! __fw_requirements_prepare_bash_download "$__url_primary" "$__tarpath"; then
+    if ! __fw_requirements_prepare_bash_download "$__url_mirror" "$__tarpath"; then
+      echo "Error: Failed to download $__tarball." >&2
+      return 1
+    fi
+  fi
+
+  tar -xzf "$__tarpath" -C "$__tmpdir" || {
+    echo "Error: Failed to extract $__tarball." >&2
+    return 1
+  }
+
+  __srcdir="$__tmpdir/bash-${__base_ver}"
+  if [ ! -d "$__srcdir" ]; then
+    echo "Error: Source directory $__srcdir not found." >&2
+    return 1
+  fi
+
+  if [ "$__patch" -gt 0 ]; then
+    __patch_prefix="bash${__major}${__minor}"
+    __patch_dir="https://ftp.gnu.org/gnu/bash/bash-${__base_ver}-patches"
+    __i=1
+    while [ "$__i" -le "$__patch" ]; do
+      __patch_file="${__patch_prefix}-$(printf '%03d' "$__i")"
+      __patch_path="$__tmpdir/$__patch_file"
+      if ! __fw_requirements_prepare_bash_download "$__patch_dir/$__patch_file" "$__patch_path"; then
+        echo "Error: Failed to download patch $__patch_file." >&2
+        return 1
+      fi
+      (cd "$__srcdir" && patch -p0 < "$__patch_path") || {
+        echo "Error: Failed to apply patch $__patch_file." >&2
+        return 1
+      }
+      __i=$((__i + 1))
+    done
+  fi
+
+  (cd "$__srcdir" && ./configure --prefix=/usr/local) || {
+    echo "Error: Failed to configure bash source." >&2
+    return 1
+  }
+
+  __jobs=1
+  if command -v getconf >/dev/null 2>&1; then
+    __jobs=$(getconf _NPROCESSORS_ONLN 2>/dev/null)
+    [ -z "$__jobs" ] && __jobs=1
+  fi
+
+  (cd "$__srcdir" && make -j "$__jobs") || {
+    echo "Error: Failed to build bash source." >&2
+    return 1
+  }
+
+  if [ "$(id -u)" -eq 0 ]; then
+    (cd "$__srcdir" && make install) || {
+      echo "Error: Failed to install bash." >&2
+      return 1
+    }
+  else
+    (cd "$__srcdir" && __fw_requirements_prepare_bash_run make install) || {
+      echo "Error: Failed to install bash (sudo)." >&2
+      return 1
+    }
+  fi
+
+  __fw_requirements_prepare_bash_cleanup
+  trap - 0 2 15
+  unset __target_ver __major __minor __patch __base_ver __sudo __tmpdir __tarball __tarpath __url_primary __url_mirror
+  unset __srcdir __patch_prefix __patch_dir __i __patch_file __patch_path __jobs
 }
