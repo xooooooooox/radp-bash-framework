@@ -2,7 +2,7 @@
 set -eou pipefail
 
 #######################################
-# 导入 radp bash framework
+# 情况一: setup radp bash framework
 # Globals:
 #   BASH_SOURCE
 # Arguments:
@@ -12,17 +12,62 @@ set -eou pipefail
 # Returns:
 #   None
 #######################################
-setup_radp_bash_framework() {
-  local pwd
-  pwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  local project_src_root="$pwd"/../../../..
-  project_src_root=$(cd -P -- "$project_src_root" && pwd)
-  local radp_bf="$project_src_root"/src/main/shell/bin/radp-bf
+setup_radp_bash_framework_via_source() {
+  local radp_bf="$PROJECT_SRC_ROOT"/src/main/shell/bin/radp-bf
 
-  GX_RADP_FW_USER_CONFIG_PATH="$pwd"/config
-  readonly GX_RADP_FW_USER_CONFIG_PATH
+  # 自定义用户配置文件目录
+  GX_RADP_FW_USER_CONFIG_PATH="$EXAMPLE_SRC_ROOT"/config
+
   # shellcheck source=../../../main/shell/framework/run.sh
   source "$("$radp_bf" --print-run)" "$@"
+}
+
+#######################################
+# 情况二: setup radp bash framework
+# Globals:
+#   BASH_SOURCE
+# Arguments:
+#   @ - 命令行所有参数
+# Outputs:
+#   None
+# Returns:
+#   None
+#######################################
+setup_radp_bash_framework_via_helper() {
+  # 自定义用户配置文件目录
+  GX_RADP_FW_USER_CONFIG_PATH="$EXAMPLE_SRC_ROOT"/config
+
+  # shellcheck source=../../../main/shell/framework/run.sh
+  source "$(radp-bf --print-run)" "$@"
+}
+
+#######################################
+# 情况一: 如果你是将 radp-bash-framework 直接放置到工程目录下, 导入框架的方式见 setup_radp_bash_framework_from_source
+# 情况二: 如果你提前根据 README.md 安装了 radp-bash-framework, 淡入框架的方式见 setup_radp_bash_framework_via_helper
+# 根据情况, 参考对应的方式即可, 这里由于是示例, 列出了所有情况
+# Globals:
+#   None
+# Arguments:
+#   1 - 导入框架的方式
+# Outputs:
+#
+# Returns:
+#   0 - Success
+#######################################
+setup_radp_bash_framework() {
+  local type=${1:-}
+  shift
+  case $type in
+  source)
+
+    setup_radp_bash_framework_via_source "$@"
+    ;;
+  *)
+    GX_RADP_FW_USER_CONFIG_PATH="$pwd"/config
+    setup_radp_bash_framework_via_helper "$@"
+    ;;
+  esac
+  readonly GX_RADP_FW_USER_CONFIG_PATH
 }
 
 #######################################
@@ -37,7 +82,12 @@ setup_radp_bash_framework() {
 #   None
 #######################################
 main() {
-  setup_radp_bash_framework "$@"
+  EXAMPLE_SRC_ROOT=""
+  EXAMPLE_SRC_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  PROJECT_SRC_ROOT="$EXAMPLE_SRC_ROOT"/../../../..
+  PROJECT_SRC_ROOT=$(cd -P -- "$PROJECT_SRC_ROOT" && pwd)
+
+  setup_radp_bash_framework "source" "$@"
 }
 
 declare -g GX_RADP_FW_USER_CONFIG_PATH=${GX_RADP_FW_USER_CONFIG_PATH:-}
