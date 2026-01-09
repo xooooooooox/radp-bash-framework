@@ -7,7 +7,6 @@ __fw_setup_user_completion() {
 
   cat >"$gr_fw_user_completion_file" <<'EOF'
 set -e
-# shellcheck source=./completion.sh
 
 ########################################################################################################################
 ###
@@ -33,6 +32,7 @@ EOF
   fi
 
   cat >>"$gr_fw_user_completion_file" <<'EOF'
+  :
 }
 
 __main
