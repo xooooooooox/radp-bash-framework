@@ -212,6 +212,7 @@ __fw_generate_user_config() {
 
   local config_content="#!/usr/bin/env bash
 set -e
+# shellcheck source=./completion.sh
 
 ########################################################################################################################
 ###
@@ -246,6 +247,7 @@ set -e
     cat >"$gr_fw_user_config_file" << 'EOF'
 #!/usr/bin/env bash
 set -e
+# shellcheck source=./completion.sh
 
 ########################################################################################################################
 ###
@@ -267,8 +269,7 @@ __fw_autoconfigure() {
     if [[ ${#gw_final_yaml_vars[@]} -gt 0 ]]; then
       if [[ "$gr_fw_user_config_path_exists" == "true" ]]; then
         __fw_generate_user_config gw_final_yaml_vars
-
-        # shellcheck source=../../../../../config/config.sh
+        # include use config.sh
         __fw_source_scripts "$gr_fw_user_config_file"
       fi
     fi
