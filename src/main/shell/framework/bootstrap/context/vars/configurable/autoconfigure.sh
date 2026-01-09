@@ -212,7 +212,6 @@ __fw_generate_user_config() {
 
   local config_content="#!/usr/bin/env bash
 set -e
-# shellcheck source=./completion.sh
 
 ########################################################################################################################
 ###
@@ -247,7 +246,6 @@ set -e
     cat >"$gr_fw_user_config_file" << 'EOF'
 #!/usr/bin/env bash
 set -e
-# shellcheck source=./completion.sh
 
 ########################################################################################################################
 ###
