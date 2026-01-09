@@ -10,4 +10,5 @@ __main() {
   __fw_setup_user_completion
 }
 
+declare -gr gr_fw_user_completion_file="$gr_fw_user_config_path"/completion.sh
 __main
