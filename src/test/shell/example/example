@@ -59,11 +59,9 @@ setup_radp_bash_framework() {
   shift
   case $type in
   source)
-
     setup_radp_bash_framework_via_source "$@"
     ;;
   *)
-    GX_RADP_FW_USER_CONFIG_PATH="$pwd"/config
     setup_radp_bash_framework_via_helper "$@"
     ;;
   esac
