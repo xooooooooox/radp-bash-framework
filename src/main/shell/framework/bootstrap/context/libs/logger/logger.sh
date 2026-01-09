@@ -490,13 +490,11 @@ __fw_logger_setup() {
 
     if [[ ! -d "$log_path" ]]; then
       if ! mkdir -p "$log_path"; then
-        # TODO v1.0-2025/12/31: 不应该直接使用 sudo 应该根据实际情况来决定是否需要sudo,如果当前用户已经是 root 了, sudo 就没必要了
-        sudo mkdir -p "$log_path" 2>/dev/null || {
+        $gr_sudo mkdir -p "$log_path" 2>/dev/null || {
           echo "Error: Failed to log path '$log_path'."
           exit 1
         }
-        # TODO v1.0-2025/12/31: owner:group
-        sudo chown -Rv "":"" "$log_path"
+        $gr_sudo chmod u+w,g+w "$log_path"
       fi
     fi
 
