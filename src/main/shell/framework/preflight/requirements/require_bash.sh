@@ -205,11 +205,11 @@ __fw_requirements_prepare_bash() {
     __url=${1:-}
     __out=${2:-}
     if command -v curl >/dev/null 2>&1; then
-      curl -fsSL "$__url" -o "$__out"
+      curl -fL --progress-bar "$__url" -o "$__out"
       return $?
     fi
     if command -v wget >/dev/null 2>&1; then
-      wget -q -O "$__out" "$__url"
+      wget --progress=dot:mega -O "$__out" "$__url"
       return $?
     fi
     return 1
