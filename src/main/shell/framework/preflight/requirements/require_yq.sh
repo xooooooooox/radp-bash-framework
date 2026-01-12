@@ -1,5 +1,17 @@
 #!/bin/sh
 
+#######################################
+# 检查 yq 是否已安装
+# Globals:
+#   None
+# Arguments:
+#   1 - req_ver: 最低版本（当前实现仅判断是否存在）
+# Outputs:
+#   None
+# Returns:
+#   0 - 已安装
+#   1 - 未安装
+#######################################
 __fw_requirements_check_yq() {
   __req_ver=${1:-}
   command -v yq >/dev/null 2>&1
@@ -8,6 +20,20 @@ __fw_requirements_check_yq() {
 __fw_requirements_prepare_yq() {
   __req_ver=${1:-}
   __install_ver=${2:-}
+
+  #######################################
+  # 安装 yq（二进制发布包）
+  # Globals:
+  #   None
+  # Arguments:
+  #   1 - req_ver: 最低版本
+  #   2 - install_ver: 指定安装版本
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
 
   __target_ver=${__install_ver:-${__req_ver:-4.44.1}}
   __os=$(uname -s 2>/dev/null | tr 'A-Z' 'a-z')
@@ -38,6 +64,18 @@ __fw_requirements_prepare_yq() {
     fi
   fi
 
+  #######################################
+  # 以 root 或 sudo 执行指定命令
+  # Globals:
+  #   __sudo
+  # Arguments:
+  #   @ - 命令及参数
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
   __fw_requirements_prepare_yq_run() {
     if [ -n "$__sudo" ]; then
       $__sudo "$@"
@@ -46,6 +84,18 @@ __fw_requirements_prepare_yq() {
     fi
   }
 
+  #######################################
+  # 安装下载工具依赖（支持 apt/dnf/yum）
+  # Globals:
+  #   None
+  # Arguments:
+  #   None
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
   __fw_requirements_prepare_yq_install_deps() {
     if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
       return 0
@@ -70,6 +120,19 @@ __fw_requirements_prepare_yq() {
     return 1
   }
 
+  #######################################
+  # 下载文件（优先 curl，其次 wget）
+  # Globals:
+  #   None
+  # Arguments:
+  #   1 - url: 下载地址
+  #   2 - out: 输出文件路径
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
   __fw_requirements_prepare_yq_download() {
     __url=${1:-}
     __out=${2:-}
@@ -94,6 +157,17 @@ __fw_requirements_prepare_yq() {
     echo "Error: Failed to create temp directory." >&2
     return 1
   fi
+  #######################################
+  # 清理临时目录
+  # Globals:
+  #   __tmpdir
+  # Arguments:
+  #   None
+  # Outputs:
+  #   None
+  # Returns:
+  #   None
+  #######################################
   __fw_requirements_prepare_yq_cleanup() {
     if [ -n "$__tmpdir" ] && [ -d "$__tmpdir" ]; then
       rm -rf "$__tmpdir"

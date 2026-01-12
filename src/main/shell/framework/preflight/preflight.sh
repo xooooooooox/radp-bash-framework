@@ -2,6 +2,19 @@
 set -e
 # shellcheck source=../run.sh
 
+#######################################
+# 声明框架能正常运行的依赖和版本要求(requirements)
+# Globals:
+#   gr_fw_preflight_path
+#   gr_fw_requirements_path
+#   gr_fw_requirements
+# Arguments:
+#   None
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
 __fw_requirements_declare() {
   if [ -z "$gr_fw_requirements_path" ]; then
     gr_fw_requirements_path="$gr_fw_preflight_path"/requirements
@@ -42,6 +55,18 @@ fi
   unset __fw_req __req_name __req_ver __install_ver __temp __req_name_safe __require_script
 }
 
+#######################################
+# 检查 requirements 是否满足(并记录不满足项)
+# Globals:
+#   gr_fw_requirements
+#   gw_fw_requirements_not_satisfied
+# Arguments:
+#   None
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#######################################
 __fw_requirements_check() {
   __fw_req=${__fw_req:-}
   __req_name=${__req_name:-}
@@ -74,6 +99,18 @@ __fw_requirements_check() {
   return 0
 }
 
+#######################################
+# 安装/准备未满足的 requirements
+# Globals:
+#   gw_fw_requirements_not_satisfied
+# Arguments:
+#   None
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#   1 - Failed
+#######################################
 __fw_requirements_prepare() {
   __fw_req=${__fw_req:-}
   __req_name=${__req_name:-}
@@ -103,13 +140,61 @@ __fw_requirements_prepare() {
   unset __req_name __req_ver __install_ver __temp __req_name_safe __fw_req gw_fw_requirements_not_satisfied
 }
 
+#######################################
+# 如安装了新 bash，则使用新 bash 重新执行当前命令
+# Globals:
+#   gw_fw_requirements_bash_reexec
+#   gw_fw_requirements_bash_required_ver
+#   GW_FW_REQUIREMENTS_REEXECED
+# Arguments:
+#   @ - 原始命令行参数
+# Outputs:
+#   None
+# Returns:
+#   0 - 无需重启或已完成重启
+#   1 - 重启前校验失败
+#######################################
+__fw_requirements_reexec_bash_if_needed() {
+  __bash_bin=${gw_fw_requirements_bash_reexec:-}
+  if [ -z "$__bash_bin" ]; then
+    return 0
+  fi
+  if [ "${GW_FW_REQUIREMENTS_REEXECED:-0}" = "1" ]; then
+    return 0
+  fi
+
+  if ! __fw_requirements_check_bash "${gw_fw_requirements_bash_required_ver:-}" "$__bash_bin"; then
+    echo "Error: Installed bash does not meet required version." >&2
+    return 1
+  fi
+
+  export GW_FW_REQUIREMENTS_REEXECED=1
+  exec "$__bash_bin" "$0" "$@"
+}
+
+#######################################
+# 预检入口：声明、检查并准备 requirements
+# Globals:
+#   None
+# Arguments:
+#   @ - 原始命令行参数
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#   1 - Failed
+#######################################
 __main() {
   __fw_requirements_declare
   __fw_requirements_check || return 1
-  __fw_requirements_prepare
+  __fw_requirements_prepare || return 1
+  __fw_requirements_reexec_bash_if_needed "$@" || return 1
 }
 
-gr_fw_requirements_path=${gr_fw_requirements_path:-}
+#----------------------------------------------------------------------------------------------------------------------#
 gr_fw_requirements=${gr_fw_requirements:-}
+gr_fw_requirements_path=${gr_fw_requirements_path:-}
 gw_fw_requirements_not_satisfied=${gw_fw_requirements_not_satisfied:-}
-__main
+gw_fw_requirements_bash_reexec=${gw_fw_requirements_bash_reexec:-}
+gw_fw_requirements_bash_required_ver=${gw_fw_requirements_bash_required_ver:-}
+__main "$@"

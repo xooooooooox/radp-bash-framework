@@ -1,24 +1,41 @@
 #!/bin/sh
 
+#######################################
+# 检查 bash 是否满足最低版本要求
+# Globals:
+#   BASH_VERSION
+# Arguments:
+#   1 - req_ver: 最低版本
+#   2 - bash_bin: 可选，指定 bash 可执行文件路径
+# Outputs:
+#   None
+# Returns:
+#   0 - 满足
+#   1 - 不满足
+#######################################
 __fw_requirements_check_bash() {
   __req_ver=${1:-}
+  __bash_bin=${2:-}
   __ok=0
-  if [ -n "$BASH_VERSION" ]; then
+  __ver=${__ver:-}
+  if [ -n "$__bash_bin" ]; then
+    __ver=$("$__bash_bin" --version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')
+    __ver=${__ver%% *}
+    __ver=${__ver%%(*}
+  elif [ -n "$BASH_VERSION" ]; then
+    __ver=${BASH_VERSION%%(*}
+  fi
+
+  if [ -n "$__ver" ]; then
     if [ -z "$__req_ver" ]; then
       __ok=1
     else
-      __curr_major=$(echo "$BASH_VERSION" | cut -d. -f1)
-      __curr_minor=$(echo "$BASH_VERSION." | cut -d. -f2)
-      [ -z "$__curr_minor" ] && __curr_minor=0
-      __req_major=$(echo "$__req_ver" | cut -d. -f1)
-      __req_minor=$(echo "$__req_ver." | cut -d. -f2)
-      [ -z "$__req_minor" ] && __req_minor=0
-      if [ "$__curr_major" -gt "$__req_major" ] || { [ "$__curr_major" -eq "$__req_major" ] && [ "$__curr_minor" -ge "$__req_minor" ]; }; then
+      if __fw_requirements_bash_version_ge "$__ver" "$__req_ver"; then
         __ok=1
       fi
     fi
   fi
-  unset __curr_major __curr_minor __req_major __req_minor __req_ver
+  unset __ver __req_ver __bash_bin
   if [ "$__ok" -eq 1 ]; then
     unset __ok
     return 0
@@ -28,10 +45,62 @@ __fw_requirements_check_bash() {
   fi
 }
 
+#######################################
+# 比较 bash 版本是否满足最低版本要求
+# Globals:
+#   None
+# Arguments:
+#   1 - curr_ver: 当前版本
+#   2 - req_ver: 最低版本
+# Outputs:
+#   None
+# Returns:
+#   0 - 满足
+#   1 - 不满足
+#######################################
+__fw_requirements_bash_version_ge() {
+  __curr_ver=${1:-}
+  __req_ver=${2:-}
+  if [ -z "$__req_ver" ]; then
+    return 0
+  fi
+  if [ -z "$__curr_ver" ]; then
+    return 1
+  fi
+
+  __curr_major=$(echo "$__curr_ver" | cut -d. -f1)
+  __curr_minor=$(echo "$__curr_ver." | cut -d. -f2)
+  [ -z "$__curr_minor" ] && __curr_minor=0
+  __req_major=$(echo "$__req_ver" | cut -d. -f1)
+  __req_minor=$(echo "$__req_ver." | cut -d. -f2)
+  [ -z "$__req_minor" ] && __req_minor=0
+
+  if [ "$__curr_major" -gt "$__req_major" ] || { [ "$__curr_major" -eq "$__req_major" ] && [ "$__curr_minor" -ge "$__req_minor" ]; }; then
+    return 0
+  fi
+  return 1
+}
+
+#######################################
+# 安装 bash(源码编译)
+# Globals:
+#   gw_fw_requirements_bash_required_ver
+#   gw_fw_requirements_bash_reexec
+# Arguments:
+#   1 - req_ver: 最低版本
+#   2 - install_ver: 指定安装版本
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#   1 - Failed
+#######################################
 __fw_requirements_prepare_bash() {
   __req_ver=${1:-}
   __install_ver=${2:-}
+  gw_fw_requirements_bash_required_ver=$__req_ver
 
+  # 解析安装目标版本：优先 install 版本，其次 req 版本
   __target_ver=${__install_ver:-${__req_ver:-5.2}}
   __major=$(printf '%s' "$__target_ver" | cut -d. -f1)
   __minor=$(printf '%s' "$__target_ver" | cut -d. -f2)
@@ -59,6 +128,18 @@ __fw_requirements_prepare_bash() {
     fi
   fi
 
+  #######################################
+  # 以 root 或 sudo 执行指定命令
+  # Globals:
+  #   __sudo
+  # Arguments:
+  #   @ - 命令及参数
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
   __fw_requirements_prepare_bash_run() {
     if [ -n "$__sudo" ]; then
       $__sudo "$@"
@@ -67,6 +148,18 @@ __fw_requirements_prepare_bash() {
     fi
   }
 
+  #######################################
+  # 安装构建 bash 所需依赖(支持 apt/dnf/yum)
+  # Globals:
+  #   None
+  # Arguments:
+  #   None
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
   __fw_requirements_prepare_bash_install_deps() {
     if command -v apt-get >/dev/null 2>&1; then
       __fw_requirements_prepare_bash_run apt-get update >/dev/null 2>&1 || return 1
@@ -91,6 +184,19 @@ __fw_requirements_prepare_bash() {
     return 1
   }
 
+  #######################################
+  # 下载文件(优先 curl，其次 wget)
+  # Globals:
+  #   None
+  # Arguments:
+  #   1 - url: 下载地址
+  #   2 - out: 输出文件路径
+  # Outputs:
+  #   None
+  # Returns:
+  #   0 - Success
+  #   1 - Failed
+  #######################################
   __fw_requirements_prepare_bash_download() {
     __url=${1:-}
     __out=${2:-}
@@ -115,6 +221,18 @@ __fw_requirements_prepare_bash() {
     echo "Error: Failed to create temp directory." >&2
     return 1
   fi
+
+  #######################################
+  # 清理临时目录
+  # Globals:
+  #   __tmpdir
+  # Arguments:
+  #   None
+  # Outputs:
+  #   None
+  # Returns:
+  #   None
+  #######################################
   __fw_requirements_prepare_bash_cleanup() {
     if [ -n "$__tmpdir" ] && [ -d "$__tmpdir" ]; then
       rm -rf "$__tmpdir"
@@ -189,6 +307,9 @@ __fw_requirements_prepare_bash() {
       echo "Error: Failed to install bash (sudo)." >&2
       return 1
     }
+  fi
+  if [ -x /usr/local/bin/bash ]; then
+    gw_fw_requirements_bash_reexec=/usr/local/bin/bash
   fi
 
   __fw_requirements_prepare_bash_cleanup
