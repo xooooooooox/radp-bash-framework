@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# shellcheck source=../preflight_helper.sh
+# shellcheck source=./preflight_helper.sh
 . "$gr_fw_requirements_path"/preflight_helper.sh
 
 #######################################
