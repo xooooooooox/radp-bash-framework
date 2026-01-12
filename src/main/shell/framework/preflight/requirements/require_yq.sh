@@ -36,6 +36,7 @@ __fw_requirements_prepare_yq() {
   #######################################
 
   __target_ver=${__install_ver:-${__req_ver:-4.44.1}}
+  echo "Preflight: installing yq $__target_ver..."
   __os=$(uname -s 2>/dev/null | tr 'A-Z' 'a-z')
   if [ "$__os" != "linux" ]; then
     echo "Error: Unsupported OS for yq install: $__os" >&2
@@ -101,17 +102,20 @@ __fw_requirements_prepare_yq() {
       return 0
     fi
     if command -v apt-get >/dev/null 2>&1; then
+      echo "Preflight: installing download tools (apt)..."
       __fw_requirements_prepare_yq_run apt-get update >/dev/null 2>&1 || return 1
       DEBIAN_FRONTEND=noninteractive __fw_requirements_prepare_yq_run apt-get install -y \
         ca-certificates curl wget >/dev/null 2>&1 || return 1
       return 0
     fi
     if command -v dnf >/dev/null 2>&1; then
+      echo "Preflight: installing download tools (dnf)..."
       __fw_requirements_prepare_yq_run dnf install -y \
         ca-certificates curl wget >/dev/null 2>&1 || return 1
       return 0
     fi
     if command -v yum >/dev/null 2>&1; then
+      echo "Preflight: installing download tools (yum)..."
       __fw_requirements_prepare_yq_run yum install -y \
         ca-certificates curl wget >/dev/null 2>&1 || return 1
       return 0
@@ -178,6 +182,7 @@ __fw_requirements_prepare_yq() {
   __filename="yq_${__os}_${__arch}"
   __url="https://github.com/mikefarah/yq/releases/download/v${__target_ver}/${__filename}"
   __binpath="$__tmpdir/$__filename"
+  echo "Preflight: downloading yq from $__url..."
 
   if ! __fw_requirements_prepare_yq_download "$__url" "$__binpath"; then
     echo "Error: Failed to download yq from $__url" >&2
@@ -192,12 +197,14 @@ __fw_requirements_prepare_yq() {
   __target_dir="/usr/local/bin"
   __target_bin="${__target_dir}/yq"
   if [ ! -d "$__target_dir" ]; then
+    echo "Preflight: creating $__target_dir..."
     __fw_requirements_prepare_yq_run mkdir -p "$__target_dir" || {
       echo "Error: Failed to create $__target_dir." >&2
       return 1
     }
   fi
 
+  echo "Preflight: installing yq to $__target_bin..."
   __fw_requirements_prepare_yq_run mv "$__binpath" "$__target_bin" || {
     echo "Error: Failed to install yq to $__target_bin." >&2
     return 1

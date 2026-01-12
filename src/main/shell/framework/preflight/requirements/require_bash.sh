@@ -102,6 +102,7 @@ __fw_requirements_prepare_bash() {
 
   # 解析安装目标版本：优先 install 版本，其次 req 版本
   __target_ver=${__install_ver:-${__req_ver:-5.2}}
+  echo "Preflight: installing bash $__target_ver from source..."
   __major=$(printf '%s' "$__target_ver" | cut -d. -f1)
   __minor=$(printf '%s' "$__target_ver" | cut -d. -f2)
   __patch=$(printf '%s' "$__target_ver" | cut -d. -f3)
@@ -162,6 +163,7 @@ __fw_requirements_prepare_bash() {
   #######################################
   __fw_requirements_prepare_bash_install_deps() {
     if command -v apt-get >/dev/null 2>&1; then
+      echo "Preflight: installing build dependencies (apt)..."
       __fw_requirements_prepare_bash_run apt-get update >/dev/null 2>&1 || return 1
       DEBIAN_FRONTEND=noninteractive __fw_requirements_prepare_bash_run apt-get install -y \
         build-essential bison libreadline-dev libncurses-dev \
@@ -169,12 +171,14 @@ __fw_requirements_prepare_bash() {
       return 0
     fi
     if command -v dnf >/dev/null 2>&1; then
+      echo "Preflight: installing build dependencies (dnf)..."
       __fw_requirements_prepare_bash_run dnf install -y \
         gcc make bison readline-devel ncurses-devel \
         ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
       return 0
     fi
     if command -v yum >/dev/null 2>&1; then
+      echo "Preflight: installing build dependencies (yum)..."
       __fw_requirements_prepare_bash_run yum install -y \
         gcc make bison readline-devel ncurses-devel \
         ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
@@ -244,6 +248,7 @@ __fw_requirements_prepare_bash() {
   __tarpath="$__tmpdir/$__tarball"
   __url_primary="https://ftp.gnu.org/gnu/bash/$__tarball"
   __url_mirror="https://mirrors.edge.kernel.org/gnu/bash/$__tarball"
+  echo "Preflight: downloading $__tarball..."
   if ! __fw_requirements_prepare_bash_download "$__url_primary" "$__tarpath"; then
     if ! __fw_requirements_prepare_bash_download "$__url_mirror" "$__tarpath"; then
       echo "Error: Failed to download $__tarball." >&2
@@ -263,6 +268,7 @@ __fw_requirements_prepare_bash() {
   fi
 
   if [ "$__patch" -gt 0 ]; then
+    echo "Preflight: applying bash patches (level $__patch)..."
     __patch_prefix="bash${__major}${__minor}"
     __patch_dir="https://ftp.gnu.org/gnu/bash/bash-${__base_ver}-patches"
     __i=1
@@ -292,11 +298,13 @@ __fw_requirements_prepare_bash() {
     [ -z "$__jobs" ] && __jobs=1
   fi
 
+  echo "Preflight: building bash (jobs=$__jobs)..."
   (cd "$__srcdir" && make -j "$__jobs") || {
     echo "Error: Failed to build bash source." >&2
     return 1
   }
 
+  echo "Preflight: installing bash to /usr/local..."
   if [ "$(id -u)" -eq 0 ]; then
     (cd "$__srcdir" && make install) || {
       echo "Error: Failed to install bash." >&2
