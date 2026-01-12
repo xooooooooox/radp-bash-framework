@@ -61,22 +61,6 @@ __fw_requirements_prepare_yq() {
   __sudo=$(__fw_requirements_resolve_sudo "Error: Installing yq requires root or sudo.") || return 1
 
   #######################################
-  # 以 root 或 sudo 执行指定命令
-  # Globals:
-  #   __sudo
-  # Arguments:
-  #   @ - 命令及参数
-  # Outputs:
-  #   None
-  # Returns:
-  #   0 - Success
-  #   1 - Failed
-  #######################################
-  __fw_requirements_prepare_yq_run() {
-    __fw_requirements_run_with_sudo "$__sudo" "$@"
-  }
-
-  #######################################
   # 安装下载工具依赖（支持 apt/dnf/yum）
   # Globals:
   #   None
@@ -92,55 +76,11 @@ __fw_requirements_prepare_yq() {
     if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
       return 0
     fi
-    if command -v apt-get >/dev/null 2>&1; then
-      echo "Preflight: installing download tools (apt)..."
-      __fw_requirements_prepare_yq_run apt-get update >/dev/null 2>&1 || return 1
-      DEBIAN_FRONTEND=noninteractive __fw_requirements_prepare_yq_run apt-get install -y \
-        ca-certificates curl wget >/dev/null 2>&1 || return 1
-      return 0
-    fi
-    if command -v dnf >/dev/null 2>&1; then
-      echo "Preflight: installing download tools (dnf)..."
-      __fw_requirements_prepare_yq_run dnf install -y \
-        ca-certificates curl wget >/dev/null 2>&1 || return 1
-      return 0
-    fi
-    if command -v yum >/dev/null 2>&1; then
-      echo "Preflight: installing download tools (yum)..."
-      __fw_requirements_fix_yum_repo_for_centos7 "__fw_requirements_prepare_yq_run" || return 1
-      __fw_requirements_prepare_yq_run yum install -y \
-        ca-certificates curl wget >/dev/null 2>&1 || return 1
-      return 0
-    fi
-    echo "Error: Unsupported OS. Please install curl or wget manually." >&2
-    return 1
-  }
-
-  #######################################
-  # 下载文件（优先 curl，其次 wget）
-  # Globals:
-  #   None
-  # Arguments:
-  #   1 - url: 下载地址
-  #   2 - out: 输出文件路径
-  # Outputs:
-  #   None
-  # Returns:
-  #   0 - Success
-  #   1 - Failed
-  #######################################
-  __fw_requirements_prepare_yq_download() {
-    __url=${1:-}
-    __out=${2:-}
-    if command -v curl >/dev/null 2>&1; then
-      curl -fsSL "$__url" -o "$__out"
-      return $?
-    fi
-    if command -v wget >/dev/null 2>&1; then
-      wget -q -O "$__out" "$__url"
-      return $?
-    fi
-    return 1
+    __fw_requirements_install_packages "$__sudo" \
+      "ca-certificates curl wget" \
+      "ca-certificates curl wget" \
+      "ca-certificates curl wget" \
+      "download tools"
   }
 
   __fw_requirements_prepare_yq_install_deps || {
@@ -148,7 +88,7 @@ __fw_requirements_prepare_yq() {
     return 1
   }
 
-  __tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t radp_yq_install)
+  __tmpdir=$(__fw_requirements_mktemp_dir "radp_yq_install")
   if [ -z "$__tmpdir" ] || [ ! -d "$__tmpdir" ]; then
     echo "Error: Failed to create temp directory." >&2
     return 1
@@ -165,9 +105,7 @@ __fw_requirements_prepare_yq() {
   #   None
   #######################################
   __fw_requirements_prepare_yq_cleanup() {
-    if [ -n "$__tmpdir" ] && [ -d "$__tmpdir" ]; then
-      rm -rf "$__tmpdir"
-    fi
+    __fw_requirements_cleanup_tmpdir "$__tmpdir"
   }
   trap '__fw_requirements_prepare_yq_cleanup' 0 2 15
 
@@ -176,7 +114,7 @@ __fw_requirements_prepare_yq() {
   __binpath="$__tmpdir/$__filename"
   echo "Preflight: downloading yq from $__url..."
 
-  if ! __fw_requirements_prepare_yq_download "$__url" "$__binpath"; then
+  if ! __fw_requirements_download_file "$__url" "$__binpath" "quiet"; then
     echo "Error: Failed to download yq from $__url" >&2
     return 1
   fi
@@ -190,14 +128,14 @@ __fw_requirements_prepare_yq() {
   __target_bin="${__target_dir}/yq"
   if [ ! -d "$__target_dir" ]; then
     echo "Preflight: creating $__target_dir..."
-    __fw_requirements_prepare_yq_run mkdir -p "$__target_dir" || {
+    __fw_requirements_run_with_sudo "$__sudo" mkdir -p "$__target_dir" || {
       echo "Error: Failed to create $__target_dir." >&2
       return 1
     }
   fi
 
   echo "Preflight: installing yq to $__target_bin..."
-  __fw_requirements_prepare_yq_run mv "$__binpath" "$__target_bin" || {
+  __fw_requirements_run_with_sudo "$__sudo" mv "$__binpath" "$__target_bin" || {
     echo "Error: Failed to install yq to $__target_bin." >&2
     return 1
   }

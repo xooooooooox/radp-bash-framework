@@ -125,22 +125,6 @@ __fw_requirements_prepare_bash() {
   __sudo=$(__fw_requirements_resolve_sudo "Error: Installing bash requires root or sudo.") || return 1
 
   #######################################
-  # 以 root 或 sudo 执行指定命令
-  # Globals:
-  #   __sudo
-  # Arguments:
-  #   @ - 命令及参数
-  # Outputs:
-  #   None
-  # Returns:
-  #   0 - Success
-  #   1 - Failed
-  #######################################
-  __fw_requirements_prepare_bash_run() {
-    __fw_requirements_run_with_sudo "$__sudo" "$@"
-  }
-
-  #######################################
   # 安装构建 bash 所需依赖(支持 apt/dnf/yum)
   # Globals:
   #   None
@@ -153,58 +137,11 @@ __fw_requirements_prepare_bash() {
   #   1 - Failed
   #######################################
   __fw_requirements_prepare_bash_install_deps() {
-    if command -v apt-get >/dev/null 2>&1; then
-      echo "Preflight: installing build dependencies (apt)..."
-      __fw_requirements_prepare_bash_run apt-get update >/dev/null 2>&1 || return 1
-      DEBIAN_FRONTEND=noninteractive __fw_requirements_prepare_bash_run apt-get install -y \
-        build-essential bison libreadline-dev libncurses-dev \
-        ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
-      return 0
-    fi
-    if command -v dnf >/dev/null 2>&1; then
-      echo "Preflight: installing build dependencies (dnf)..."
-      __fw_requirements_prepare_bash_run dnf install -y \
-        gcc make bison readline-devel ncurses-devel \
-        ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
-      return 0
-    fi
-    if command -v yum >/dev/null 2>&1; then
-      echo "Preflight: installing build dependencies (yum)..."
-      __fw_requirements_fix_yum_repo_for_centos7 "__fw_requirements_prepare_bash_run" || return 1
-      __fw_requirements_prepare_bash_run yum install -y \
-        gcc make bison readline-devel ncurses-devel \
-        ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
-      return 0
-    fi
-    echo "Error: Unsupported OS. Please install build dependencies manually." >&2
-    return 1
-  }
-
-  #######################################
-  # 下载文件(优先 curl，其次 wget)
-  # Globals:
-  #   None
-  # Arguments:
-  #   1 - url: 下载地址
-  #   2 - out: 输出文件路径
-  # Outputs:
-  #   None
-  # Returns:
-  #   0 - Success
-  #   1 - Failed
-  #######################################
-  __fw_requirements_prepare_bash_download() {
-    __url=${1:-}
-    __out=${2:-}
-    if command -v curl >/dev/null 2>&1; then
-      curl -fL --progress-bar "$__url" -o "$__out"
-      return $?
-    fi
-    if command -v wget >/dev/null 2>&1; then
-      wget --progress=dot:mega -O "$__out" "$__url"
-      return $?
-    fi
-    return 1
+    __fw_requirements_install_packages "$__sudo" \
+      "build-essential bison libreadline-dev libncurses-dev ca-certificates curl wget tar gzip patch" \
+      "gcc make bison readline-devel ncurses-devel ca-certificates curl wget tar gzip patch" \
+      "gcc make bison readline-devel ncurses-devel ca-certificates curl wget tar gzip patch" \
+      "build dependencies"
   }
 
   __fw_requirements_prepare_bash_install_deps || {
@@ -212,7 +149,7 @@ __fw_requirements_prepare_bash() {
     return 1
   }
 
-  __tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t radp_bash_build)
+  __tmpdir=$(__fw_requirements_mktemp_dir "radp_bash_build")
   if [ -z "$__tmpdir" ] || [ ! -d "$__tmpdir" ]; then
     echo "Error: Failed to create temp directory." >&2
     return 1
@@ -230,9 +167,7 @@ __fw_requirements_prepare_bash() {
   #   None
   #######################################
   __fw_requirements_prepare_bash_cleanup() {
-    if [ -n "$__tmpdir" ] && [ -d "$__tmpdir" ]; then
-      rm -rf "$__tmpdir"
-    fi
+    __fw_requirements_cleanup_tmpdir "$__tmpdir"
   }
   trap '__fw_requirements_prepare_bash_cleanup' 0 2 15
 
@@ -241,8 +176,8 @@ __fw_requirements_prepare_bash() {
   __url_primary="https://ftp.gnu.org/gnu/bash/$__tarball"
   __url_mirror="https://mirrors.edge.kernel.org/gnu/bash/$__tarball"
   echo "Preflight: downloading $__tarball..."
-  if ! __fw_requirements_prepare_bash_download "$__url_primary" "$__tarpath"; then
-    if ! __fw_requirements_prepare_bash_download "$__url_mirror" "$__tarpath"; then
+  if ! __fw_requirements_download_file "$__url_primary" "$__tarpath" "progress"; then
+    if ! __fw_requirements_download_file "$__url_mirror" "$__tarpath" "progress"; then
       echo "Error: Failed to download $__tarball." >&2
       return 1
     fi
@@ -267,7 +202,7 @@ __fw_requirements_prepare_bash() {
     while [ "$__i" -le "$__patch" ]; do
       __patch_file="${__patch_prefix}-$(printf '%03d' "$__i")"
       __patch_path="$__tmpdir/$__patch_file"
-      if ! __fw_requirements_prepare_bash_download "$__patch_dir/$__patch_file" "$__patch_path"; then
+      if ! __fw_requirements_download_file "$__patch_dir/$__patch_file" "$__patch_path" "progress"; then
         echo "Error: Failed to download patch $__patch_file." >&2
         return 1
       fi
@@ -297,17 +232,10 @@ __fw_requirements_prepare_bash() {
   }
 
   echo "Preflight: installing bash to /usr/local..."
-  if [ "$(id -u)" -eq 0 ]; then
-    (cd "$__srcdir" && make install) || {
-      echo "Error: Failed to install bash." >&2
-      return 1
-    }
-  else
-    (cd "$__srcdir" && __fw_requirements_prepare_bash_run make install) || {
-      echo "Error: Failed to install bash (sudo)." >&2
-      return 1
-    }
-  fi
+  (cd "$__srcdir" && __fw_requirements_run_with_sudo "$__sudo" make install) || {
+    echo "Error: Failed to install bash." >&2
+    return 1
+  }
   if [ -x /usr/local/bin/bash ]; then
     gw_fw_requirements_bash_reexec=/usr/local/bin/bash
   fi
