@@ -1,6 +1,55 @@
 #!/bin/sh
 
 #######################################
+# Resolve sudo command if needed
+# Globals:
+#   None
+# Arguments:
+#   1 - err_msg: error message when sudo missing
+# Outputs:
+#   sudo command or empty string
+# Returns:
+#   0 - Success
+#   1 - Failed
+#######################################
+__fw_requirements_resolve_sudo() {
+  __err_msg=${1:-"Error: Installing requires root or sudo."}
+  if [ "$(id -u)" -ne 0 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      echo "sudo"
+      return 0
+    fi
+    echo "$__err_msg" >&2
+    return 1
+  fi
+  echo ""
+  return 0
+}
+
+#######################################
+# Run command with optional sudo
+# Globals:
+#   None
+# Arguments:
+#   1 - sudo_cmd: sudo command or empty
+#   @ - command and args
+# Outputs:
+#   None
+# Returns:
+#   0 - Success
+#   1 - Failed
+#######################################
+__fw_requirements_run_with_sudo() {
+  __sudo_cmd=${1:-}
+  shift
+  if [ -n "$__sudo_cmd" ]; then
+    "$__sudo_cmd" "$@"
+  else
+    "$@"
+  fi
+}
+
+#######################################
 # Fix CentOS 7 EOL yum repos (vault)
 # Globals:
 #   None

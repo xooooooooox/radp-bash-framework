@@ -122,15 +122,7 @@ __fw_requirements_prepare_bash() {
   esac
   __base_ver="${__major}.${__minor}"
 
-  __sudo=""
-  if [ "$(id -u)" -ne 0 ]; then
-    if command -v sudo >/dev/null 2>&1; then
-      __sudo="sudo"
-    else
-      echo "Error: Installing bash requires root or sudo." >&2
-      return 1
-    fi
-  fi
+  __sudo=$(__fw_requirements_resolve_sudo "Error: Installing bash requires root or sudo.") || return 1
 
   #######################################
   # 以 root 或 sudo 执行指定命令
@@ -145,11 +137,7 @@ __fw_requirements_prepare_bash() {
   #   1 - Failed
   #######################################
   __fw_requirements_prepare_bash_run() {
-    if [ -n "$__sudo" ]; then
-      $__sudo "$@"
-    else
-      "$@"
-    fi
+    __fw_requirements_run_with_sudo "$__sudo" "$@"
   }
 
   #######################################
