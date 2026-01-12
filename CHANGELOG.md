@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.3.4 - 2026-01-12
+
+### fix
+
+- fix preflight_helper.sh no such file or directory
+
 ## v0.3.3 - 2026-01-12
 
 ### fix
