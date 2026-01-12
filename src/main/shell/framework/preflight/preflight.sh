@@ -68,7 +68,6 @@ fi
 #   0 - Success
 #######################################
 __fw_requirements_check() {
-  echo "Preflight: checking requirements..."
   __fw_req=${__fw_req:-}
   __req_name=${__req_name:-}
   __req_ver=${__req_ver:-}
@@ -96,9 +95,8 @@ __fw_requirements_check() {
       fi
     fi
   done
-  if [ -z "${gw_fw_requirements_not_satisfied:-}" ]; then
-    echo "Preflight: requirements satisfied."
-  else
+  if [ -n "${gw_fw_requirements_not_satisfied:-}" ]; then
+    echo "Preflight: checking requirements..."
     echo "Preflight: missing requirements:${gw_fw_requirements_not_satisfied}"
   fi
   unset __req_name __req_ver __install_ver __temp __req_name_safe __fw_req
