@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# shellcheck source=./require_common.sh
+. "$gr_fw_requirements_path/require_common.sh"
+
 #######################################
 # 检查 bash 是否满足最低版本要求
 # Globals:
@@ -150,45 +153,6 @@ __fw_requirements_prepare_bash() {
   }
 
   #######################################
-  # 修复 CentOS 7 EOL yum 源（vault）
-  # Globals:
-  #   None
-  # Arguments:
-  #   None
-  # Outputs:
-  #   None
-  # Returns:
-  #   0 - Success
-  #   1 - Failed
-  #######################################
-  __fw_requirements_prepare_bash_fix_yum_repo_for_centos7() {
-    __os_release=""
-    if [ -f /etc/centos-release ]; then
-      __os_release=$(cat /etc/centos-release 2>/dev/null)
-    elif [ -f /etc/redhat-release ]; then
-      __os_release=$(cat /etc/redhat-release 2>/dev/null)
-    fi
-    case "$__os_release" in
-    *"CentOS Linux release 7"*) ;;
-    *) return 0 ;;
-    esac
-
-    set -- /etc/yum.repos.d/CentOS-*.repo
-    if [ ! -e "$1" ]; then
-      return 0
-    fi
-
-    echo "Preflight: fixing CentOS 7 yum repos (vault)..."
-    __fw_requirements_prepare_bash_run sed -i -r \
-      -e 's|^mirrorlist=|#mirrorlist=|g' \
-      -e 's|^#?baseurl=http://mirror.centos.org/centos|baseurl=https://vault.centos.org/centos|g' \
-      -e 's|^#?baseurl=http://mirror.centos.org/altarch|baseurl=https://vault.centos.org/altarch|g' \
-      -e 's|^#?baseurl=http://download.fedoraproject.org|baseurl=http://download.fedoraproject.org|g' \
-      /etc/yum.repos.d/CentOS-*.repo >/dev/null 2>&1 || return 1
-    return 0
-  }
-
-  #######################################
   # 安装构建 bash 所需依赖(支持 apt/dnf/yum)
   # Globals:
   #   None
@@ -218,7 +182,7 @@ __fw_requirements_prepare_bash() {
     fi
     if command -v yum >/dev/null 2>&1; then
       echo "Preflight: installing build dependencies (yum)..."
-      __fw_requirements_prepare_bash_fix_yum_repo_for_centos7 || return 1
+      __fw_requirements_fix_yum_repo_for_centos7 "__fw_requirements_prepare_bash_run" || return 1
       __fw_requirements_prepare_bash_run yum install -y \
         gcc make bison readline-devel ncurses-devel \
         ca-certificates curl wget tar gzip patch >/dev/null 2>&1 || return 1
