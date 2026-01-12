@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.3.3 - 2026-01-12
+
+### fix
+
+- fix prefilght not work well.
+
 ## v0.3.2 - 2026-01-09
 
 ### fix
