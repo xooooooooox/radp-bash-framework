@@ -15,11 +15,11 @@
 #######################################
 __fw_requirements_check_bash() {
   __req_ver=${1:-}
-  __bash_bin=${2:-}
+  __bash_bin_arg=${2:-}
   __ok=0
   __ver=${__ver:-}
-  if [ -n "$__bash_bin" ]; then
-    __ver=$("$__bash_bin" --version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')
+  if [ -n "$__bash_bin_arg" ]; then
+    __ver=$("$__bash_bin_arg" --version 2>/dev/null | sed -n '1s/.*version[[:space:]]*//p')
     __ver=${__ver%% *}
     __ver=${__ver%%(*}
   elif [ -n "$BASH_VERSION" ]; then
@@ -35,7 +35,7 @@ __fw_requirements_check_bash() {
       fi
     fi
   fi
-  unset __ver __req_ver __bash_bin
+  unset __ver __req_ver __bash_bin_arg
   if [ "$__ok" -eq 1 ]; then
     unset __ok
     return 0
