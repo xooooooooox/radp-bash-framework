@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# shellcheck source=./require_common.sh
-. "$gr_fw_requirements_path/require_common.sh"
+# shellcheck source=../preflight_helper.sh
+. "$gr_fw_requirements_path"/preflight_helper.sh
 
 #######################################
 # 检查 bash 是否满足最低版本要求
