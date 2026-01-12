@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.3.4 - 2026-01-12
+
+### fix
+- b72e00d can't find preflight_helper.sh
+
 ## v0.3.3 - 2026-01-12
 
 ### fix
