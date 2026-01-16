@@ -12,12 +12,12 @@
 #   输出格式为 "distro_arch:distro_os:distro_id:distro_name:distro_version:distro_pm"
 # Examples:
 #   1) 获取完整信息
-#      distro_info=$(radp_os_get_distro_info)
+#      distro_info=$(__fw_os_get_distro_info)
 #      IFS=':' read -r distro_arch distro_os distro_id distro_name distro_version distro_pm <<< "$distro_info"
 #   2) 如果仅关注 distro_pm
-#      IFS=':' read -r _ _ _ _ _ distro_pm < <(radp_os_get_distro_info)
+#      IFS=':' read -r _ _ _ _ _ distro_pm < <(__fw_os_get_distro_info)
 #######################################
-function radp_os_get_distro_info() {
+function __fw_os_get_distro_info() {
   local distro_arch="unknown"
   local distro_os="unknown"
   local distro_id="unknown"
@@ -85,7 +85,7 @@ __main() {
   readonly gr_sudo
 
   # distro
-  IFS=':' read -r gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pkg < <(radp_os_get_distro_info)
+  IFS=':' read -r gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pkg < <(__fw_os_get_distro_info)
   readonly gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pkg
 }
 
