@@ -81,7 +81,7 @@ toolkit/
 
 ### io/
 - `radp_io_append_single_line_to_file` -> `radp_fs_append_line` (`io/01_fs.sh`)
-- `radp_os_get_absolute_path` -> `radp_path_abs` (`io/01_fs.sh`)
+- `radp_os_get_absolute_path` -> `radp_io_get_path_abs` (`io/01_fs.sh`)
 - `radp_io_prompt_continue` -> `radp_prompt_confirm` (`io/02_prompt.sh`)
 - `radp_nr_io_prompt_inputs` -> `radp_nr_prompt_read` (`io/02_prompt.sh`)
 - `radp_io_output_banner_file` -> `radp_fs_write_banner` (`io/03_banner.sh`)
