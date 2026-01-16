@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 # toolkit module: io/01_fs.sh
 
+#######################################
+# 将文件/目录路径解析为绝对路径，自动展开符号链接
+# Globals:
+#   BASH_SOURCE - 默认使用调用者脚本路径
+# Arguments:
+#   1 - target: 目标文件或目录；省略时取调用者脚本路径
+# Outputs:
+#   输出解析后的绝对路径
+# Examples:
+#   radp_io_get_path_abs ./logs -> /abs/path/logs
+#   radp_io_get_path_abs        -> /abs/path/of/caller/script.sh
+# Returns:
+#   0 - Success
+#######################################
 function radp_io_get_path_abs() {
   local target="${1:-${BASH_SOURCE[1]}}"
 
