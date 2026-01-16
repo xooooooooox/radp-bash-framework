@@ -43,10 +43,6 @@ toolkit/
     05_user.sh      # 用户存在性、密码、ssh home、shell
     06_shell.sh     # shell 配置、PATH 追加、bash 版本校验
     07_cron.sh      # crontab 更新/合并
-  pkg/             # 包管理封装
-    01_install.sh   # 包管理抽象安装入口
-    02_apt.sh       # apt/apt-get 适配
-    03_brew.sh      # brew 适配
   cli/             # CLI 解析/帮助/分发/自省
     01_parse.sh     # getopt 包装、通用参数解析
     02_help.sh      # usage/帮助输出
@@ -114,12 +110,6 @@ toolkit/
 - `radp_os_enable_sudo_without_password` -> `radp_sudo_enable_nopasswd` (`os/02_security.sh`)
 - `radp_os_check_if_is_sudoer` -> `radp_sudo_user_has_access` (`os/02_security.sh`)
 - `radp_os_add_sudoer` -> `radp_sudo_user_grant_nopasswd` (`os/02_security.sh`)
-
-### pkg/
-- `radp_os_pkg_install` -> `radp_pkg_install` (`pkg/01_install.sh`)
-- `radp_alias_apt_get` -> `radp_pkg_apt_get` (`pkg/02_apt.sh`)
-- `radp_alias_brew` -> `radp_pkg_brew` (`pkg/03_brew.sh`)
-- `radp_alias_source` -> `radp_shell_reload_rc` (`os/06_shell.sh`)
 
 ### cli/
 - `radp_nr_cli_parse_common_options` -> `radp_nr_cli_parse_common_options` (`cli/01_parse.sh`)
