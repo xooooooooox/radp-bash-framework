@@ -11,7 +11,8 @@
 #   输出解析后的绝对路径
 # Examples:
 #   radp_io_get_path_abs ./logs -> /abs/path/logs
-#   radp_io_get_path_abs        -> /abs/path/of/caller/script.sh
+#   radp_io_get_path_abs -> /abs/path/of/caller/script.sh
+#   radp_io_get_path_abs ./xx/file.txt -> /abs/path/to/file.txt
 # Returns:
 #   0 - Success
 #######################################
