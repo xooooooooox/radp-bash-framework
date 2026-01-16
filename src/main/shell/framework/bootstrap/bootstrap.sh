@@ -24,7 +24,22 @@ __fw_source_scripts() {
       local -a sorted_scripts
       if [[ -d "$tgt" ]]; then
         # 如果目标是目录, 查找该目录下的所有 .sh 文件
-        mapfile -t sorted_scripts < <(find "$tgt" -type f -name "*.sh" | sort -t '_' -k 1,1n)
+        # 按 basename 的数字前缀排序，避免跨目录排序不稳定
+        mapfile -t sorted_scripts < <(
+          find "$tgt" -type f -name "*.sh" -print0 |
+            while IFS= read -r -d '' script; do
+              local base prefix
+              base=$(basename "$script")
+              prefix=${base%%_*}
+              if [[ $prefix =~ ^[0-9]+$ ]]; then
+                printf '%s\t%s\n' "$prefix" "$script"
+              else
+                printf '999999\t%s\n' "$script"
+              fi
+            done |
+            sort -t $'\t' -k1,1n -k2,2 |
+            cut -f2-
+        )
       elif [[ -f "$tgt" && "${tgt: -3}" == ".sh" ]]; then
         sorted_scripts=("$tgt")
       else
