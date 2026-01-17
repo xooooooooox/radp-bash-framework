@@ -16,7 +16,7 @@
 # Returns:
 #   0 - Success
 #######################################
-function radp_io_get_path_abs() {
+radp_io_get_path_abs() {
   local target="${1:-${BASH_SOURCE[1]}}"
 
   # 解析符号链接
