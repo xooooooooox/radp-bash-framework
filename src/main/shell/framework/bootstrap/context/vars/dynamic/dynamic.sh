@@ -17,7 +17,7 @@
 #   2) 如果仅关注 distro_pm
 #      IFS=':' read -r _ _ _ _ _ distro_pm < <(__fw_os_get_distro_info)
 #######################################
-function __fw_os_get_distro_info() {
+__fw_os_get_distro_info() {
   local distro_arch="unknown"
   local distro_os="unknown"
   local distro_id="unknown"
@@ -85,8 +85,8 @@ __main() {
   readonly gr_sudo
 
   # distro
-  IFS=':' read -r gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pkg < <(__fw_os_get_distro_info)
-  readonly gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pkg
+  IFS=':' read -r gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pm < <(__fw_os_get_distro_info)
+  readonly gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pm
 }
 
 #----------------------------------------------------------------------------------------------------------------------#
@@ -96,6 +96,6 @@ declare -g gr_distro_os
 declare -g gr_distro_id
 declare -g gr_distro_name
 declare -g gr_distro_version
-declare -g gr_distro_pkg
+declare -g gr_distro_pm
 
 __main "$@"
