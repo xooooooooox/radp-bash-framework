@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.3.5 - 2026-01-17
+
+### feat
+- Support user completion
+- Optimize func `__fw_source_scripts`
+- Create toolkit skeleton
+  - Add func `radp_io_get_path_abs`
+  - Add func `radp_os_get_distro_xx`
+  - Add func `radp_os_install_pkgs` and `radp_os_is_pkg_installed`
+  - Add func `radp_nr_arr_merge_unique`
+
 ## v0.3.4 - 2026-01-12
 
 ### fix
