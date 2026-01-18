@@ -15,6 +15,7 @@ set -e
 #######################################
 __fw_create_cached_completion_hint_file() {
   local hint_file=${1:?}
+  local completion_file=${2:?}
   if [[ ! -f "$hint_file" ]]; then
     local dir
     dir="$(dirname "$hint_file")"
@@ -26,8 +27,8 @@ __fw_create_cached_completion_hint_file() {
 #!/usr/bin/env bash
 set -e
 
-# shellcheck source=$hint_file
-__fw_source_scripts "$hint_file"
+# shellcheck source=$completion_file
+__fw_source_scripts "$completion_file"
 EOF
 }
 
@@ -83,7 +84,7 @@ EOF
 #######################################
 __fw_setup_user_completion() {
   # shellcheck source=./cache/completion.user.hint.sh
-  __fw_create_cached_completion_hint_file "$gr_fw_cached_user_completion_hint_file"
+  __fw_create_cached_completion_hint_file "$gr_fw_cached_user_completion_hint_file" "$gr_fw_user_completion_file"
 
   # 如果没有用户配置目录, 也就没有必要去创建 user completion file 了
   if [[ ! -d "$gr_fw_user_config_path" ]]; then
