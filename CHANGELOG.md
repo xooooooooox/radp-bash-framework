@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.3.6 - 2026-01-18
+
+### feat
+
+- Optimize completion
+
 ## v0.3.5 - 2026-01-17
 
 ### feat
