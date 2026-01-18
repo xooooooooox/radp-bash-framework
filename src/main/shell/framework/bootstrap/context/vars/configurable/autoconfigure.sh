@@ -278,6 +278,49 @@ __fw_autoconfigure() {
 }
 
 #######################################
+# Write final resolved config snapshot to cache.
+# Globals:
+#   gr_fw_context_cache_path
+# Outputs:
+#   Writes final_config.sh
+# Returns:
+#   0 - Success
+#######################################
+__fw_write_final_config() {
+  local cache_dir="$gr_fw_context_cache_path"
+  local final_file="$cache_dir/final_config.sh"
+
+  mkdir -p "$cache_dir" || return 1
+
+  cat >"$final_file" <<'EOF'
+#!/usr/bin/env bash
+set -e
+
+########################################################################################################################
+###
+# Final resolved config snapshot (auto-generated)
+########################################################################################################################
+EOF
+
+  local -a vars=()
+  local name
+  while IFS= read -r name; do
+    case "$name" in
+    gr_* | YAML_*)
+      vars+=("$name")
+      ;;
+    esac
+  done < <(compgen -v)
+
+  local var
+  for var in "${vars[@]}"; do
+    if declare -p "$var" >/dev/null 2>&1; then
+      declare -p "$var"
+    fi
+  done | sort >>"$final_file"
+}
+
+#######################################
 # 初始化用户配置路径状态
 # 检查 user config path 是否存在，设置 gr_fw_user_config_path_exists 标志
 # Globals:
@@ -442,6 +485,9 @@ __main() {
 
   # 5. 执行自动配置
   __fw_autoconfigure
+
+  # 6. 记录最终解析结果到缓存
+  __fw_write_final_config
 }
 
 declare -g gr_radp_env=${gr_radp_env:-}
