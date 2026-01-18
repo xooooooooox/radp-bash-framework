@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v0.3.6 - 2026-01-18
+
+### feat
+- d4c070d Optimize completion
+- eb0b374 write final config to cache path
+- bb97fe8 Optimize completion script
+- a954da6 Optimize completion
+- 09d964a Optimize completion
+
+### fix
+- a9a8be8 user config path
+
+### chore
+- e0e7fb5 format code
+- 18f84a0 Add friendly log
+
 ## v0.3.5 - 2026-01-17
 
 ### feat
