@@ -32,7 +32,6 @@ __fw_source_scripts "$completion_file"
 EOF
 }
 
-
 __fw_setup_fw_completion() {
   # shellcheck source=./cache/completion.fw.hint.sh
   cat >"$gr_fw_cached_fw_completion_file" <<'EOF'
