@@ -16,8 +16,8 @@ set -e
 #   0 - Success
 #######################################
 __fw_context_setup_code_completion() {
-  # shellcheck source=./completion.sh
-  __fw_source_scripts "$gr_fw_context_completion_file"
+  # shellcheck source=./compinit.sh
+  __fw_source_scripts "$gr_fw_context_path"/compinit.sh
 }
 
 #######################################

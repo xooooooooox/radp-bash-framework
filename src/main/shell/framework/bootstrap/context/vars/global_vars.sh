@@ -59,6 +59,49 @@ __fw_declare_dynamic_vars() {
 }
 
 #######################################
+# Write final resolved config snapshot to cache.
+# Globals:
+#   gr_fw_context_cache_path
+# Outputs:
+#   Writes final_config.sh
+# Returns:
+#   0 - Success
+#######################################
+__fw_write_final_config() {
+  local cache_dir="$gr_fw_context_cache_path"
+  local final_file="$cache_dir/final_config.sh"
+
+  mkdir -p "$cache_dir" || return 1
+
+  cat >"$final_file" <<'EOF'
+#!/usr/bin/env bash
+set -e
+
+########################################################################################################################
+###
+# Final resolved config snapshot (auto-generated)
+########################################################################################################################
+EOF
+
+  local -a vars=()
+  local name
+  while IFS= read -r name; do
+    case "$name" in
+    gr_*|gra_*)
+      vars+=("$name")
+      ;;
+    esac
+  done < <(compgen -v)
+
+  local var
+  for var in "${vars[@]}"; do
+    if declare -p "$var" >/dev/null 2>&1; then
+      declare -p "$var"
+    fi
+  done | sort >>"$final_file"
+}
+
+#######################################
 # 统一声明所有全局变量
 # 命名规范：脚本内所有全局变量必须为小写, 变量命名由几部分组成: `g<r|w>[x][a]_name`
 #   0) g: 标识其为全局变量
@@ -86,11 +129,13 @@ __main() {
   __fw_declare_constants_vars "$@"
   __fw_declare_configurable_vars "$@"
   __fw_declare_dynamic_vars "$@"
+
+  # 记录最终解析结果到缓存(目前只记录只读全局变量)
+  __fw_write_final_config
 }
 
 declare -gr gr_fw_context_path="$gr_fw_bootstrap_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
 declare -gr gr_fw_context_cache_path="$gr_fw_context_path"/cache
-declare -gr gr_fw_context_completion_file="$gr_fw_context_path"/completion.sh
 __main "$@"
