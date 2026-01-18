@@ -36,6 +36,7 @@ EOF
 __fw_setup_fw_completion() {
   # shellcheck source=./cache/completion.fw.hint.sh
   cat >"$gr_fw_cached_fw_completion_file" <<'EOF'
+#!/usr/bin/env bash
 set -e
 
 ########################################################################################################################
@@ -91,6 +92,7 @@ __fw_setup_user_completion() {
     return 0
   fi
   cat >"$gr_fw_user_completion_file" <<'EOF'
+#!/usr/bin/env bash
 set -e
 
 ########################################################################################################################
