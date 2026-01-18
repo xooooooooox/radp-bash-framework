@@ -243,7 +243,7 @@ set -e
     echo "$config_content" >"$gr_fw_user_config_file"
   else
     # 没有 extend 变量时，重置为空模板(清空之前可能存在的内容)
-    cat >"$gr_fw_user_config_file" << 'EOF'
+    cat >"$gr_fw_user_config_file" <<'EOF'
 #!/usr/bin/env bash
 set -e
 
@@ -269,6 +269,9 @@ __fw_autoconfigure() {
         __fw_generate_user_config gw_final_yaml_vars
         # include use config.sh
         __fw_source_scripts "$gr_fw_user_config_file"
+        if [[ "$gr_radp_fw_log_console_enabled" == 'true' && "$gr_radp_fw_log_debug" == 'true' && "$gr_radp_fw_log_level" == 'debug' ]]; then
+          echo "User config path '$gr_fw_user_config_path'"
+        fi
       fi
     fi
   fi
