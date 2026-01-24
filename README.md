@@ -33,14 +33,14 @@ You can place that command in your shell profile (e.g. `~/.bashrc`) for automati
 #### Script (curl / wget / fetch)
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
 Or:
 
 ```shell
-wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
-fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
+fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
 Optional variables:
@@ -51,7 +51,7 @@ RADP_BF_REF=main \
 RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
 RADP_BF_BIN_DIR="$HOME/.local/bin" \
 RADP_BF_ALLOW_ANY_DIR=1 \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh)"
 ```
 
 `RADP_BF_REF` can be a branch, tag, or commit and takes precedence over `RADP_BF_VERSION`.
@@ -201,7 +201,17 @@ myapp/
 │   ├── config/
 │   │   ├── config.yaml          # Base configuration
 │   │   └── config-dev.yaml      # Development overrides
-│   └── libs/                    # Project-specific libraries
+│   ├── libs/                    # Project-specific libraries
+│   └── vars/
+│       └── constants.sh         # Version constants (gr_myapp_version)
+├── packaging/
+│   ├── copr/myapp.spec          # COPR RPM spec
+│   └── obs/
+│       ├── myapp.spec           # OBS RPM spec
+│       └── debian/              # Debian packaging
+├── .github/workflows/           # CI/CD workflows
+├── install.sh                   # Universal installer
+├── CHANGELOG.md
 ├── README.md
 └── .gitignore
 ```

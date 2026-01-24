@@ -33,14 +33,14 @@ source "$(radp-bf --print-run)"
 #### 脚本安装（curl / wget / fetch）
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
 或：
 
 ```shell
-wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
-fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
+fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
 可选变量：
@@ -51,7 +51,7 @@ RADP_BF_REF=main \
 RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
 RADP_BF_BIN_DIR="$HOME/.local/bin" \
 RADP_BF_ALLOW_ANY_DIR=1 \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/tools/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh)"
 ```
 
 `RADP_BF_REF` 支持分支、标签或 commit，并且优先级高于 `RADP_BF_VERSION`。
@@ -199,7 +199,17 @@ myapp/
 │   ├── config/
 │   │   ├── config.yaml          # 基础配置
 │   │   └── config-dev.yaml      # 开发环境配置覆盖
-│   └── libs/                    # 项目私有库
+│   ├── libs/                    # 项目私有库
+│   └── vars/
+│       └── constants.sh         # 版本常量 (gr_myapp_version)
+├── packaging/
+│   ├── copr/myapp.spec          # COPR RPM spec
+│   └── obs/
+│       ├── myapp.spec           # OBS RPM spec
+│       └── debian/              # Debian 打包文件
+├── .github/workflows/           # CI/CD 工作流
+├── install.sh                   # 通用安装脚本
+├── CHANGELOG.md
 ├── README.md
 └── .gitignore
 ```
