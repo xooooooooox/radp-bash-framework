@@ -101,13 +101,12 @@ __APPNAME___main() {
         exit 1
     fi
 
+    # 设置用户配置路径（在加载 framework 之前）
+    # 这样 framework 会自动加载 config/config.yaml 和 config/config-{env}.yaml
+    export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
+
     # shellcheck source=/dev/null
     source "$(radp-bf --print-run)"
-
-    # 配置应用
-    # shellcheck source=/dev/null
-    [[ -f "$project_root/src/main/shell/config/app.sh" ]] && \
-        source "$project_root/src/main/shell/config/app.sh"
 
     # 设置应用信息
     radp_cli_set_app_name "__APPNAME__"
@@ -145,16 +144,16 @@ __radp_cli_scaffold_commands() {
     local target_dir="$2"
 
     # version 命令
-    cat > "$target_dir/src/main/shell/commands/version.sh" << 'VERSION_CMD'
+    local project_var="${project_name//-/_}"
+    cat > "$target_dir/src/main/shell/commands/version.sh" << VERSION_CMD
 # @cmd
 # @desc Show version information
 
 cmd_version() {
-    echo "__APP_NAME__ v0.1.0"
+    # Version is loaded from config.yaml via radp.extend.${project_var}.version
+    echo "${project_name} \${gr_radp_extend_${project_var}_version:-v0.1.0}"
 }
 VERSION_CMD
-    sed -i.bak "s/__APP_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/version.sh"
-    rm -f "$target_dir/src/main/shell/commands/version.sh.bak"
 
     # completion 命令
     cat > "$target_dir/src/main/shell/commands/completion.sh" << 'COMPLETION_CMD'
@@ -203,18 +202,60 @@ HELLO_CMD
 
 #######################################
 # 生成配置文件
+# 遵循 radp-bash-framework 的 YAML 配置机制
 #######################################
 __radp_cli_scaffold_config() {
     local project_name="$1"
     local target_dir="$2"
+    local project_var="${project_name//-/_}"
 
-    cat > "$target_dir/src/main/shell/config/app.sh" << APP_CONFIG
-#!/usr/bin/env bash
-# Application configuration for $project_name
+    # 生成 config.yaml（遵循 radp-bash-framework 的配置结构）
+    cat > "$target_dir/src/main/shell/config/config.yaml" << YAML_CONFIG
+# $project_name configuration
+# This file follows radp-bash-framework's configuration structure
+# Priority: Environment variables (GX_*) > YAML values > defaults
 
-# Application version
-declare -gr ${project_name//-/_}_version="v0.1.0"
-APP_CONFIG
+radp:
+  env: default
+
+  # Framework settings override (optional)
+  fw:
+    banner-mode: on
+    log:
+      debug: false
+      level: info
+      console:
+        enabled: true
+      file:
+        enabled: false
+    user:
+      config:
+        automap: true  # Auto-generate config.sh from radp.extend.*
+
+  # Application-specific extensions
+  # Variables defined here will be available as gr_radp_extend_* in shell
+  extend:
+    ${project_var}:
+      version: v0.1.0
+      # Add your application config here
+      # example:
+      #   some_setting: value
+YAML_CONFIG
+
+    # 生成环境特定配置示例
+    cat > "$target_dir/src/main/shell/config/config-dev.yaml" << YAML_DEV
+# Development environment overrides for $project_name
+
+radp:
+  fw:
+    log:
+      debug: true
+      level: debug
+
+  extend:
+    ${project_var}:
+      # Development-specific overrides
+YAML_DEV
 }
 
 #######################################
@@ -258,6 +299,53 @@ $project_name hello World
 
 # Generate shell completion
 $project_name completion bash > ~/.bash_completion.d/$project_name
+\`\`\`
+
+## Configuration
+
+This project uses radp-bash-framework's YAML configuration system.
+
+### Configuration Files
+
+\`\`\`
+src/main/shell/config/
+├── config.yaml          # Base configuration
+└── config-dev.yaml      # Development environment overrides
+\`\`\`
+
+### Configuration Structure
+
+\`\`\`yaml
+radp:
+  env: default           # Environment name (loads config-{env}.yaml)
+
+  fw:                    # Framework settings
+    banner-mode: on
+    log:
+      debug: false
+      level: info
+
+  extend:                # Application-specific settings
+    ${project_name//-/_}:
+      version: v0.1.0
+      # Your custom config here
+\`\`\`
+
+### Accessing Config in Code
+
+Variables from \`radp.extend.*\` are available as \`gr_radp_extend_*\`:
+
+\`\`\`bash
+# radp.extend.${project_name//-/_}.version -> gr_radp_extend_${project_name//-/_}_version
+echo "\$gr_radp_extend_${project_name//-/_}_version"
+\`\`\`
+
+### Environment Variables
+
+Override any config with \`GX_*\` prefix:
+
+\`\`\`bash
+GX_RADP_FW_LOG_DEBUG=true $project_name hello
 \`\`\`
 
 ## Adding Commands
