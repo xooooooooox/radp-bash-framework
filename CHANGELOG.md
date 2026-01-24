@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.2 - 2026-01-24
+
+### refactor
+- 867e58a enhance CLI scaffolding
+
 ## v0.4.1 - 2026-01-24
 
 ### refactor
