@@ -1,0 +1,100 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+radp-bash-framework is a modular Bash framework providing structured context, configuration management, logging, and a comprehensive toolkit for shell scripting.
+
+## Commands
+
+### Testing
+```bash
+bats src/test/shell                    # Run all tests
+bats src/test/shell/<file>.bats        # Run specific test file
+```
+
+### Framework Entry
+```bash
+source src/main/shell/framework/run.sh              # Source framework directly
+source "$(./src/main/shell/bin/radp-bf --print-run)" # Via CLI wrapper
+```
+
+### CLI Options
+```bash
+radp-bf --print-run    # Print path to run.sh
+radp-bf --print-root   # Print framework root path
+radp-bf --version      # Print version
+```
+
+## Architecture
+
+### Execution Flow
+```
+run.sh (idempotent via gw_fw_run_initialized)
+  ↓
+preflight/ (environment & dependency checks)
+  ↓
+bootstrap/bootstrap.sh (context builder)
+  ↓
+context/context.sh (injects globals, libs, config)
+  ├─ libs/logger/ (logging system)
+  ├─ libs/toolkit/ (6 domains: core, exec, io, net, os, cli)
+  ├─ vars/global_vars.sh (all variable declarations)
+  └─ config autoconfiguration (YAML → shell vars)
+```
+
+### Key Directories
+- `src/main/shell/framework/` — Framework source
+- `src/main/shell/config/` — Default configuration YAMLs
+- `src/test/shell/` — BATS tests
+
+### Sourcing & Load Order
+- `__fw_source_scripts` sources all `.sh` files in a directory
+- Files sorted by numeric prefix: `1_feature.sh`, `2_other.sh`
+- Sourced files recorded in `gwxa_fw_sourced_scripts` array
+
+### Configuration Layering
+1. `framework_config.yaml` — Framework defaults
+2. User `config.yaml` — Overrides via `radp.fw.*` or `radp.extend.*`
+3. Environment variables — `GX_RADP_FW_*` or `YAML_*` prefix
+4. Final config cached in `cache/final_config.sh`
+
+## Naming Conventions
+
+### Variables
+- `gr_*` — Global readonly paths/config (e.g., `gr_fw_root_path`)
+- `gw_*` — Global writable state/flags (e.g., `gw_fw_run_initialized`)
+- `gwxa_*` — Global arrays (e.g., `gwxa_fw_sourced_scripts`)
+- Use `local` for function-scoped variables
+
+### Functions
+- `__fw_*` — Framework private/internal (double underscore)
+- `radp_*` — Public framework functions
+- `radp_nr_*` — Functions using nameref (pass variable name, not `$value`)
+- `radp_*_is_*` — Boolean checks returning 0/1
+
+## Toolkit Domains
+
+The toolkit is organized into 6 domains under `libs/toolkit/`:
+- **core** — Variables, arrays, maps, strings, version comparison
+- **exec** — Command execution with logging, retry strategies
+- **io** — File operations, interactive prompts, text banners
+- **net** — Connectivity checks, interface queries, SSH operations
+- **os** — Distro detection, security (SELinux/firewall), user management
+- **cli** — Argument parsing, help generation, command dispatch
+
+## Code Style
+
+- Entry scripts (`run.sh`, `preflight/*.sh`) use POSIX-compatible syntax
+- Bootstrap and beyond use Bash features (`[[ ]]`, arrays, `mapfile`)
+- Quote variables unless intentional word splitting
+- Preserve existing ShellCheck annotations (`# shellcheck source=...`)
+- Use `radp_log_*` functions instead of ad-hoc `echo` for output
+
+## IDE Integration
+
+For BashSupport Pro navigation:
+- `context.sh` contains `# shellcheck source=...` hints for IDE resolution
+- Update `__fw_context_setup_code_completion()` when adding sourced scripts
+- Working directory should be repository root for stable relative paths
