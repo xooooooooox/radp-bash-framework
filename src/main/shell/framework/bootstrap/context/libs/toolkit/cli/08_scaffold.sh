@@ -118,6 +118,12 @@ __APPNAME___main() {
         exit 1
     fi
 
+    # 生成补全脚本时禁用 banner 和控制台日志，避免污染输出
+    if [[ "${1:-}" == "completion" ]]; then
+        export GX_RADP_FW_BANNER_MODE=off
+        export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
+    fi
+
     # 设置用户配置路径（在加载 framework 之前）
     # 这样 framework 会自动加载 config/config.yaml 和 config/config-{env}.yaml
     export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
@@ -181,8 +187,8 @@ VERSION_CMD
 # @cmd
 # @desc Generate shell completion script
 # @arg shell! Shell type (bash or zsh)
-# @example completion bash > ~/.bash_completion.d/__APP_NAME__
-# @example completion zsh > ~/.zfunc/___APP_NAME__
+# @example completion bash >> ~/.bashrc  # Add to bashrc
+# @example completion zsh > ~/.zfunc/___APP_NAME__ && echo 'fpath=(~/.zfunc $fpath); autoload -Uz compinit; compinit' >> ~/.zshrc
 
 cmd_completion() {
     local shell="${1:-}"
