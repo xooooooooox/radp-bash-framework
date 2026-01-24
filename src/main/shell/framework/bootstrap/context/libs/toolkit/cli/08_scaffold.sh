@@ -187,8 +187,8 @@ VERSION_CMD
 # @cmd
 # @desc Generate shell completion script
 # @arg shell! Shell type (bash or zsh)
-# @example completion bash >> ~/.bashrc  # Add to bashrc
-# @example completion zsh > ~/.zfunc/___APP_NAME__ && echo 'fpath=(~/.zfunc $fpath); autoload -Uz compinit; compinit' >> ~/.zshrc
+# @example completion bash > ~/.local/share/bash-completion/completions/__APP_NAME__
+# @example completion zsh > ~/.zfunc/___APP_NAME__
 
 cmd_completion() {
     local shell="${1:-}"

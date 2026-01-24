@@ -297,7 +297,7 @@ Generate completion scripts:
 
 ```shell
 # Bash
-myapp completion bash > ~/.bash_completion.d/myapp
+myapp completion bash > ~/.local/share/bash-completion/completions/myapp
 
 # Zsh
 myapp completion zsh > ~/.zfunc/_myapp
