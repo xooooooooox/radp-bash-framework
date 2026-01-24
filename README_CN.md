@@ -171,6 +171,127 @@ sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
 sudo apt-get -f install
 ```
 
+## 框架内置工具包
+
+### CLI 工具包
+
+radp-bash-framework 内置 CLI 工具包，支持基于注解的命令定义、自动帮助生成、Shell 补全等功能。
+
+#### 创建新项目
+
+```shell
+radp-bf new myapp
+cd myapp
+./bin/myapp --help
+```
+
+生成的项目结构如下：
+
+```
+myapp/
+├── bin/
+│   └── myapp                    # CLI 入口脚本
+├── src/main/shell/
+│   ├── commands/                # 命令实现
+│   │   ├── hello.sh             # myapp hello
+│   │   ├── version.sh           # myapp version
+│   │   └── completion.sh        # myapp completion
+│   ├── config/
+│   │   ├── config.yaml          # 基础配置
+│   │   └── config-dev.yaml      # 开发环境配置覆盖
+│   └── libs/                    # 项目私有库
+├── README.md
+└── .gitignore
+```
+
+#### 命令注解
+
+使用注释元数据定义命令：
+
+```bash
+# @cmd
+# @desc 命令描述
+# @arg name!         必填参数
+# @arg items~        可变参数（多个值）
+# @option -v, --verbose          布尔标志
+# @option -e, --env <name>       带值选项
+# @option -c, --config <file>    带值选项
+# @example hello World
+# @example hello --verbose World
+
+cmd_hello() {
+    local name="${1:-World}"
+
+    if [[ "${opt_verbose:-}" == "true" ]]; then
+        echo "Verbose mode enabled"
+    fi
+
+    echo "Hello, $name!"
+}
+```
+
+#### 子命令
+
+创建目录实现子命令分组：
+
+```
+src/main/shell/commands/
+├── db/
+│   ├── migrate.sh    # myapp db migrate
+│   └── seed.sh       # myapp db seed
+└── hello.sh          # myapp hello
+```
+
+#### 配置管理
+
+框架使用 YAML 配置系统，自动映射为 Shell 变量：
+
+```yaml
+# src/main/shell/config/config.yaml
+radp:
+  env: default
+
+  fw:
+    banner-mode: on
+    log:
+      debug: false
+      level: info
+    user:
+      config:
+        automap: true
+
+  extend:
+    myapp:
+      version: v1.0.0
+      api_url: https://api.example.com
+```
+
+`radp.extend.*` 下的变量会自动映射为 `gr_radp_extend_*`：
+
+```bash
+# radp.extend.myapp.version -> gr_radp_extend_myapp_version
+echo "$gr_radp_extend_myapp_version"  # v1.0.0
+```
+
+通过环境变量覆盖配置：
+
+```shell
+GX_RADP_FW_LOG_DEBUG=true myapp hello
+```
+
+#### Shell 补全
+
+生成补全脚本：
+
+```shell
+# Bash
+myapp completion bash > ~/.bash_completion.d/myapp
+
+# Zsh
+myapp completion zsh > ~/.zfunc/_myapp
+```
+
+
 ## CI
 
 ### 发布流程

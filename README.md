@@ -173,6 +173,126 @@ sudo rpm -Uvh ./obs-radp-bash-framework-<version>-<release>.noarch.rpm
 sudo dpkg -i ./obs-radp-bash-framework_<version>-<release>_all.deb
 sudo apt-get -f install
 ```
+## Framework Builtin Toolkit
+
+### CLI Toolkit
+
+radp-bash-framework includes a CLI toolkit for building command-line applications with annotation-based command definitions, automatic help generation, and shell completion.
+
+#### Create a New CLI Project
+
+```shell
+radp-bf new myapp
+cd myapp
+./bin/myapp --help
+```
+
+This creates a project structure:
+
+```
+myapp/
+├── bin/
+│   └── myapp                    # CLI entry point
+├── src/main/shell/
+│   ├── commands/                # Command implementations
+│   │   ├── hello.sh             # myapp hello
+│   │   ├── version.sh           # myapp version
+│   │   └── completion.sh        # myapp completion
+│   ├── config/
+│   │   ├── config.yaml          # Base configuration
+│   │   └── config-dev.yaml      # Development overrides
+│   └── libs/                    # Project-specific libraries
+├── README.md
+└── .gitignore
+```
+
+#### Command Annotations
+
+Define commands using comment-based metadata:
+
+```bash
+# @cmd
+# @desc Command description here
+# @arg name!         Required argument
+# @arg items~        Variadic arguments (multiple values)
+# @option -v, --verbose          Boolean flag
+# @option -e, --env <name>       Option with value
+# @option -c, --config <file>    Option with value
+# @example hello World
+# @example hello --verbose World
+
+cmd_hello() {
+    local name="${1:-World}"
+
+    if [[ "${opt_verbose:-}" == "true" ]]; then
+        echo "Verbose mode enabled"
+    fi
+
+    echo "Hello, $name!"
+}
+```
+
+#### Subcommands
+
+Create a directory for subcommand groups:
+
+```
+src/main/shell/commands/
+├── db/
+│   ├── migrate.sh    # myapp db migrate
+│   └── seed.sh       # myapp db seed
+└── hello.sh          # myapp hello
+```
+
+#### Configuration
+
+The framework uses a YAML configuration system with automatic variable mapping:
+
+```yaml
+# src/main/shell/config/config.yaml
+radp:
+  env: default
+
+  fw:
+    banner-mode: on
+    log:
+      debug: false
+      level: info
+    user:
+      config:
+        automap: true
+
+  extend:
+    myapp:
+      version: v1.0.0
+      api_url: https://api.example.com
+```
+
+Variables from `radp.extend.*` are available as `gr_radp_extend_*`:
+
+```bash
+# radp.extend.myapp.version -> gr_radp_extend_myapp_version
+echo "$gr_radp_extend_myapp_version"  # v1.0.0
+```
+
+Override via environment variables:
+
+```shell
+GX_RADP_FW_LOG_DEBUG=true myapp hello
+```
+
+#### Shell Completion
+
+Generate completion scripts:
+
+```shell
+# Bash
+myapp completion bash > ~/.bash_completion.d/myapp
+
+# Zsh
+myapp completion zsh > ~/.zfunc/_myapp
+```
+
 
 ## CI
 
