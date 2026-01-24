@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.3.7 - 2026-01-24
+
+### chore
+- f630015 del
+
+### docs
+- 9b66c0b Add CLAUDE.md with project guidance and structure
+
+### refactor
+- 67040ce consolidate and rewrite CLI framework modules
+
 ## v0.3.6 - 2026-01-18
 
 ### feat
