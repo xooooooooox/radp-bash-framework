@@ -43,11 +43,15 @@ toolkit/
     05_user.sh      # 用户存在性、密码、ssh home、shell
     06_shell.sh     # shell 配置、PATH 追加、bash 版本校验
     07_cron.sh      # crontab 更新/合并
-  cli/             # CLI 解析/帮助/分发/自省
-    01_parse.sh     # getopt 包装、通用参数解析
-    02_help.sh      # usage/帮助输出
-    03_introspect.sh# 子命令/函数自省与映射
-    04_dispatch.sh  # 子命令调度、直连执行判定
+  cli/             # CLI 解析/帮助/分发/脚手架
+    01_meta.sh      # 元数据解析（@cmd, @arg, @option 等）
+    02_discover.sh  # 命令发现（扫描 commands/ 目录）
+    03_parse.sh     # 参数解析（getopt 封装）
+    04_help.sh      # 帮助生成（根据元数据自动生成）
+    05_dispatch.sh  # 命令路由（解析参数并路由到命令函数）
+    06_completion.sh# 补全脚本生成（bash/zsh）
+    07_app.sh       # 应用入口（radp_app_run）
+    08_scaffold.sh  # 项目脚手架（radp-bf new）
 ```
 
 ## 命名规则
