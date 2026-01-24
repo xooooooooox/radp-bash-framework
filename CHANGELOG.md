@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.4.0 - 2026-01-17
+
+### feat
+
+- distro libs optimize func radp_os_get_distro_pm and radp_os_install_pkgs
+- core libs add func radp_nr_arr_merge_unique
+- os libs add func radp_os_is_pkg_installed and radp_os_install_pkgs
+- Optimize os libs func radp_os_get_distro_xx
+- Add distro libs
+- Optimize context completion
+- rename func to __fw_os_get_distro_info
+- dynamic vars add gr_distro_xx and add func radp_os_get_distro_info
+- remove pkg toolkit
+- Add func radp_io_get_path_abs
+- Optimize func __fw_source_scripts
+- Create toolkit skeleton
+
 ## v0.3.6 - 2026-01-18
 
 ### feat
