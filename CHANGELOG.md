@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.1 - 2026-01-24
+
+### refactor
+- 5303563 consolidate and rewrite CLI framework modules
+- e4d0b16 consolidate and rewrite CLI framework modules
+
 ## v0.4.0 - 2026-01-17
 
 ### feat
