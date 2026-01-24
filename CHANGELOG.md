@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.3 - 2026-01-24
+
+### refactor
+- 86b7df1 update completion script paths for bash and zsh
+- 2cba3c0 improve scaffolding and completion script handling
+
 ## v0.4.2 - 2026-01-24
 
 ### refactor
