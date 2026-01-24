@@ -243,7 +243,7 @@ set -e
     echo "$config_content" >"$gr_fw_user_config_file"
   else
     # 没有 extend 变量时，重置为空模板(清空之前可能存在的内容)
-    cat >"$gr_fw_user_config_file" << 'EOF'
+    cat >"$gr_fw_user_config_file" <<'EOF'
 #!/usr/bin/env bash
 set -e
 
@@ -269,6 +269,9 @@ __fw_autoconfigure() {
         __fw_generate_user_config gw_final_yaml_vars
         # include use config.sh
         __fw_source_scripts "$gr_fw_user_config_file"
+        if [[ "$gr_radp_fw_log_console_enabled" == 'true' && "$gr_radp_fw_log_debug" == 'true' && "$gr_radp_fw_log_level" == 'debug' ]]; then
+          echo "User config path '$gr_fw_user_config_path'"
+        fi
       fi
     fi
   fi
@@ -452,13 +455,21 @@ declare -gr gr_fw_banner_file="$gr_fw_config_path"/banner.txt
 
 declare -g gr_fw_user_config_path
 gr_fw_user_config_path="$(
+  path=""
   if [[ -n "${GX_RADP_FW_USER_CONFIG_PATH:-}" ]]; then
-    printf '%s\n' "$GX_RADP_FW_USER_CONFIG_PATH"
+    path="$GX_RADP_FW_USER_CONFIG_PATH"
   elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
-    printf '%s\n' "${XDG_CONFIG_HOME%/}/radp_bash"
+    path="${XDG_CONFIG_HOME%/}/radp_bash"
   else
-    printf '%s\n' "$(dirname "${gr_fw_root_path}")/config"
+    path="$(dirname "${gr_fw_root_path}")/config"
   fi
+  if [[ "$path" == "~" || "$path" == "~/"* ]]; then
+    path="${path/#\~/$HOME}"
+  fi
+  if [[ "$path" != /* ]]; then
+    path="$(pwd)/$path"
+  fi
+  __fw_normalize_path "$path"
 )"
 readonly gr_fw_user_config_path
 declare -gr gr_fw_user_config_filename="${GX_RADP_FW_USER_CONFIG_FILENAME:-config}"

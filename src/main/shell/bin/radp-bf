@@ -5,17 +5,19 @@ __radp_bf_usage() {
   cat <<'USAGE'
 radp-bash-framework
 Usage:
-  radp-bf [options...]
+  radp-bf [command] [options...]
 
 Commands:
+  new <name>    Create a new CLI project based on radp-bash-framework.
   --print-run   Print full path to run.sh.
   --print-root  Print framework root directory.
   --print       Print all default paths.
   -h, --help    Show this help.
   -v, --version Show version number.
 
-Example:
-  source "$(radp-bash-framework --print-run)"
+Examples:
+  source "$(radp-bf --print-run)"
+  radp-bf new my-cli
 USAGE
 }
 
@@ -76,6 +78,16 @@ __radp_bf_main() {
     printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
     printf "%-17s %s\n" "User lib path:" "$gr_radp_fw_user_lib_path"
     return 0
+    ;;
+  new)
+    shift
+    if [[ -z "${1:-}" ]]; then
+      echo "radp-bf new: project name required" >&2
+      echo "Usage: radp-bf new <project-name> [target-dir]" >&2
+      return 1
+    fi
+    radp_cli_scaffold_new "$@"
+    return $?
     ;;
   *)
     echo "radp-bash-framework: unknown argument '${1}'" >&2

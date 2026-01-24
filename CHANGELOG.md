@@ -4,18 +4,35 @@
 
 ### feat
 
-- 262087c distro libs optimize func radp_os_get_distro_pm and radp_os_install_pkgs
-- 472e402 core libs add func radp_nr_arr_merge_unique
-- 3ee2a31 os libs add func radp_os_is_pkg_installed and radp_os_install_pkgs
-- 6320eda Optimize os libs func radp_os_get_distro_xx
-- 43fb99d Add distro libs
-- 320764f Optimize context completion
-- efece04 rename func to __fw_os_get_distro_info
-- 2259837 dynamic vars add gr_distro_xx and add func radp_os_get_distro_info
-- 1a0636d remove pkg toolkit
-- cc2697e Add func radp_io_get_path_abs
-- e814902 Optimize func __fw_source_scripts
-- 2b838aa Create toolkit skeleton
+- distro libs optimize func radp_os_get_distro_pm and radp_os_install_pkgs
+- core libs add func radp_nr_arr_merge_unique
+- os libs add func radp_os_is_pkg_installed and radp_os_install_pkgs
+- Optimize os libs func radp_os_get_distro_xx
+- Add distro libs
+- Optimize context completion
+- rename func to __fw_os_get_distro_info
+- dynamic vars add gr_distro_xx and add func radp_os_get_distro_info
+- remove pkg toolkit
+- Add func radp_io_get_path_abs
+- Optimize func __fw_source_scripts
+- Create toolkit skeleton
+
+## v0.3.6 - 2026-01-18
+
+### feat
+
+- Optimize completion
+
+## v0.3.5 - 2026-01-17
+
+### feat
+- Support user completion
+- Optimize func `__fw_source_scripts`
+- Create toolkit skeleton
+  - Add func `radp_io_get_path_abs`
+  - Add func `radp_os_get_distro_xx`
+  - Add func `radp_os_install_pkgs` and `radp_os_is_pkg_installed`
+  - Add func `radp_nr_arr_merge_unique`
 
 ## v0.3.4 - 2026-01-12
 
