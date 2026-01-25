@@ -34,7 +34,7 @@ radp_cli_scaffold_new() {
 
     # 创建目录结构
     mkdir -p "$target_dir"/{bin,src/main/shell/{commands,config,libs,vars}}
-    mkdir -p "$target_dir"/packaging/{copr,obs/debian/source}
+    mkdir -p "$target_dir"/packaging/{copr,homebrew,obs/debian/source}
     mkdir -p "$target_dir"/.github/workflows
 
     # 生成入口脚本
@@ -437,6 +437,71 @@ src/main/shell/commands/
 └── hello.sh         # $project_name hello
 \`\`\`
 
+## CI/CD
+
+This project includes GitHub Actions workflows for automated releases.
+
+### Workflow Chain
+
+\`\`\`
+release-prep (manual trigger)
+       │
+       ▼
+   PR merged
+       │
+       ▼
+create-version-tag
+       │
+       ├──────────────────────┬──────────────────────┐
+       ▼                      ▼                      ▼
+update-spec-version    update-homebrew-tap    (GitHub Release)
+       │
+       ├──────────────┐
+       ▼              ▼
+build-copr-package  build-obs-package
+\`\`\`
+
+### Release Process
+
+1. Trigger \`release-prep\` workflow with bump_type (patch/minor/major/manual)
+2. Review and merge the generated PR
+3. Subsequent workflows run automatically
+
+### Required Secrets
+
+Configure these secrets in your GitHub repository settings (\`Settings > Secrets and variables > Actions\`):
+
+#### Homebrew Tap (required for \`update-homebrew-tap\`)
+
+| Secret | Description |
+|--------|-------------|
+| \`HOMEBREW_TAP_TOKEN\` | GitHub Personal Access Token with \`repo\` scope for homebrew-radp repository |
+
+#### COPR (required for \`build-copr-package\`)
+
+| Secret | Description |
+|--------|-------------|
+| \`COPR_LOGIN\` | COPR API login (from <https://copr.fedorainfracloud.org/api/>) |
+| \`COPR_TOKEN\` | COPR API token |
+| \`COPR_USERNAME\` | COPR username |
+| \`COPR_PROJECT\` | COPR project name (e.g., \`radp\`) |
+
+#### OBS (required for \`build-obs-package\`)
+
+| Secret | Description |
+|--------|-------------|
+| \`OBS_USERNAME\` | OBS username |
+| \`OBS_PASSWORD\` | OBS password or API token |
+| \`OBS_PROJECT\` | OBS project name |
+| \`OBS_PACKAGE\` | OBS package name |
+| \`OBS_API_URL\` | (Optional) OBS API URL, defaults to \`https://api.opensuse.org\` |
+
+### Skipping Workflows
+
+If you don't need certain distribution channels:
+- Delete the corresponding workflow file from \`.github/workflows/\`
+- Or leave secrets unconfigured (workflow will skip with missing secrets)
+
 ## License
 
 MIT
@@ -793,6 +858,60 @@ COPYRIGHT
 
     # Debian source format
     echo "3.0 (quilt)" > "$target_dir/packaging/obs/debian/source/format"
+
+    # Homebrew formula template
+    # Convert project name to Ruby class name (capitalize first letter, remove hyphens and capitalize following letters)
+    local class_name
+    class_name="$(echo "${project_name}" | sed -r 's/(^|-)([a-z])/\U\2/g')"
+
+    cat > "$target_dir/packaging/homebrew/${project_name}.rb" << FORMULA
+# Homebrew formula template for ${project_name}
+# The CI workflow uses this template and replaces placeholders with actual values.
+#
+# Placeholders:
+#   %%TARBALL_URL%% - GitHub archive URL for the release tag
+#   %%SHA256%%      - SHA256 checksum of the tarball
+#   %%VERSION%%     - Version number (without 'v' prefix)
+#
+# Installation:
+#   brew tap xooooooooox/radp
+#   brew install ${project_name}
+
+class ${class_name} < Formula
+  desc "CLI tool built with radp-bash-framework"
+  homepage "https://github.com/xooooooooox/${project_name}"
+  url "%%TARBALL_URL%%"
+  sha256 "%%SHA256%%"
+  version "%%VERSION%%"
+  license "MIT"
+
+  depends_on "xooooooooox/radp/radp-bash-framework"
+
+  def install
+    # Install to libexec
+    libexec.install "bin", "src"
+
+    # Create wrapper script that sets up paths
+    (bin/"${project_name}").write <<~EOS
+      #!/bin/bash
+      exec "#{libexec}/bin/${project_name}" "\\\$@"
+    EOS
+  end
+
+  def caveats
+    <<~EOS
+      ${project_name} requires radp-bash-framework (installed as dependency).
+
+      Quick start:
+        ${project_name} --help
+    EOS
+  end
+
+  test do
+    system "#{bin}/${project_name}", "--help"
+  end
+end
+FORMULA
 }
 
 #######################################
