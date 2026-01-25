@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.4.8 - 2026-01-25
+
+### feat
+- 3cde3d6 add package manager detection and installation support
+
+### docs
+- ff9466a improve installation guide and variable descriptions
+- a075d86 add framework description to README and README_CN
+
 ## v0.4.7 - 2026-01-25
 
 ### chore
