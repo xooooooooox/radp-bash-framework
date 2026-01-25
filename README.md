@@ -206,6 +206,7 @@ myapp/
 │       └── constants.sh         # Version constants (gr_myapp_version)
 ├── packaging/
 │   ├── copr/myapp.spec          # COPR RPM spec
+│   ├── homebrew/myapp.rb        # Homebrew formula template
 │   └── obs/
 │       ├── myapp.spec           # OBS RPM spec
 │       └── debian/              # Debian packaging

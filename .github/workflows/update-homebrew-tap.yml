@@ -14,12 +14,10 @@ on:
 jobs:
   update-tap:
     if: >-
-      ${{
-        github.event_name != 'workflow_run' ||
-        (github.event.workflow_run.conclusion == 'success' &&
-        (github.event.workflow_run.head_branch == 'main' ||
-         startsWith(github.event.workflow_run.head_branch, 'workflow/')))
-      }}
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.head_branch == 'main' ||
+       startsWith(github.event.workflow_run.head_branch, 'workflow/')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -77,57 +75,39 @@ jobs:
           fi
           version="${tag_name#v}"
           tarball_url="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${tag_name}.tar.gz"
-          sha256="$(curl -L "${tarball_url}" | sha256sum | awk '{print $1}')"
+          sha256="$(curl -sL "${tarball_url}" | sha256sum | awk '{print $1}')"
           echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "tarball_url=${tarball_url}" >> "$GITHUB_OUTPUT"
           echo "sha256=${sha256}" >> "$GITHUB_OUTPUT"
 
-      - name: Update formula
+      - name: Create or update formula
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          TARBALL_URL: ${{ steps.release.outputs.tarball_url }}
+          SHA256: ${{ steps.release.outputs.sha256 }}
         run: |
           set -euo pipefail
+          template="packaging/homebrew/radp-bash-framework.rb"
           formula="homebrew-radp/${TAP_FORMULA_PATH}"
-          export RELEASE_TAG_NAME="${{ steps.release.outputs.tag_name }}"
-          export RELEASE_VERSION="${{ steps.release.outputs.version }}"
-          export RELEASE_TARBALL_URL="${{ steps.release.outputs.tarball_url }}"
-          export RELEASE_SHA256="${{ steps.release.outputs.sha256 }}"
-          python - <<'PY'
-          import os
-          import pathlib
-          import re
+          mkdir -p "$(dirname "${formula}")"
 
-          formula_path = pathlib.Path("homebrew-radp") / pathlib.Path(os.environ["TAP_FORMULA_PATH"])
-          tag_name = os.environ["RELEASE_TAG_NAME"]
-          version = os.environ["RELEASE_VERSION"]
-          tarball_url = os.environ["RELEASE_TARBALL_URL"]
-          sha256 = os.environ["RELEASE_SHA256"]
-
-          if not formula_path.exists():
-            raise SystemExit(f"Formula not found: {formula_path}")
-
-          content = formula_path.read_text(encoding="utf-8")
-
-          content, url_count = re.subn(r'^\s*url\s+"[^"]+"', f'  url "{tarball_url}"', content, flags=re.MULTILINE)
-          content, sha_count = re.subn(r'^\s*sha256\s+"[^"]+"', f'  sha256 "{sha256}"', content, flags=re.MULTILINE)
-          content, version_count = re.subn(r'^\s*version\s+"[^"]+"', f'  version "{version}"', content, flags=re.MULTILINE)
-
-          if url_count == 0 or sha_count == 0:
-            raise SystemExit("Failed to update url/sha256 in formula")
-
-          formula_path.write_text(content, encoding="utf-8")
-          print(f"Updated {formula_path} to {tag_name}")
-          PY
+          # Copy template and replace placeholders
+          cp "${template}" "${formula}"
+          sed -i "s|%%TARBALL_URL%%|${TARBALL_URL}|g" "${formula}"
+          sed -i "s|%%SHA256%%|${SHA256}|g" "${formula}"
+          sed -i "s|%%VERSION%%|${VERSION}|g" "${formula}"
 
       - name: Commit and push tap
         run: |
           set -euo pipefail
           cd homebrew-radp
-          if git diff --quiet; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${TAP_FORMULA_PATH}" || true
+          if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${TAP_FORMULA_PATH}"
           git commit -m "Update radp-bash-framework to ${{ steps.release.outputs.tag_name }}"
           git push
