@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.4.10 - 2026-01-25
+
+### feat
+- d62c42d improve subcommand matching and error handling
+
+### docs
+- 5fcc35b add CLI command discovery and nested command group documentation
+
 ## v0.4.9 - 2026-01-25
 
 ### feat
