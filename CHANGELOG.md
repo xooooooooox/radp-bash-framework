@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.4 - 2026-01-25
+
+### feat
+- 78a484d add Homebrew support and improve scaffolding structure
+- a35f6b1 add Homebrew formula for radp-bash-framework
+
 ## v0.4.3 - 2026-01-24
 
 ### refactor
