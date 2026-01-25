@@ -106,6 +106,51 @@ __APPNAME___get_project_root() {
     dirname "$bin_dir"
 }
 
+# 解析全局选项 (--verbose, --debug)
+__APPNAME___parse_global_opts() {
+    local -a filtered_args=()
+    local verbose=false
+    local debug=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -v|--verbose)
+                verbose=true
+                shift
+                ;;
+            --debug)
+                debug=true
+                shift
+                ;;
+            --)
+                shift
+                filtered_args+=("$@")
+                break
+                ;;
+            *)
+                filtered_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    # 设置输出模式环境变量
+    if [[ "$debug" == "true" ]]; then
+        export GX_RADP_FW_BANNER_MODE=on
+        export GX_RADP_FW_LOG_LEVEL=debug
+        export GX_RADP_FW_LOG_DEBUG=true
+    elif [[ "$verbose" == "true" ]]; then
+        export GX_RADP_FW_BANNER_MODE=on
+        export GX_RADP_FW_LOG_LEVEL=info
+    else
+        # 默认: banner off, 只显示错误
+        export GX_RADP_FW_BANNER_MODE=off
+        export GX_RADP_FW_LOG_LEVEL=error
+    fi
+
+    printf '%s\0' "${filtered_args[@]}"
+}
+
 # 主函数
 __APPNAME___main() {
     local project_root
@@ -118,14 +163,19 @@ __APPNAME___main() {
         exit 1
     fi
 
-    # 生成补全脚本时禁用 banner 和控制台日志，避免污染输出
-    if [[ "${1:-}" == "completion" ]]; then
+    # 解析全局选项
+    local -a args=()
+    while IFS= read -r -d '' arg; do
+        args+=("$arg")
+    done < <(__APPNAME___parse_global_opts "$@")
+
+    # 生成补全脚本时禁用所有输出
+    if [[ "${args[0]:-}" == "completion" ]]; then
         export GX_RADP_FW_BANNER_MODE=off
         export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
     fi
 
     # 设置用户配置路径（在加载 framework 之前）
-    # 这样 framework 会自动加载 config/config.yaml 和 config/config-{env}.yaml
     export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
 
     # shellcheck source=/dev/null
@@ -149,7 +199,7 @@ __APPNAME___main() {
     fi
 
     # 运行
-    radp_app_run "$@"
+    radp_app_run "${args[@]}"
 }
 
 __APPNAME___main "$@"
@@ -350,8 +400,25 @@ $project_name version
 $project_name hello World
 
 # Generate shell completion
-$project_name completion bash > ~/.bash_completion.d/$project_name
+$project_name completion bash > ~/.local/share/bash-completion/completions/$project_name
+$project_name completion zsh > ~/.zfunc/_$project_name
+
+# Verbose mode (show banner and info logs)
+$project_name -v hello World
+$project_name --verbose version
+
+# Debug mode (show banner and debug logs)
+$project_name --debug hello World
 \`\`\`
+
+## Global Options
+
+| Option | Description |
+|--------|-------------|
+| \`-v\`, \`--verbose\` | Enable verbose output (banner + info logs) |
+| \`--debug\` | Enable debug output (banner + debug logs) |
+
+By default, the CLI runs in quiet mode (no banner, only error logs).
 
 ## Configuration
 
