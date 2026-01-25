@@ -231,6 +231,7 @@ __radp_cli_scaffold_commands() {
     # version 命令
     local project_var="${project_name//-/_}"
     cat > "$target_dir/src/main/shell/commands/version.sh" << VERSION_CMD
+#!/usr/bin/env bash
 # @cmd
 # @desc Show version information
 
@@ -242,6 +243,7 @@ VERSION_CMD
 
     # completion 命令
     cat > "$target_dir/src/main/shell/commands/completion.sh" << 'COMPLETION_CMD'
+#!/usr/bin/env bash
 # @cmd
 # @desc Generate shell completion script
 # @arg shell! Shell type (bash or zsh)
@@ -264,6 +266,7 @@ COMPLETION_CMD
 
     # hello 示例命令
     cat > "$target_dir/src/main/shell/commands/hello.sh" << 'HELLO_CMD'
+#!/usr/bin/env bash
 # @cmd
 # @desc Say hello (example command)
 # @arg name Name to greet
