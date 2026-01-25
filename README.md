@@ -18,6 +18,8 @@
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![OBS packages](https://img.shields.io/badge/OBS-packages-4b8bbe)](https://software.opensuse.org//download.html?project=home%3Axooooooooox%3Aradp&package=radp-bash-framework)
 
+A modular Bash framework providing structured bootstrapping, configuration management, logging, and a comprehensive toolkit for shell scripting.
+
 ## QuickStart
 
 ### Installation

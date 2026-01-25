@@ -18,6 +18,8 @@
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![OBS packages](https://img.shields.io/badge/OBS-packages-4b8bbe)](https://software.opensuse.org//download.html?project=home%3Axooooooooox%3Aradp&package=radp-bash-framework)
 
+模块化 Bash 框架，提供结构化引导、配置管理、日志系统和丰富的工具集。
+
 ## 快速开始
 
 ### 安装
