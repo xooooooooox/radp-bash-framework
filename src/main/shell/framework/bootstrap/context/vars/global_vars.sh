@@ -137,5 +137,21 @@ __main() {
 declare -gr gr_fw_context_path="$gr_fw_bootstrap_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
-declare -gr gr_fw_context_cache_path="$gr_fw_context_path"/cache
+declare -g gr_fw_context_cache_path=""
+# Cache path: use user-writable location to support system-wide installation
+# Priority: XDG_CACHE_HOME > ~/.cache > /tmp
+__fw_resolve_cache_path() {
+  local cache_base="${XDG_CACHE_HOME:-$HOME/.cache}"
+  local cache_path="${cache_base}/radp-bash-framework"
+
+  # If we can't create the cache directory, fall back to /tmp
+  if ! mkdir -p "$cache_path" 2>/dev/null; then
+    cache_path="/tmp/radp-bash-framework-cache-$(id -u)"
+    mkdir -p "$cache_path" 2>/dev/null || true
+  fi
+
+  echo "$cache_path"
+}
+gr_fw_context_cache_path="$(__fw_resolve_cache_path)"
+readonly gr_fw_context_cache_path
 __main "$@"
