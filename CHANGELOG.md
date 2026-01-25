@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.6 - 2026-01-25
+
+### refactor
+- eaa0e46 improve argument handling and add empty input safeguards
+
 ## v0.4.5 - 2026-01-25
 
 ### feat
