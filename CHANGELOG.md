@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.7 - 2026-01-25
+
+### chore
+- 5677093 add shebang to scaffolded command scripts
+
 ## v0.4.6 - 2026-01-25
 
 ### refactor
