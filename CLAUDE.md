@@ -84,6 +84,30 @@ The toolkit is organized into 6 domains under `libs/toolkit/`:
 - **os** — Distro detection, security (SELinux/firewall), user management
 - **cli** — Argument parsing, help generation, command dispatch
 
+## CLI Command Discovery
+
+Commands are auto-discovered from the `commands/` directory:
+```
+commands/
+├── version.sh              # Top-level: mycli version
+├── vf/
+│   ├── init.sh             # Subcommand: mycli vf init
+│   ├── list.sh             # Subcommand: mycli vf list
+│   └── template/
+│       ├── list.sh         # Nested: mycli vf template list
+│       └── show.sh         # Nested: mycli vf template show
+```
+
+### Command File Requirements
+- Must contain `# @cmd` marker to be discovered
+- Function name follows path: `commands/vf/init.sh` → `cmd_vf_init()`
+- Files starting with `_` are ignored (internal use)
+
+### Nested Command Groups
+- Supports arbitrary nesting depth (`vf template list`)
+- Command groups without a `.sh` file show "Missing subcommand" with correct path
+- Help is auto-generated for command groups showing available subcommands
+
 ## Code Style
 
 - Entry scripts (`run.sh`, `preflight/*.sh`) use POSIX-compatible syntax
