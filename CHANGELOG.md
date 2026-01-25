@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.9 - 2026-01-25
+
+### feat
+- d8b5d20 dynamically resolve cache path for system-wide installations
+- f531294 Update cli generated scaffold
+
 ## v0.4.8 - 2026-01-25
 
 ### feat
