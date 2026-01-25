@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.5 - 2026-01-25
+
+### feat
+- ae9773c add global option parsing for verbose and debug modes
+
 ## v0.4.4 - 2026-01-25
 
 ### feat
