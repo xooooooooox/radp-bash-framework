@@ -37,6 +37,7 @@ radp_cli_dispatch() {
     # 查找匹配的命令
     local cmd_path=""
     local cmd_args=()
+    local longest_group=""  # 跟踪最长匹配的命令组路径
     local i=0
 
     # 逐步构建命令路径，找到最长匹配
@@ -57,7 +58,10 @@ radp_cli_dispatch() {
         if radp_cli_cmd_exists "$test_path"; then
             cmd_path="$test_path"
             cmd_args=("${args[@]:$((i + 1))}")
-        elif ! radp_cli_has_subcommands "$test_path"; then
+        elif radp_cli_has_subcommands "$test_path"; then
+            # 是命令组，记录最长匹配的命令组路径
+            longest_group="$test_path"
+        else
             # 既不是命令也不是命令组，停止搜索
             break
         fi
@@ -65,23 +69,27 @@ radp_cli_dispatch() {
 
     # 未找到命令
     if [[ -z "$cmd_path" ]]; then
-        local first_arg="${args[0]}"
+        # 优先使用最长匹配的命令组路径
+        local target_group="${longest_group:-${args[0]}}"
 
         # 检查是否是命令组（有子命令但自身没有实现）
-        if radp_cli_has_subcommands "$first_arg"; then
-            # 检查是否请求帮助
-            if [[ "${args[1]:-}" == "-h" || "${args[1]:-}" == "--help" ]]; then
-                radp_cli_help_command_group "$first_arg"
+        if radp_cli_has_subcommands "$target_group"; then
+            # 检查是否请求帮助（检查命令组路径后的下一个参数）
+            local group_depth
+            group_depth=$(echo "$target_group" | wc -w | tr -d ' ')
+            local next_arg="${args[$group_depth]:-}"
+            if [[ "$next_arg" == "-h" || "$next_arg" == "--help" ]]; then
+                radp_cli_help_command_group "$target_group"
                 return 0
             fi
 
-            radp_log_error "Missing subcommand for: $first_arg"
+            radp_log_error "Missing subcommand for: $target_group"
             echo
-            radp_cli_help_command_group "$first_arg"
+            radp_cli_help_command_group "$target_group"
             return 1
         fi
 
-        radp_log_error "Unknown command: $first_arg"
+        radp_log_error "Unknown command: ${args[0]}"
         echo
         radp_cli_help_app
         return 1
