@@ -148,7 +148,10 @@ __APPNAME___parse_global_opts() {
         export GX_RADP_FW_LOG_LEVEL=error
     fi
 
-    printf '%s\0' "${filtered_args[@]}"
+    # 注意：当数组为空时不输出任何内容
+    if [[ ${#filtered_args[@]} -gt 0 ]]; then
+        printf '%s\0' "${filtered_args[@]}"
+    fi
 }
 
 # 主函数
@@ -199,7 +202,12 @@ __APPNAME___main() {
     fi
 
     # 运行
-    radp_app_run "${args[@]}"
+    # 当没有参数时，显示帮助
+    if [[ ${#args[@]} -eq 0 ]]; then
+        radp_app_run --help
+    else
+        radp_app_run "${args[@]}"
+    fi
 }
 
 __APPNAME___main "$@"

@@ -95,7 +95,10 @@ radp_cli_discover() {
 #   1 - 命令不存在
 #######################################
 radp_cli_get_cmd_file() {
-    local cmd_path="$1"
+    local cmd_path="${1:-}"
+    # 空路径返回失败
+    [[ -z "$cmd_path" ]] && return 1
+
     local file="${__radp_cli_commands[$cmd_path]:-}"
 
     if [[ -n "$file" ]]; then
@@ -114,8 +117,9 @@ radp_cli_get_cmd_file() {
 #   1 - 不存在
 #######################################
 radp_cli_cmd_exists() {
-    local cmd_path="$1"
-    [[ -n "${__radp_cli_commands[$cmd_path]:-}" ]]
+    local cmd_path="${1:-}"
+    # 空路径始终返回不存在
+    [[ -n "$cmd_path" ]] && [[ -n "${__radp_cli_commands[$cmd_path]:-}" ]]
 }
 
 #######################################
@@ -170,7 +174,10 @@ radp_cli_list_subcommands() {
 #   1 - 没有子命令
 #######################################
 radp_cli_has_subcommands() {
-    local cmd="$1"
+    local cmd="${1:-}"
+    # 空命令返回没有子命令
+    [[ -z "$cmd" ]] && return 1
+
     local cmd_path
 
     for cmd_path in "${!__radp_cli_commands[@]}"; do
