@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.14 - 2026-01-26
+
+### feat
+- 58bf50e enhance IDE completion hints generation and command integration
+
 ## v0.4.13 - 2026-01-26
 
 ### feat
