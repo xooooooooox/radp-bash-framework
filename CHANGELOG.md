@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.11 - 2026-01-26
+
+### fix
+- ddeca22 fix cli toolkit for subcmd group and shell completion not work well.
+
 ## v0.4.10 - 2026-01-25
 
 ### feat
