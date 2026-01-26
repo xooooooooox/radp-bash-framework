@@ -92,7 +92,7 @@ radp_cli_dispatch "$@" # Dispatch to command handler
 
 ```bash
 radp_cli_completion_generate bash # Generate bash completion
-radp_cli_completion_generate zsh  # Generate zsh completion
+radp_cli_completion_generate zsh # Generate zsh completion
 
 ```
 
@@ -103,16 +103,39 @@ The completion system supports dynamic completion via the `@complete` annotation
 # @arg name! Package name
 # @complete name _complete_packages  # Dynamic completion
 
-cmd_install() { ... }
+cmd_install() {
+  ... }
 
-_complete_packages() {
+  _complete_packages() {
     echo "fzf"
     echo "bat"
     echo "jq"
-}
+  }
 ```
 
 See [Command Annotations](annotations.md#dynamic-completion) for details.
+
+### Passthrough Mode
+
+For commands that wrap external tools (vagrant, docker, kubectl), use `@meta passthrough` to bypass argument parsing:
+
+```bash
+# @cmd
+# @desc Run docker commands
+# @meta passthrough
+
+cmd_docker() {
+  exec docker "$@" # All arguments passed through
+}
+```
+
+In passthrough mode:
+
+- No getopt parsing - avoids conflicts with external tool options
+- `--help` still shows framework-generated help
+- Use environment variables for wrapper-specific configuration
+
+See [Command Annotations](annotations.md#meta-annotations) for details.
 
 ### Scaffolding
 
