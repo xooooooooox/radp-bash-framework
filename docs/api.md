@@ -92,8 +92,27 @@ radp_cli_dispatch "$@" # Dispatch to command handler
 
 ```bash
 radp_cli_completion_generate bash # Generate bash completion
-radp_cli_completion_generate zsh # Generate zsh completion
+radp_cli_completion_generate zsh  # Generate zsh completion
+
 ```
+
+The completion system supports dynamic completion via the `@complete` annotation:
+
+```bash
+# @cmd
+# @arg name! Package name
+# @complete name _complete_packages  # Dynamic completion
+
+cmd_install() { ... }
+
+_complete_packages() {
+    echo "fzf"
+    echo "bat"
+    echo "jq"
+}
+```
+
+See [Command Annotations](annotations.md#dynamic-completion) for details.
 
 ### Scaffolding
 

@@ -94,6 +94,60 @@ cmd_run() {
 }
 ```
 
+## Dynamic Completion
+
+### `@complete`
+
+Define dynamic shell completion for arguments or options. The completion function is called at runtime to provide
+completion values.
+
+```bash
+# @complete <name> <function>
+```
+
+- `name`: Argument name or option long name (without `--`)
+- `function`: Shell function that outputs completion values (one per line)
+
+Example:
+
+```bash
+# @cmd
+# @desc Install a package
+# @arg name! Package name
+# @complete name _my_complete_packages
+# @option -c, --category <name> Filter by category
+# @complete category _my_complete_categories
+
+cmd_install() {
+  local name="$1"
+  local category="${opt_category:-}"
+  # ...
+}
+
+# Completion function for packages
+_my_complete_packages() {
+  echo "fzf"
+  echo "bat"
+  echo "jq"
+}
+
+# Completion function for categories
+_my_complete_categories() {
+  echo "cli-tools"
+  echo "languages"
+  echo "editors"
+}
+```
+
+When the user presses TAB:
+
+- `myapp install <TAB>` → shows: `fzf bat jq`
+- `myapp install -c <TAB>` → shows: `cli-tools languages editors`
+
+**Note:** The completion function must be available when the shell completion script runs. For built-in commands, define
+completion functions in your project's libs. For user-facing features, ensure the functions are sourced in the entry
+script.
+
 ## Examples
 
 ### `@example`
@@ -189,4 +243,5 @@ myapp/
 └── install.sh                     # Installer script
 ```
 
-The `config/` directory contains YAML configuration files that are automatically parsed by the framework. See [Configuration](configuration.md) for details on the YAML configuration system.
+The `config/` directory contains YAML configuration files that are automatically parsed by the framework.
+See [Configuration](configuration.md) for details on the YAML configuration system.
