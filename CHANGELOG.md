@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.22 - 2026-01-26
+
+### fix
+- 013f7b1 remove trailing backslash from last _arguments parameter in zsh completion
+
 ## v0.4.21 - 2026-01-26
 
 - TODO: no commits found; add summary manually.
