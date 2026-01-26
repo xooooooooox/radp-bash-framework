@@ -62,64 +62,8 @@ BASH_COMPLETION_FUNC
     echo "            COMPREPLY=(\$(compgen -W \"$top_commands --help --version\" -- \"\$cur\"))"
     echo "            ;;"
 
-    # 为每个有子命令的命令组生成补全
-    local cmd
-    for cmd in $(radp_cli_list_commands); do
-        if radp_cli_has_subcommands "$cmd"; then
-            local subcommands
-            subcommands=$(radp_cli_list_subcommands "$cmd" | tr '\n' ' ')
-            echo "        '$cmd')"
-            echo "            COMPREPLY=(\$(compgen -W \"$subcommands --help\" -- \"\$cur\"))"
-            echo "            ;;"
-        fi
-
-        # 为具体命令生成选项补全
-        if radp_cli_cmd_exists "$cmd"; then
-            local -A meta=()
-            if radp_cli_get_cmd_meta "$cmd" meta 2>/dev/null; then
-                local options="--help"
-                local opt_line
-                while IFS= read -r opt_line; do
-                    [[ -z "$opt_line" ]] && continue
-                    local -A opt_info=()
-                    radp_cli_parse_option_spec "$opt_line" opt_info
-                    [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
-                    [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
-                done <<< "${meta[options]}"
-
-                # 只有当命令没有子命令时才输出
-                if ! radp_cli_has_subcommands "$cmd"; then
-                    echo "        '$cmd')"
-                    echo "            COMPREPLY=(\$(compgen -W \"$options\" -- \"\$cur\"))"
-                    echo "            ;;"
-                fi
-            fi
-        fi
-
-        # 处理二级命令
-        local subcmd
-        for subcmd in $(radp_cli_list_subcommands "$cmd"); do
-            local full_cmd="$cmd $subcmd"
-            if radp_cli_cmd_exists "$full_cmd"; then
-                local -A sub_meta=()
-                if radp_cli_get_cmd_meta "$full_cmd" sub_meta 2>/dev/null; then
-                    local options="--help"
-                    local opt_line
-                    while IFS= read -r opt_line; do
-                        [[ -z "$opt_line" ]] && continue
-                        local -A opt_info=()
-                        radp_cli_parse_option_spec "$opt_line" opt_info
-                        [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
-                        [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
-                    done <<< "${sub_meta[options]}"
-
-                    echo "        '$full_cmd')"
-                    echo "            COMPREPLY=(\$(compgen -W \"$options\" -- \"\$cur\"))"
-                    echo "            ;;"
-                fi
-            fi
-        done
-    done
+    # 递归生成所有命令路径的补全
+    __radp_cli_bash_gen_all_completions ""
 
     echo "        *)"
     echo "            COMPREPLY=()"
@@ -131,12 +75,69 @@ BASH_COMPLETION_FUNC
 }
 
 #######################################
+# 递归生成 Bash 命令补全（内部函数）
+# Arguments:
+#   1 - parent_path: 父命令路径（空字符串表示顶级）
+#######################################
+__radp_cli_bash_gen_all_completions() {
+    local parent_path="$1"
+    local cmd_list
+
+    if [[ -z "$parent_path" ]]; then
+        cmd_list=$(radp_cli_list_commands)
+    else
+        cmd_list=$(radp_cli_list_subcommands "$parent_path")
+    fi
+
+    local cmd
+    for cmd in $cmd_list; do
+        local full_path
+        if [[ -z "$parent_path" ]]; then
+            full_path="$cmd"
+        else
+            full_path="$parent_path $cmd"
+        fi
+
+        if radp_cli_has_subcommands "$full_path"; then
+            # 有子命令：补全子命令列表
+            local subcommands
+            subcommands=$(radp_cli_list_subcommands "$full_path" | tr '\n' ' ')
+            echo "        '$full_path')"
+            echo "            COMPREPLY=(\$(compgen -W \"$subcommands --help\" -- \"\$cur\"))"
+            echo "            ;;"
+
+            # 递归处理子命令
+            __radp_cli_bash_gen_all_completions "$full_path"
+        elif radp_cli_cmd_exists "$full_path"; then
+            # 没有子命令：补全选项
+            local -A meta=()
+            if radp_cli_get_cmd_meta "$full_path" meta 2>/dev/null; then
+                local options="--help"
+                local opt_line
+                while IFS= read -r opt_line; do
+                    [[ -z "$opt_line" ]] && continue
+                    local -A opt_info=()
+                    radp_cli_parse_option_spec "$opt_line" opt_info
+                    [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
+                    [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
+                done <<< "${meta[options]}"
+
+                echo "        '$full_path')"
+                echo "            COMPREPLY=(\$(compgen -W \"$options\" -- \"\$cur\"))"
+                echo "            ;;"
+            fi
+        fi
+    done
+}
+
+#######################################
 # 生成 Zsh 补全脚本
 # Outputs:
 #   完整的 Zsh 补全脚本
 #######################################
 radp_cli_completion_zsh() {
     local app_name="${__radp_cli_app_name:-cli}"
+    local app_func="${app_name//-/_}"
 
     cat << ZSH_COMPLETION_HEADER
 #compdef $app_name
@@ -144,21 +145,18 @@ radp_cli_completion_zsh() {
 # Zsh completion script for $app_name
 # Generated by radp-bash-framework
 
-ZSH_COMPLETION_HEADER
-
-    cat << 'ZSH_COMPLETION_FUNC'
-_APP_NAME() {
+_${app_func}() {
     local context state state_descr line
     typeset -A opt_args
 
-    _arguments -C \
-        '1: :->command' \
+    _arguments -C \\
+        '1: :->command' \\
         '*:: :->args'
 
-    case "$state" in
+    case "\$state" in
         command)
             local commands=(
-ZSH_COMPLETION_FUNC
+ZSH_COMPLETION_HEADER
 
     # 生成顶级命令列表
     local cmd
@@ -186,59 +184,7 @@ ZSH_COMPLETION_MIDDLE
 
     # 为每个命令生成子命令或选项补全
     for cmd in $(radp_cli_list_commands); do
-        echo "                $cmd)"
-
-        if radp_cli_has_subcommands "$cmd"; then
-            # 有子命令
-            echo "                    local subcommands=("
-            local subcmd
-            for subcmd in $(radp_cli_list_subcommands "$cmd"); do
-                local desc=""
-                local -A sub_meta=()
-                if radp_cli_get_cmd_meta "$cmd $subcmd" sub_meta 2>/dev/null; then
-                    desc="${sub_meta[desc]:-}"
-                fi
-                desc="${desc//\'/\'\\\'\'}"
-                echo "                        '$subcmd:$desc'"
-            done
-            echo "                    )"
-            echo "                    _describe 'subcommand' subcommands"
-        else
-            # 没有子命令，补全选项
-            echo "                    _arguments \\"
-            echo "                        '(-h --help)'{-h,--help}'[Show help]' \\"
-
-            if radp_cli_cmd_exists "$cmd"; then
-                local -A meta=()
-                if radp_cli_get_cmd_meta "$cmd" meta 2>/dev/null; then
-                    local opt_line
-                    while IFS= read -r opt_line; do
-                        [[ -z "$opt_line" ]] && continue
-                        local -A opt_info=()
-                        radp_cli_parse_option_spec "$opt_line" opt_info
-
-                        local opt_spec=""
-                        if [[ -n "${opt_info[short]}" && -n "${opt_info[long]}" ]]; then
-                            opt_spec="(-${opt_info[short]} --${opt_info[long]})'{-${opt_info[short]},--${opt_info[long]}}"
-                        elif [[ -n "${opt_info[long]}" ]]; then
-                            opt_spec="'--${opt_info[long]}"
-                        fi
-
-                        if [[ -n "$opt_spec" ]]; then
-                            local desc="${opt_info[desc]//\'/\'\\\'\'}"
-                            if [[ "${opt_info[has_value]}" == "true" ]]; then
-                                echo "                        ${opt_spec}[${desc}]:${opt_info[value_name]}:' \\"
-                            else
-                                echo "                        ${opt_spec}[${desc}]' \\"
-                            fi
-                        fi
-                    done <<< "${meta[options]}"
-                fi
-            fi
-            echo "                        '*:file:_files'"
-        fi
-
-        echo "                    ;;"
+        __radp_cli_zsh_gen_cmd_completion "$cmd" "words[1]" 16
     done
 
     cat << 'ZSH_COMPLETION_FOOTER'
@@ -249,12 +195,101 @@ ZSH_COMPLETION_MIDDLE
             ;;
     esac
 }
-
-_APP_NAME "$@"
 ZSH_COMPLETION_FOOTER
 
-    # 替换占位符
-    sed -i.bak "s/APP_NAME/${app_name//-/_}/g" 2>/dev/null || true
+    echo
+    echo "_${app_func} \"\$@\""
+}
+
+#######################################
+# 递归生成 Zsh 命令补全（内部函数）
+# Arguments:
+#   1 - cmd_path: 当前命令路径
+#   2 - words_expr: words 表达式（用于嵌套 case）
+#   3 - indent: 缩进空格数
+#######################################
+__radp_cli_zsh_gen_cmd_completion() {
+    local cmd_path="$1"
+    local words_expr="$2"
+    local indent="$3"
+    local pad=""
+    local i
+    for ((i = 0; i < indent; i++)); do pad+=" "; done
+
+    local cmd_name="${cmd_path##* }"
+    echo "${pad}${cmd_name})"
+
+    if radp_cli_has_subcommands "$cmd_path"; then
+        # 有子命令：生成子命令列表
+        echo "${pad}    local subcommands=("
+        local subcmd
+        for subcmd in $(radp_cli_list_subcommands "$cmd_path"); do
+            local desc=""
+            local -A sub_meta=()
+            local full_path="$cmd_path $subcmd"
+            if radp_cli_cmd_exists "$full_path"; then
+                radp_cli_get_cmd_meta "$full_path" sub_meta 2>/dev/null || true
+                desc="${sub_meta[desc]:-}"
+            elif radp_cli_has_subcommands "$full_path"; then
+                desc="Manage $subcmd"
+            fi
+            desc="${desc//\'/\'\\\'\'}"
+            echo "${pad}        '$subcmd:$desc'"
+        done
+        echo "${pad}    )"
+
+        # 计算当前深度
+        local depth
+        depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
+        local next_word_idx=$((depth + 1))
+
+        echo "${pad}    case \"\${words[$next_word_idx]}\" in"
+
+        # 递归处理子命令
+        for subcmd in $(radp_cli_list_subcommands "$cmd_path"); do
+            __radp_cli_zsh_gen_cmd_completion "$cmd_path $subcmd" "words[$next_word_idx]" $((indent + 4))
+        done
+
+        echo "${pad}        *)"
+        echo "${pad}            _describe 'subcommand' subcommands"
+        echo "${pad}            ;;"
+        echo "${pad}    esac"
+    else
+        # 没有子命令：补全选项
+        echo "${pad}    _arguments \\"
+        echo "${pad}        '(-h --help)'{-h,--help}'[Show help]' \\"
+
+        if radp_cli_cmd_exists "$cmd_path"; then
+            local -A meta=()
+            if radp_cli_get_cmd_meta "$cmd_path" meta 2>/dev/null; then
+                local opt_line
+                while IFS= read -r opt_line; do
+                    [[ -z "$opt_line" ]] && continue
+                    local -A opt_info=()
+                    radp_cli_parse_option_spec "$opt_line" opt_info
+
+                    local opt_spec=""
+                    if [[ -n "${opt_info[short]}" && -n "${opt_info[long]}" ]]; then
+                        opt_spec="(-${opt_info[short]} --${opt_info[long]})'{-${opt_info[short]},--${opt_info[long]}}"
+                    elif [[ -n "${opt_info[long]}" ]]; then
+                        opt_spec="'--${opt_info[long]}"
+                    fi
+
+                    if [[ -n "$opt_spec" ]]; then
+                        local desc="${opt_info[desc]//\'/\'\\\'\'}"
+                        if [[ "${opt_info[has_value]}" == "true" ]]; then
+                            echo "${pad}        ${opt_spec}[${desc}]:${opt_info[value_name]}:' \\"
+                        else
+                            echo "${pad}        ${opt_spec}[${desc}]' \\"
+                        fi
+                    fi
+                done <<< "${meta[options]}"
+            fi
+        fi
+        echo "${pad}        '*:file:_files'"
+    fi
+
+    echo "${pad}    ;;"
 }
 
 #######################################

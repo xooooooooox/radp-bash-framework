@@ -147,19 +147,25 @@ radp_cli_list_commands() {
 #   1 - parent_cmd: 父命令（如 "vf"）
 # Outputs:
 #   每行一个子命令名
+# Note:
+#   也会输出命令组（如 "vf template" 会输出 "template"）
 #######################################
 radp_cli_list_subcommands() {
     local parent_cmd="$1"
     local cmd_path
+    local -A seen=()
 
     for cmd_path in "${!__radp_cli_commands[@]}"; do
         # 检查是否以 parent_cmd 开头且有子命令
         if [[ "$cmd_path" == "$parent_cmd "* ]]; then
-            # 提取子命令名
-            local sub="${cmd_path#"$parent_cmd "}"
-            # 只输出直接子命令（不含更深层的）
-            if [[ "$sub" != *" "* ]]; then
+            # 提取剩余路径
+            local remaining="${cmd_path#"$parent_cmd "}"
+            # 提取直接子命令（第一个词）
+            local sub="${remaining%% *}"
+            # 去重输出
+            if [[ -z "${seen[$sub]:-}" ]]; then
                 echo "$sub"
+                seen[$sub]=1
             fi
         fi
     done | sort
