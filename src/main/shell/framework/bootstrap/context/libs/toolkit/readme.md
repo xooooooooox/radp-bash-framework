@@ -52,6 +52,8 @@ toolkit/
     06_completion.sh# 补全脚本生成（bash/zsh）
     07_app.sh       # 应用入口（radp_app_run）
     08_scaffold.sh  # 项目脚手架（radp-bf new）
+  ide/             # IDE 集成支持
+    01_hints.sh     # IDE 代码补全提示（BashSupport Pro）
 ```
 
 ## 命名规则

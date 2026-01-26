@@ -102,6 +102,31 @@ radp_cli_scaffold_new "myapp" # Create new CLI project in current dir
 radp_cli_scaffold_new "myapp" "/path/to/dir"
 ```
 
+## IDE Integration (`radp_ide_*`)
+
+Provides code completion hints for BashSupport Pro IDE plugin.
+
+```bash
+# Initialize IDE hints file (generates completion.sh)
+# Called automatically during framework bootstrap
+radp_ide_init
+
+# Add commands directory to IDE hints
+# Called automatically by radp_cli_set_commands_dir()
+radp_ide_add_commands_dir "/path/to/commands"
+```
+
+The generated `completion.sh` file contains `# shellcheck source=...` directives that enable BashSupport Pro to provide
+code completion for:
+
+- Framework global variables (`gr_fw_*`, `gr_radp_fw_*`)
+- Framework library functions (`radp_*`)
+- User global variables (`gr_radp_extend_*`)
+- User library functions
+- User commands
+
+> **Note:** The `completion.sh` file uses absolute paths and should be added to `.gitignore`.
+
 ## Request Detection (`radp_app_*`)
 
 ```bash
@@ -119,9 +144,10 @@ fi
 
 ## Naming Conventions
 
-| Pattern              | Meaning                   | Example                    |
-|----------------------|---------------------------|----------------------------|
-| `radp_<domain>_*`    | Public function           | `radp_os_get_distro_id`    |
-| `radp_nr_*`          | Nameref function          | `radp_nr_arr_merge_unique` |
-| `*_is_*` / `*_has_*` | Boolean (0=true, 1=false) | `radp_os_is_pkg_installed` |
-| `__fw_*`             | Private/internal          | Do not use directly        |
+| Pattern               | Meaning                   | Example                    |
+|-----------------------|---------------------------|----------------------------|
+| `radp_<domain>_*`     | Public function           | `radp_os_get_distro_id`    |
+| `radp_nr_*`           | Nameref function          | `radp_nr_arr_merge_unique` |
+| `radp_ide_*`          | IDE integration           | `radp_ide_init`            |
+| `*_is_*` / `*_has_*`  | Boolean (0=true, 1=false) | `radp_os_is_pkg_installed` |
+| `__fw_*` / `__radp_*` | Private/internal          | Do not use directly        |
