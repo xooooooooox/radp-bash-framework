@@ -322,6 +322,68 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 myapp completion zsh >~/.zfunc/_myapp
 ```
 
+### Utility Libraries
+
+The framework provides utility libraries organized by domain under `src/main/shell/framework/bootstrap/context/libs/`.
+
+#### Logging (`radp_log_*`)
+
+```bash
+radp_log_debug "Debug message" # Debug level (requires GX_RADP_FW_LOG_DEBUG=true)
+radp_log_info "Info message" # Info level
+radp_log_warn "Warning message" # Warning level
+radp_log_error "Error message" # Error level
+radp_log_raw "Raw output" # Raw output without formatting
+```
+
+#### Core (`toolkit/core/`)
+
+| Function                                          | Description                                            |
+|---------------------------------------------------|--------------------------------------------------------|
+| `radp_nr_arr_merge_unique <arr_name> <values...>` | Merge values into array, removing duplicates (nameref) |
+
+#### I/O (`toolkit/io/`)
+
+| Function                      | Description                            |
+|-------------------------------|----------------------------------------|
+| `radp_io_get_path_abs <path>` | Convert relative path to absolute path |
+
+#### OS (`toolkit/os/`)
+
+| Function                         | Description                                     |
+|----------------------------------|-------------------------------------------------|
+| `radp_os_get_distro_id`          | Get distribution ID (e.g., `ubuntu`, `fedora`)  |
+| `radp_os_get_distro_name`        | Get distribution name (e.g., `Ubuntu`)          |
+| `radp_os_get_distro_version`     | Get distribution version                        |
+| `radp_os_get_distro_os`          | Get OS type (`linux`, `darwin`)                 |
+| `radp_os_get_distro_arch`        | Get architecture (`x86_64`, `aarch64`)          |
+| `radp_os_get_distro_pm`          | Get package manager (`apt`, `dnf`, `brew`)      |
+| `radp_os_is_pkg_installed <pkg>` | Check if package is installed (returns 0/1)     |
+| `radp_os_install_pkgs <pkgs...>` | Install packages using detected package manager |
+
+#### CLI (`toolkit/cli/`)
+
+| Function                                  | Description                      |
+|-------------------------------------------|----------------------------------|
+| `radp_app_run`                            | Main application entry point     |
+| `radp_app_bootstrap <root> <name>`        | Bootstrap and run application    |
+| `radp_app_config <name> [version] [desc]` | Configure application info       |
+| `radp_app_version`                        | Output application version       |
+| `radp_cli_set_app_name <name>`            | Set application name             |
+| `radp_cli_set_commands_dir <dir>`         | Set commands directory           |
+| `radp_cli_discover`                       | Discover commands from directory |
+| `radp_cli_dispatch <args...>`             | Dispatch to command handler      |
+| `radp_cli_help`                           | Show help for current command    |
+| `radp_cli_completion_generate <shell>`    | Generate shell completion script |
+| `radp_cli_scaffold_new <name> [dir]`      | Create new CLI project           |
+
+#### Naming Conventions
+
+- **Public functions**: `radp_<domain>_<verb>[_<object>]`
+- **Boolean functions**: `*_is_*` / `*_has_*` — return 0 (true) or 1 (false)
+- **Nameref functions**: `radp_nr_*` — first argument is variable name (without `$`)
+- **Private functions**: `__fw_*` or `__<module>_*` — internal use only
+
 ## CI
 
 ### How to release

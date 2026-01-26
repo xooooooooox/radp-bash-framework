@@ -314,6 +314,68 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 myapp completion zsh >~/.zfunc/_myapp
 ```
 
+### 工具函数库
+
+框架在 `src/main/shell/framework/bootstrap/context/libs/` 下按领域提供工具函数库。
+
+#### 日志 (`radp_log_*`)
+
+```bash
+radp_log_debug "调试信息" # Debug 级别（需 GX_RADP_FW_LOG_DEBUG=true）
+radp_log_info "普通信息" # Info 级别
+radp_log_warn "警告信息" # Warning 级别
+radp_log_error "错误信息" # Error 级别
+radp_log_raw "原始输出" # 无格式输出
+```
+
+#### 核心 (`toolkit/core/`)
+
+| 函数                                                | 说明                   |
+|---------------------------------------------------|----------------------|
+| `radp_nr_arr_merge_unique <arr_name> <values...>` | 合并值到数组，自动去重（nameref） |
+
+#### 输入输出 (`toolkit/io/`)
+
+| 函数                            | 说明           |
+|-------------------------------|--------------|
+| `radp_io_get_path_abs <path>` | 将相对路径转换为绝对路径 |
+
+#### 操作系统 (`toolkit/os/`)
+
+| 函数                               | 说明                             |
+|----------------------------------|--------------------------------|
+| `radp_os_get_distro_id`          | 获取发行版 ID（如 `ubuntu`, `fedora`） |
+| `radp_os_get_distro_name`        | 获取发行版名称（如 `Ubuntu`）            |
+| `radp_os_get_distro_version`     | 获取发行版版本                        |
+| `radp_os_get_distro_os`          | 获取操作系统类型（`linux`, `darwin`）    |
+| `radp_os_get_distro_arch`        | 获取架构（`x86_64`, `aarch64`）      |
+| `radp_os_get_distro_pm`          | 获取包管理器（`apt`, `dnf`, `brew`）   |
+| `radp_os_is_pkg_installed <pkg>` | 检查包是否已安装（返回 0/1）               |
+| `radp_os_install_pkgs <pkgs...>` | 使用检测到的包管理器安装包                  |
+
+#### CLI (`toolkit/cli/`)
+
+| 函数                                        | 说明            |
+|-------------------------------------------|---------------|
+| `radp_app_run`                            | 应用程序主入口       |
+| `radp_app_bootstrap <root> <name>`        | 引导并运行应用       |
+| `radp_app_config <name> [version] [desc]` | 配置应用信息        |
+| `radp_app_version`                        | 输出应用版本        |
+| `radp_cli_set_app_name <name>`            | 设置应用名称        |
+| `radp_cli_set_commands_dir <dir>`         | 设置命令目录        |
+| `radp_cli_discover`                       | 从目录发现命令       |
+| `radp_cli_dispatch <args...>`             | 分发到命令处理函数     |
+| `radp_cli_help`                           | 显示当前命令帮助      |
+| `radp_cli_completion_generate <shell>`    | 生成 shell 补全脚本 |
+| `radp_cli_scaffold_new <name> [dir]`      | 创建新 CLI 项目    |
+
+#### 命名规范
+
+- **公共函数**: `radp_<domain>_<verb>[_<object>]`
+- **布尔函数**: `*_is_*` / `*_has_*` — 返回 0 (true) 或 1 (false)
+- **Nameref 函数**: `radp_nr_*` — 第一个参数为变量名（不带 `$`）
+- **私有函数**: `__fw_*` 或 `__<module>_*` — 仅内部使用
+
 ## CI
 
 ### 发布流程
