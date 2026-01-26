@@ -166,3 +166,27 @@ commands/
 ```
 
 Function naming follows the path: `commands/db/migrate.sh` → `cmd_db_migrate()`
+
+## Project Structure
+
+When you create a new project with `radp-bf new myapp`, it generates:
+
+```
+myapp/
+├── bin/myapp                      # CLI entry point
+├── src/main/shell/
+│   ├── commands/                  # Command implementations
+│   │   ├── hello.sh
+│   │   ├── version.sh
+│   │   └── completion.sh
+│   ├── config/                    # YAML configuration
+│   │   ├── config.yaml            # Base configuration
+│   │   └── config-dev.yaml        # Environment overrides
+│   ├── libs/                      # Project-specific libraries
+│   └── vars/
+│       └── constants.sh           # Version constants
+├── packaging/                     # Distribution packaging
+└── install.sh                     # Installer script
+```
+
+The `config/` directory contains YAML configuration files that are automatically parsed by the framework. See [Configuration](configuration.md) for details on the YAML configuration system.

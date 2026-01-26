@@ -60,6 +60,30 @@ See [src/test/shell/README.md](src/test/shell/README.md) for writing new tests.
 
 ## Release Process
 
+### Workflow Chain
+
+```
+release-prep (manual trigger)
+       │
+       ▼
+   PR merged
+       │
+       ▼
+create-version-tag
+       │
+       ├──────────────────────┬──────────────────────┐
+       ▼                      ▼                      ▼
+update-spec-version    update-homebrew-tap    (GitHub Release)
+       │
+       ├──────────────┐
+       ▼              ▼
+build-copr-package  build-obs-package
+       │              │
+       └──────┬───────┘
+              ▼
+  attach-release-packages
+```
+
 ### 1. Prepare Release
 
 Trigger `release-prep` workflow with `bump_type` (patch/minor/major/manual):
