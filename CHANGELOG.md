@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.13 - 2026-01-26
+
+### feat
+- 1a449d1 add file transfer and GitHub API utility modules
+
 ## v0.4.12 - 2026-01-26
 
 ### docs
