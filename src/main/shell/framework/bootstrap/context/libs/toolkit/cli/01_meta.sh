@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # toolkit module: cli/01_meta.sh
-# 元数据解析：从命令文件注释中提取 @cmd, @desc, @arg, @option, @example, @complete 等
+# 元数据解析：从命令文件注释中提取 @cmd, @desc, @arg, @option, @example, @complete, @meta 等
 
 #######################################
 # 从命令文件中解析元数据
@@ -14,6 +14,7 @@
 #   @option ... [default: x]    - 带默认值
 #   @example <text>   - 使用示例
 #   @complete <name> <func>     - 动态补全函数（name 为参数名或选项长名）
+#   @meta passthrough - 透传模式：跳过参数解析，所有参数直接传递给命令函数
 # Arguments:
 #   1 - file_path: 命令文件路径
 #   2 - var_name: 存储结果的关联数组变量名
@@ -36,6 +37,7 @@ radp_cli_parse_meta() {
   local -a options=()
   local -a examples=()
   local -a completes=()
+  local -a metas=()
   local is_cmd=false
 
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -70,6 +72,9 @@ radp_cli_parse_meta() {
     @complete\ *)
       completes+=("${line#@complete }")
       ;;
+    @meta\ *)
+      metas+=("${line#@meta }")
+      ;;
     esac
   done <"$file_path"
 
@@ -81,6 +86,7 @@ radp_cli_parse_meta() {
   __meta_ref[options]="$(printf '%s\n' "${options[@]}")"
   __meta_ref[examples]="$(printf '%s\n' "${examples[@]}")"
   __meta_ref[completes]="$(printf '%s\n' "${completes[@]}")"
+  __meta_ref[metas]="$(printf '%s\n' "${metas[@]}")"
 
   return 0
 }

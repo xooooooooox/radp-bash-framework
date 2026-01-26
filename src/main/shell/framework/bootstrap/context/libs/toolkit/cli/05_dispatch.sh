@@ -125,32 +125,60 @@ __radp_cli_execute_cmd() {
         return 1
     }
 
-    # 解析参数
-    if ! radp_cli_parse_args "${meta[options]}" "${meta[args]}" "${cmd_args[@]}"; then
-        echo
-        radp_cli_help_command "$cmd_path"
-        return 1
+    # 检查是否是透传模式
+    local passthrough=false
+    if [[ "${meta[metas]}" == *passthrough* ]]; then
+        passthrough=true
     fi
 
-    # 检查是否请求帮助
-    if [[ "$__radp_cli_show_help" == "true" ]]; then
-        radp_cli_help_command "$cmd_path"
-        return 0
+    if [[ "$passthrough" == "true" ]]; then
+        # 透传模式：只检查 --help，其他参数直接传递
+        if [[ "${cmd_args[0]:-}" == "-h" || "${cmd_args[0]:-}" == "--help" ]]; then
+            radp_cli_help_command "$cmd_path"
+            return 0
+        fi
+
+        # 加载命令文件
+        # shellcheck source=/dev/null
+        source "$cmd_file"
+
+        # 获取函数名
+        local func_name
+        func_name=$(radp_cli_extract_cmd_func "$cmd_file") || {
+            radp_log_error "No cmd_* function found in: $cmd_file"
+            return 1
+        }
+
+        # 直接传递所有参数给命令函数
+        "cmd_$func_name" "${cmd_args[@]}"
+    else
+        # 正常模式：解析参数
+        if ! radp_cli_parse_args "${meta[options]}" "${meta[args]}" "${cmd_args[@]}"; then
+            echo
+            radp_cli_help_command "$cmd_path"
+            return 1
+        fi
+
+        # 检查是否请求帮助
+        if [[ "$__radp_cli_show_help" == "true" ]]; then
+            radp_cli_help_command "$cmd_path"
+            return 0
+        fi
+
+        # 加载命令文件
+        # shellcheck source=/dev/null
+        source "$cmd_file"
+
+        # 获取函数名
+        local func_name
+        func_name=$(radp_cli_extract_cmd_func "$cmd_file") || {
+            radp_log_error "No cmd_* function found in: $cmd_file"
+            return 1
+        }
+
+        # 执行命令函数
+        "cmd_$func_name" "${__radp_cli_positional_args[@]}"
     fi
-
-    # 加载命令文件
-    # shellcheck source=/dev/null
-    source "$cmd_file"
-
-    # 获取函数名
-    local func_name
-    func_name=$(radp_cli_extract_cmd_func "$cmd_file") || {
-        radp_log_error "No cmd_* function found in: $cmd_file"
-        return 1
-    }
-
-    # 执行命令函数
-    "cmd_$func_name" "${__radp_cli_positional_args[@]}"
 }
 
 #######################################

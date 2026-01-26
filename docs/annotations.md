@@ -148,6 +148,42 @@ When the user presses TAB:
 completion functions in your project's libs. For user-facing features, ensure the functions are sourced in the entry
 script.
 
+## Meta Annotations
+
+### `@meta passthrough`
+
+Enable passthrough mode for commands that need to forward all arguments to an external tool. When set, the framework
+skips argument parsing (getopt) and passes all arguments directly to the command function.
+
+This is useful for wrapper commands that call other CLI tools (like vagrant, docker, kubectl) where you don't want the
+framework to interpret the external tool's options.
+
+```bash
+# @cmd
+# @desc Run vagrant commands (passthrough to vagrant)
+# @meta passthrough
+# @example vg up
+# @example vg provision myvm --provision-with shell
+
+cmd_vg() {
+  # All arguments ($@) are passed directly without parsing
+  # Use environment variables for wrapper-specific options
+  exec vagrant "$@"
+}
+```
+
+**Behavior in passthrough mode:**
+
+- No `@option` or `@arg` parsing - all arguments go to the command
+- `--help` / `-h` still works (shows framework-generated help)
+- Use environment variables for wrapper-specific configuration
+
+**When to use:**
+
+- Wrapper commands for external tools (vagrant, docker, kubectl, etc.)
+- Commands where options conflict with external tool options
+- Commands that need to pass through `--` and options transparently
+
 ## Examples
 
 ### `@example`
