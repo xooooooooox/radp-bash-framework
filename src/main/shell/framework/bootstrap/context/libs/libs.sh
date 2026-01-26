@@ -16,6 +16,9 @@ __fw_include_lib_internal() {
 }
 
 __fw_include_lib_external() {
+  # Skip if user lib path is not configured
+  [[ -z "$gr_radp_fw_user_lib_path" ]] && return 0
+
   local scripts_before=${#gwxa_fw_sourced_scripts[@]}
   __fw_source_scripts "$gr_radp_fw_user_lib_path"
 
