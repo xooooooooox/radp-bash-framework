@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.17 - 2026-01-26
+
+### fix
+- 882c1d1 prevent loading external libraries if user lib path is unset
+
 ## v0.4.16 - 2026-01-26
 
 ### chore
