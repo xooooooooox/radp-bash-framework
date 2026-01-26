@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.4.15 - 2026-01-26
+## v0.4.16 - 2026-01-26
 
 ### chore
 - b87c920 update project dictionary to include "homelabctl"
