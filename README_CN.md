@@ -18,178 +18,61 @@
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![OBS packages](https://img.shields.io/badge/OBS-packages-4b8bbe)](https://software.opensuse.org//download.html?project=home%3Axooooooooox%3Aradp&package=radp-bash-framework)
 
-模块化 Bash 框架，提供结构化引导、配置管理、日志系统和丰富的工具集。
+模块化 Bash 框架，用于构建 CLI 应用程序，提供结构化引导、配置管理和丰富的工具集。
 
-## 快速开始
+## 特性
 
-### 安装
+- **CLI 脚手架** - 使用 `radp-bf new myapp` 生成完整的 CLI 项目
+- **注解驱动命令** - 使用注释元数据定义命令（`@cmd`、`@arg`、`@option`）
+- **自动发现** - 从目录结构自动发现命令，支持嵌套子命令
+- **Shell 补全** - 自动生成 Bash/Zsh 补全脚本
+- **YAML 配置** - 分层配置系统，支持环境变量覆盖
+- **日志系统** - 结构化日志，支持多级别（debug/info/warn/error）
+- **OS 检测** - 跨平台工具，检测发行版、架构、包管理器
+- **路径工具** - 文件系统辅助函数、路径解析
 
-安装后建议在当前 shell 加载入口：
+## 依赖
 
-```shell
-source "$(radp-bf --print-run)"
-```
+- Bash 4.3+
+- [yq](https://github.com/mikefarah/yq)（用于 YAML 解析，缺失时自动安装）
 
-如需每次启动自动加载，可将上述命令写入 `~/.bashrc` 或其它 shell 配置。
+## 安装
 
-#### 脚本安装（curl / wget / fetch）
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-```
-
-或：
-
-```shell
-wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-```
-
-脚本会自动检测可用的包管理器（Homebrew、dnf、yum、apt、zypper），优先使用包管理器安装，否则回退到从 GitHub 下载的手动安装。
-
-可选变量：
-
-```shell
-RADP_BF_VERSION=vX.Y.Z \
-  RADP_BF_REF=main \
-  RADP_BF_INSTALL_MODE=auto \
-  RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
-  RADP_BF_BIN_DIR="$HOME/.local/bin" \
-  RADP_BF_ALLOW_ANY_DIR=1 \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh)"
-```
-
-| 变量                      | 说明                                                                                         | 默认值                                |
-|-------------------------|--------------------------------------------------------------------------------------------|------------------------------------|
-| `RADP_BF_INSTALL_MODE`  | 安装模式：`auto`（自动检测包管理器）、`manual`（仅 GitHub 下载）、或指定包管理器（`homebrew`、`dnf`、`yum`、`apt`、`zypper`） | `auto`                             |
-| `RADP_BF_VERSION`       | 指定版本（如 `v1.0.0`）                                                                           | 最新版                                |
-| `RADP_BF_REF`           | 分支、标签或 commit（优先级高于 VERSION，仅手动模式有效）                                                       | -                                  |
-| `RADP_BF_INSTALL_DIR`   | 安装目录（仅手动模式有效）                                                                              | `~/.local/lib/radp-bash-framework` |
-| `RADP_BF_BIN_DIR`       | 二进制链接目录（仅手动模式有效）                                                                           | `~/.local/bin`                     |
-| `RADP_BF_ALLOW_ANY_DIR` | 允许自定义安装目录不以 `radp-bash-framework` 结尾                                                       | `0`                                |
-
-重复执行脚本可完成升级。
-
-#### Homebrew
-
-详情见: <https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb>.
+### Homebrew (macOS/Linux)
 
 ```shell
 brew tap xooooooooox/radp
 brew install radp-bash-framework
 ```
 
-#### RPM (Fedora/RHEL/CentOS via COPR)
+### 脚本安装 (curl)
 
 ```shell
-# dnf
-sudo dnf install -y dnf-plugins-core
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
+```
+
+### RPM (Fedora/RHEL/CentOS)
+
+```shell
 sudo dnf copr enable -y xooooooooox/radp
 sudo dnf install -y radp-bash-framework
-
-# yum
-sudo yum install -y epel-release
-sudo yum install -y yum-plugin-copr
-sudo yum copr enable -y xooooooooox/radp
-sudo yum install -y radp-bash-framework
 ```
 
-#### OBS 仓库 (dnf / yum / apt)
+更多安装方式（OBS、手动安装、升级）请参阅 [安装指南](docs/installation.md)。
 
-OBS 提供多发行版的 RPM/DEB 构建。替换 `<DISTRO>` 为目标发行版路径（例如 `CentOS_7`、`openSUSE_Tumbleweed`、`xUbuntu_24.04`）。
+### 加载框架
+
+安装后，在 shell 中加载框架：
 
 ```shell
-# CentOS/RHEL (yum)
-sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/ <DISTRO >/radp.repo
-sudo yum install -y radp-bash-framework
-
-# Debian/Ubuntu (apt)
-echo 'deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /' |
-  sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list
-curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/ <DISTRO >/Release.key | gpg --dearmor |
-  sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg >/dev/null
-sudo apt update
-sudo apt install radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/ <DISTRO >/radp.repo
-sudo dnf install -y radp-bash-framework
+source "$(radp-bf --print-run)"
 ```
 
-#### 手动安装（Release 制品 / 源码）
+将此命令添加到 `~/.bashrc` 可实现自动加载。
 
-每次发布都会附带可直接安装的包：<https://github.com/xooooooooox/radp-bash-framework/releases/latest>
+## 快速开始
 
-下载 `.rpm` 或 `.deb` 制品（文件名前缀通常为 `obs-` 或 `copr-`）后安装：
-
-```shell
-# RPM (Fedora/RHEL/CentOS)
-sudo rpm -Uvh ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
-# or
-sudo dnf install ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
-
-# DEB (Debian/Ubuntu)
-sudo dpkg -i ./obs-radp-bash-framework_ <version >- <release >_all.deb
-sudo apt-get -f install
-```
-
-或直接从源码运行：
-
-```shell
-source /path/to/framework/run.sh
-```
-
-### 升级
-
-#### Homebrew
-
-```shell
-brew upgrade radp-bash-framework
-```
-
-#### RPM (Fedora/RHEL/CentOS via COPR)
-
-```shell
-sudo dnf clean metadata
-sudo dnf upgrade --refresh -y radp-bash-framework
-sudo yum clean expire-cache
-sudo yum update -y radp-bash-framework
-```
-
-#### OBS 仓库 (dnf / yum / apt)
-
-```shell
-# CentOS/RHEL (yum)
-sudo yum update -y radp-bash-framework
-
-# Debian/Ubuntu(apt)
-sudo apt update
-sudo apt install -y radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf upgrade -y radp-bash-framework
-```
-
-#### 手动升级（Release 制品）
-
-从最新 Release 下载新的 `.rpm`/`.deb` 包后安装即可升级：
-
-```shell
-# RPM
-sudo rpm -Uvh ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
-
-# DEB
-sudo dpkg -i ./obs-radp-bash-framework_ <version >- <release >_all.deb
-sudo apt-get -f install
-```
-
-## 框架内置工具包
-
-### CLI 工具包
-
-radp-bash-framework 内置 CLI 工具包，支持基于注解的命令定义、自动帮助生成、Shell 补全等功能。
-
-#### 创建新项目
+### 创建 CLI 项目
 
 ```shell
 radp-bf new myapp
@@ -197,114 +80,89 @@ cd myapp
 ./bin/myapp --help
 ```
 
-生成的项目结构如下：
+生成的项目结构：
 
 ```
 myapp/
-├── bin/
-│   └── myapp                    # CLI 入口脚本
+├── bin/myapp                 # 入口脚本
 ├── src/main/shell/
-│   ├── commands/                # 命令实现
-│   │   ├── hello.sh             # myapp hello
-│   │   ├── version.sh           # myapp version
-│   │   └── completion.sh        # myapp completion
-│   ├── config/
-│   │   ├── config.yaml          # 基础配置
-│   │   └── config-dev.yaml      # 开发环境配置覆盖
-│   ├── libs/                    # 项目私有库
-│   └── vars/
-│       └── constants.sh         # 版本常量 (gr_myapp_version)
-├── packaging/
-│   ├── copr/myapp.spec          # COPR RPM spec
-│   ├── homebrew/myapp.rb        # Homebrew formula 模板
-│   └── obs/
-│       ├── myapp.spec           # OBS RPM spec
-│       └── debian/              # Debian 打包文件
-├── .github/workflows/           # CI/CD 工作流
-├── install.sh                   # 通用安装脚本
-├── CHANGELOG.md
-├── README.md
-└── .gitignore
+│   ├── commands/             # 命令实现
+│   │   ├── hello.sh          # myapp hello
+│   │   └── version.sh        # myapp version
+│   └── config/
+│       └── config.yaml       # 配置文件
+└── install.sh                # 安装脚本
 ```
 
-#### 命令注解
+### 定义命令
 
-使用注释元数据定义命令：
+使用注解定义命令：
 
 ```bash
+# src/main/shell/commands/greet.sh
+
 # @cmd
-# @desc 命令描述
-# @arg name!         必填参数
-# @arg items~        可变参数（多个值）
-# @option -v, --verbose          布尔标志
-# @option -e, --env <name>       带值选项
-# @option -c, --config <file>    带值选项
-# @example hello World
-# @example hello --verbose World
+# @desc 问候某人
+# @arg name!              必填参数
+# @option -l, --loud      大声问候
 
-cmd_hello() {
-  local name="${1:-World}"
+cmd_greet() {
+  local name="$1"
+  local msg="Hello, $name!"
 
-  if [[ "${opt_verbose:-}" == "true" ]]; then
-    echo "Verbose mode enabled"
+  if [[ "${opt_loud:-}" == "true" ]]; then
+    echo "${msg^^}"
+  else
+    echo "$msg"
   fi
-
-  echo "Hello, $name!"
 }
 ```
 
-#### 子命令
+```shell
+$ myapp greet World
+Hello, World!
 
-创建目录实现子命令分组：
+$ myapp greet --loud World
+HELLO, WORLD!
+```
+
+### 子命令
+
+创建目录实现命令分组：
 
 ```
-src/main/shell/commands/
+commands/
 ├── db/
 │   ├── migrate.sh    # myapp db migrate
 │   └── seed.sh       # myapp db seed
 └── hello.sh          # myapp hello
 ```
 
-#### 配置管理
+### 配置
 
-框架使用 YAML 配置系统，自动映射为 Shell 变量：
+YAML 配置自动映射为 Shell 变量：
 
 ```yaml
-# src/main/shell/config/config.yaml
+# config/config.yaml
 radp:
-  env: default
-
-  fw:
-    banner-mode: on
-    log:
-      debug: false
-      level: info
-    user:
-      config:
-        automap: true
-
   extend:
     myapp:
-      version: v1.0.0
       api_url: https://api.example.com
 ```
 
-`radp.extend.*` 下的变量会自动映射为 `gr_radp_extend_*`：
+在代码中访问：
 
 ```bash
-# radp.extend.myapp.version -> gr_radp_extend_myapp_version
-echo "$gr_radp_extend_myapp_version" # v1.0.0
+echo "$gr_radp_extend_myapp_api_url" # https://api.example.com
 ```
 
-通过环境变量覆盖配置：
+通过环境变量覆盖：
 
 ```shell
-GX_RADP_FW_LOG_DEBUG=true myapp hello
+GX_RADP_EXTEND_MYAPP_API_URL=http://localhost:8080 myapp hello
 ```
 
-#### Shell 补全
-
-生成补全脚本：
+### Shell 补全
 
 ```shell
 # Bash
@@ -314,119 +172,30 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 myapp completion zsh >~/.zfunc/_myapp
 ```
 
-### 工具函数库
+## 文档
 
-框架在 `src/main/shell/framework/bootstrap/context/libs/` 下按领域提供工具函数库。
+- [安装指南](docs/installation.md) - 所有安装方式和升级说明
+- [命令注解](docs/annotations.md) - `@cmd`、`@arg`、`@option`、`@example` 参考
+- [配置系统](docs/configuration.md) - YAML 配置和环境变量
+- [API 参考](docs/api.md) - 工具函数参考
 
-#### 日志 (`radp_log_*`)
+## 工具函数 API
 
-```bash
-radp_log_debug "调试信息" # Debug 级别（需 GX_RADP_FW_LOG_DEBUG=true）
-radp_log_info "普通信息" # Info 级别
-radp_log_warn "警告信息" # Warning 级别
-radp_log_error "错误信息" # Error 级别
-radp_log_raw "原始输出" # 无格式输出
-```
+框架按领域提供工具函数：
 
-#### 核心 (`toolkit/core/`)
+| 领域           | 函数                                                   | 说明       |
+|--------------|------------------------------------------------------|----------|
+| `radp_log_*` | `debug`, `info`, `warn`, `error`                     | 结构化日志    |
+| `radp_os_*`  | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | 操作系统检测   |
+| `radp_io_*`  | `get_path_abs`                                       | 文件系统工具   |
+| `radp_cli_*` | `discover`, `dispatch`, `help`                       | CLI 基础设施 |
 
-| 函数                                                | 说明                   |
-|---------------------------------------------------|----------------------|
-| `radp_nr_arr_merge_unique <arr_name> <values...>` | 合并值到数组，自动去重（nameref） |
+完整文档请参阅 [API 参考](docs/api.md)。
 
-#### 输入输出 (`toolkit/io/`)
+## 贡献
 
-| 函数                            | 说明           |
-|-------------------------------|--------------|
-| `radp_io_get_path_abs <path>` | 将相对路径转换为绝对路径 |
+开发设置、测试和发布流程请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-#### 操作系统 (`toolkit/os/`)
+## 许可证
 
-| 函数                               | 说明                             |
-|----------------------------------|--------------------------------|
-| `radp_os_get_distro_id`          | 获取发行版 ID（如 `ubuntu`, `fedora`） |
-| `radp_os_get_distro_name`        | 获取发行版名称（如 `Ubuntu`）            |
-| `radp_os_get_distro_version`     | 获取发行版版本                        |
-| `radp_os_get_distro_os`          | 获取操作系统类型（`linux`, `darwin`）    |
-| `radp_os_get_distro_arch`        | 获取架构（`x86_64`, `aarch64`）      |
-| `radp_os_get_distro_pm`          | 获取包管理器（`apt`, `dnf`, `brew`）   |
-| `radp_os_is_pkg_installed <pkg>` | 检查包是否已安装（返回 0/1）               |
-| `radp_os_install_pkgs <pkgs...>` | 使用检测到的包管理器安装包                  |
-
-#### CLI (`toolkit/cli/`)
-
-| 函数                                        | 说明            |
-|-------------------------------------------|---------------|
-| `radp_app_run`                            | 应用程序主入口       |
-| `radp_app_bootstrap <root> <name>`        | 引导并运行应用       |
-| `radp_app_config <name> [version] [desc]` | 配置应用信息        |
-| `radp_app_version`                        | 输出应用版本        |
-| `radp_cli_set_app_name <name>`            | 设置应用名称        |
-| `radp_cli_set_commands_dir <dir>`         | 设置命令目录        |
-| `radp_cli_discover`                       | 从目录发现命令       |
-| `radp_cli_dispatch <args...>`             | 分发到命令处理函数     |
-| `radp_cli_help`                           | 显示当前命令帮助      |
-| `radp_cli_completion_generate <shell>`    | 生成 shell 补全脚本 |
-| `radp_cli_scaffold_new <name> [dir]`      | 创建新 CLI 项目    |
-
-#### 命名规范
-
-- **公共函数**: `radp_<domain>_<verb>[_<object>]`
-- **布尔函数**: `*_is_*` / `*_has_*` — 返回 0 (true) 或 1 (false)
-- **Nameref 函数**: `radp_nr_*` — 第一个参数为变量名（不带 `$`）
-- **私有函数**: `__fw_*` 或 `__<module>_*` — 仅内部使用
-
-## CI
-
-### 发布流程
-
-1. 触发 `release-prep` 选择 `bump_type`（patch/minor/major/manual，默认 patch）。手动模式需输入 `vX.Y.Z`。该流程会生成发布分支
-   `workflow/vX.Y.Z` 并创建 PR：更新 `gr_fw_version`、同步 spec、插入 changelog 条目。
-2. 在 PR 中补充/整理 changelog 后合并到 `main`。
-3. PR 合并后会自动触发 `create-version-tag`（或手动触发）校验版本/changelog/spec 并创建/推送标签。
-4. 标签相关工作流执行：
-    - `update-homebrew-tap` 更新 Homebrew 的 formula。
-5. `update-spec-version` 在 `create-version-tag` 成功完成后执行（必要时可手动触发）。
-6. `build-copr-package` 会在 `update-spec-version` 成功完成后触发 COPR SCM 构建（仅当标签指向本次 workflow 运行提交）。
-7. `build-obs-package` 会同步源码到 OBS 并触发构建（仅当标签指向本次 workflow 运行提交）。
-8. `attach-release-packages` 会从 COPR/OBS 拉取构建产物及 Homebrew formula，并上传到 GitHub Release 便于手工安装。
-
-### GitHub Actions
-
-#### 发布准备 (`release-prep.yml`)
-
-- **触发方式：** 手动触发(`workflow_dispatch`)，仅在 `main` 分支运行。
-- **用途：** 根据 `bump_type`（patch/minor/major 或手动 `vX.Y.Z`）创建发布分支 `workflow/vX.Y.Z` 并生成 PR：更新
-  `gr_fw_version`、同步 spec、插入带 TODO 的 changelog 条目供审阅。
-
-#### 创建版本标签 (`create-version-tag.yml`)
-
-- **触发方式：** `main` 分支手动触发(`workflow_dispatch`)，或合并 `workflow/vX.Y.Z` 的 PR 时自动触发。
-- **用途：** 读取 `gr_fw_version`，校验 `vx.y.z`、changelog 条目与 spec 版本一致性，并在不存在该标签时创建并推送。
-
-#### 更新 spec 版本 (`update-spec-version.yml`)
-
-- **触发方式：** `create-version-tag` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
-- **用途：** 校验 `gr_fw_version` 是否符合 `vx.y.z`，更新 spec 的 `Version` 字段为 `x.y.z`，在版本变化。
-
-#### 构建 COPR 包 (`build-copr-package.yml`)
-
-- **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发。
-- **用途：** 使用 `packaging/copr/radp-bash-framework.spec` 触发 COPR SCM 构建，若版本标签不存在则跳过(SCM
-  源码基于标签归档)。
-
-#### 更新 Homebrew tap (`update-homebrew-tap.yml`)
-
-- **触发方式：** 推送版本标签(`v*`)、`create-version-tag` 工作流在 `main` 分支成功完成后触发，或手动触发(
-  `workflow_dispatch`)。
-- **用途：** 校验标签与 `gr_fw_version` 一致，生成发布元数据，更新 Homebrew tap 的 formula，并将变更推送到 tap 仓库。
-
-#### 构建 OBS 包 (`build-obs-package.yml`)
-
-- **触发方式：** `update-spec-version` 工作流在 `main` 分支成功完成后触发，或手动触发(`workflow_dispatch`)。
-- **用途：** 同步源码 tarball、spec 和 Debian 打包元数据到 OBS 并触发构建，若版本标签不存在则跳过(tarball 基于标签归档)。
-
-#### 附加发布产物 (`attach-release-packages.yml`)
-
-- **触发方式：** 发布 GitHub Release，或手动触发(`workflow_dispatch`，可指定 tag)。
-- **用途：** 从 COPR/OBS 下载构建好的包，以及 Homebrew tap 的 formula，并将它们上传为 Release 制品，方便手工安装。
+[MIT](LICENSE)

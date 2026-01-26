@@ -18,186 +18,62 @@
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![OBS packages](https://img.shields.io/badge/OBS-packages-4b8bbe)](https://software.opensuse.org//download.html?project=home%3Axooooooooox%3Aradp&package=radp-bash-framework)
 
-A modular Bash framework providing structured bootstrapping, configuration management, logging, and a comprehensive
-toolkit for shell scripting.
+A modular Bash framework for building CLI applications with structured bootstrapping, configuration management, and a
+comprehensive toolkit.
 
-## QuickStart
+## Features
 
-### Installation
+- **CLI Scaffolding** - Generate complete CLI projects with `radp-bf new myapp`
+- **Annotation-based Commands** - Define commands using comment metadata (`@cmd`, `@arg`, `@option`)
+- **Auto-discovery** - Commands are discovered from directory structure, supports nested subcommands
+- **Shell Completion** - Generate Bash/Zsh completion scripts automatically
+- **YAML Configuration** - Layered config system with environment variable overrides
+- **Logging** - Structured logging with levels (debug/info/warn/error)
+- **OS Detection** - Cross-platform utilities for distro, architecture, package manager detection
+- **Path Utilities** - File system helpers, path resolution
 
-After installing, load the framework entrypoint in your shell:
+## Requirements
 
-```shell
-source "$(radp-bf --print-run)"
-```
+- Bash 4.3+
+- [yq](https://github.com/mikefarah/yq) (for YAML parsing, auto-installed if missing)
 
-You can place that command in your shell profile (e.g. `~/.bashrc`) for automatic loading.
+## Installation
 
-#### Script (curl / wget / fetch)
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-```
-
-Or:
-
-```shell
-wget -qO- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-fetch -qo- https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-```
-
-The script automatically detects and uses available package managers (Homebrew, dnf, yum, apt, zypper) if present,
-otherwise falls back to manual installation from GitHub.
-
-Optional variables:
-
-```shell
-RADP_BF_VERSION=vX.Y.Z \
-  RADP_BF_REF=main \
-  RADP_BF_INSTALL_MODE=auto \
-  RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
-  RADP_BF_BIN_DIR="$HOME/.local/bin" \
-  RADP_BF_ALLOW_ANY_DIR=1 \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh)"
-```
-
-| Variable                | Description                                                                                                                 | Default                            |
-|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------|
-| `RADP_BF_INSTALL_MODE`  | Installation mode: `auto` (detect pkm), `manual` (GitHub only), or specific pkm (`homebrew`, `dnf`, `yum`, `apt`, `zypper`) | `auto`                             |
-| `RADP_BF_VERSION`       | Specific version to install (e.g., `v1.0.0`)                                                                                | latest                             |
-| `RADP_BF_REF`           | Branch, tag, or commit (takes precedence over VERSION, manual mode only)                                                    | -                                  |
-| `RADP_BF_INSTALL_DIR`   | Installation directory (manual mode only)                                                                                   | `~/.local/lib/radp-bash-framework` |
-| `RADP_BF_BIN_DIR`       | Binary symlink directory (manual mode only)                                                                                 | `~/.local/bin`                     |
-| `RADP_BF_ALLOW_ANY_DIR` | Allow custom install dir not ending with `radp-bash-framework`                                                              | `0`                                |
-
-Re-run the script to upgrade.
-
-#### Homebrew
-
-Click [here](https://github.com/xooooooooox/homebrew-radp/blob/main/Formula/radp-bash-framework.rb) see details.
+### Homebrew (macOS/Linux)
 
 ```shell
 brew tap xooooooooox/radp
 brew install radp-bash-framework
 ```
 
-#### RPM (Fedora/RHEL/CentOS via COPR)
+### Script (curl)
 
 ```shell
-# dnf
-sudo dnf install -y dnf-plugins-core
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
+```
+
+### RPM (Fedora/RHEL/CentOS)
+
+```shell
 sudo dnf copr enable -y xooooooooox/radp
 sudo dnf install -y radp-bash-framework
-
-# yum
-sudo yum install -y epel-release
-sudo yum install -y yum-plugin-copr
-sudo yum copr enable -y xooooooooox/radp
-sudo yum install -y radp-bash-framework
 ```
 
-#### OBS repository (dnf / yum / apt)
+See [Installation Guide](docs/installation.md) for more options (OBS, manual install, upgrade).
 
-OBS provides multi-distro builds. Replace `<DISTRO>` with the target path (e.g. `CentOS_7`, `openSUSE_Tumbleweed`,
-`xUbuntu_24.04`).
+### Load the Framework
+
+After installation, load the framework in your shell:
 
 ```shell
-# CentOS/RHEL (yum)
-sudo yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/ <DISTRO >/radp.repo
-sudo yum install -y radp-bash-framework
-
-# Debian/Ubuntu (apt)
-echo 'deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/<DISTRO>/ /' |
-  sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list
-curl -fsSL https://download.opensuse.org/repositories/home:xooooooooox:radp/ <DISTRO >/Release.key | gpg --dearmor |
-  sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg >/dev/null
-sudo apt update
-sudo apt install radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf config-manager --add-repo https://download.opensuse.org/repositories/home:/xooooooooox:/radp/ <DISTRO >/radp.repo
-sudo dnf install -y radp-bash-framework
+source "$(radp-bf --print-run)"
 ```
 
-#### Manual (Release assets / source)
+Add this to `~/.bashrc` for automatic loading.
 
-Prebuilt installable packages are attached to each
-release: <https://github.com/xooooooooox/radp-bash-framework/releases/latest>
+## Quick Start
 
-Download the `.rpm` or `.deb` asset (prefixed with `obs-` or `copr-`) and install:
-
-```shell
-# RPM (Fedora/RHEL/CentOS)
-sudo rpm -Uvh ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
-# or
-sudo dnf install ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
-
-# DEB (Debian/Ubuntu)
-sudo dpkg -i ./obs-radp-bash-framework_ <version >- <release >_all.deb
-sudo apt-get -f install
-```
-
-Or run directly from source:
-
-```shell
-source /path/to/framework/run.sh
-```
-
-### Upgrade
-
-#### Homebrew
-
-```shell
-brew upgrade radp-bash-framework
-```
-
-#### RPM (Fedora/RHEL/CentOS via COPR)
-
-```shell
-# dnf
-sudo dnf clean metadata
-sudo dnf upgrade --refresh -y radp-bash-framework
-
-# yum
-sudo yum clean expire-cache
-sudo yum update -y radp-bash-framework
-```
-
-#### OBS repository (dnf / yum / apt)
-
-```shell
-# CentOS/RHEL (yum)
-sudo yum update -y radp-bash-framework
-
-# Debian/Ubuntu(apt)
-sudo apt update
-sudo apt install -y radp-bash-framework
-
-# Fedora/RHEL/CentOS (dnf)
-sudo dnf upgrade -y radp-bash-framework
-```
-
-#### Manual (Release assets)
-
-Download the new `.rpm`/`.deb` from the latest release and install it:
-
-```shell
-# RPM
-sudo rpm -Uvh ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
-
-# DEB
-sudo dpkg -i ./obs-radp-bash-framework_ <version >- <release >_all.deb
-sudo apt-get -f install
-```
-
-## Framework Builtin Toolkit
-
-### CLI Toolkit
-
-radp-bash-framework includes a CLI toolkit for building command-line applications with annotation-based command
-definitions, automatic help generation, and shell completion.
-
-#### Create a New CLI Project
+### Create a CLI Project
 
 ```shell
 radp-bf new myapp
@@ -205,114 +81,89 @@ cd myapp
 ./bin/myapp --help
 ```
 
-This creates a project structure:
+This generates:
 
 ```
 myapp/
-├── bin/
-│   └── myapp                    # CLI entry point
+├── bin/myapp                 # Entry point
 ├── src/main/shell/
-│   ├── commands/                # Command implementations
-│   │   ├── hello.sh             # myapp hello
-│   │   ├── version.sh           # myapp version
-│   │   └── completion.sh        # myapp completion
-│   ├── config/
-│   │   ├── config.yaml          # Base configuration
-│   │   └── config-dev.yaml      # Development overrides
-│   ├── libs/                    # Project-specific libraries
-│   └── vars/
-│       └── constants.sh         # Version constants (gr_myapp_version)
-├── packaging/
-│   ├── copr/myapp.spec          # COPR RPM spec
-│   ├── homebrew/myapp.rb        # Homebrew formula template
-│   └── obs/
-│       ├── myapp.spec           # OBS RPM spec
-│       └── debian/              # Debian packaging
-├── .github/workflows/           # CI/CD workflows
-├── install.sh                   # Universal installer
-├── CHANGELOG.md
-├── README.md
-└── .gitignore
+│   ├── commands/             # Command implementations
+│   │   ├── hello.sh          # myapp hello
+│   │   └── version.sh        # myapp version
+│   └── config/
+│       └── config.yaml       # Configuration
+└── install.sh                # Installer script
 ```
 
-#### Command Annotations
+### Define Commands
 
-Define commands using comment-based metadata:
+Commands use annotation-based metadata:
 
 ```bash
+# src/main/shell/commands/greet.sh
+
 # @cmd
-# @desc Command description here
-# @arg name!         Required argument
-# @arg items~        Variadic arguments (multiple values)
-# @option -v, --verbose          Boolean flag
-# @option -e, --env <name>       Option with value
-# @option -c, --config <file>    Option with value
-# @example hello World
-# @example hello --verbose World
+# @desc Greet someone
+# @arg name!              Required argument
+# @option -l, --loud      Shout the greeting
 
-cmd_hello() {
-  local name="${1:-World}"
+cmd_greet() {
+  local name="$1"
+  local msg="Hello, $name!"
 
-  if [[ "${opt_verbose:-}" == "true" ]]; then
-    echo "Verbose mode enabled"
+  if [[ "${opt_loud:-}" == "true" ]]; then
+    echo "${msg^^}"
+  else
+    echo "$msg"
   fi
-
-  echo "Hello, $name!"
 }
 ```
 
-#### Subcommands
+```shell
+$ myapp greet World
+Hello, World!
 
-Create a directory for subcommand groups:
+$ myapp greet --loud World
+HELLO, WORLD!
+```
+
+### Subcommands
+
+Create directories for command groups:
 
 ```
-src/main/shell/commands/
+commands/
 ├── db/
 │   ├── migrate.sh    # myapp db migrate
 │   └── seed.sh       # myapp db seed
 └── hello.sh          # myapp hello
 ```
 
-#### Configuration
+### Configuration
 
-The framework uses a YAML configuration system with automatic variable mapping:
+YAML configuration with automatic variable mapping:
 
 ```yaml
-# src/main/shell/config/config.yaml
+# config/config.yaml
 radp:
-  env: default
-
-  fw:
-    banner-mode: on
-    log:
-      debug: false
-      level: info
-    user:
-      config:
-        automap: true
-
   extend:
     myapp:
-      version: v1.0.0
       api_url: https://api.example.com
 ```
 
-Variables from `radp.extend.*` are available as `gr_radp_extend_*`:
+Access in code:
 
 ```bash
-# radp.extend.myapp.version -> gr_radp_extend_myapp_version
-echo "$gr_radp_extend_myapp_version" # v1.0.0
+echo "$gr_radp_extend_myapp_api_url" # https://api.example.com
 ```
 
-Override via environment variables:
+Override via environment:
 
 ```shell
-GX_RADP_FW_LOG_DEBUG=true myapp hello
+GX_RADP_EXTEND_MYAPP_API_URL=http://localhost:8080 myapp hello
 ```
 
-#### Shell Completion
-
-Generate completion scripts:
+### Shell Completion
 
 ```shell
 # Bash
@@ -322,128 +173,30 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 myapp completion zsh >~/.zfunc/_myapp
 ```
 
-### Utility Libraries
+## Documentation
 
-The framework provides utility libraries organized by domain under `src/main/shell/framework/bootstrap/context/libs/`.
+- [Installation Guide](docs/installation.md) - All installation methods and upgrade instructions
+- [Command Annotations](docs/annotations.md) - `@cmd`, `@arg`, `@option`, `@example` reference
+- [Configuration](docs/configuration.md) - YAML config system and environment variables
+- [API Reference](docs/api.md) - Toolkit function reference
 
-#### Logging (`radp_log_*`)
+## Toolkit API
 
-```bash
-radp_log_debug "Debug message" # Debug level (requires GX_RADP_FW_LOG_DEBUG=true)
-radp_log_info "Info message" # Info level
-radp_log_warn "Warning message" # Warning level
-radp_log_error "Error message" # Error level
-radp_log_raw "Raw output" # Raw output without formatting
-```
+The framework provides utility functions organized by domain:
 
-#### Core (`toolkit/core/`)
+| Domain       | Functions                                            | Description           |
+|--------------|------------------------------------------------------|-----------------------|
+| `radp_log_*` | `debug`, `info`, `warn`, `error`                     | Structured logging    |
+| `radp_os_*`  | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | OS detection          |
+| `radp_io_*`  | `get_path_abs`                                       | File system utilities |
+| `radp_cli_*` | `discover`, `dispatch`, `help`                       | CLI infrastructure    |
 
-| Function                                          | Description                                            |
-|---------------------------------------------------|--------------------------------------------------------|
-| `radp_nr_arr_merge_unique <arr_name> <values...>` | Merge values into array, removing duplicates (nameref) |
+See [API Reference](docs/api.md) for complete documentation.
 
-#### I/O (`toolkit/io/`)
+## Contributing
 
-| Function                      | Description                            |
-|-------------------------------|----------------------------------------|
-| `radp_io_get_path_abs <path>` | Convert relative path to absolute path |
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and release process.
 
-#### OS (`toolkit/os/`)
+## License
 
-| Function                         | Description                                     |
-|----------------------------------|-------------------------------------------------|
-| `radp_os_get_distro_id`          | Get distribution ID (e.g., `ubuntu`, `fedora`)  |
-| `radp_os_get_distro_name`        | Get distribution name (e.g., `Ubuntu`)          |
-| `radp_os_get_distro_version`     | Get distribution version                        |
-| `radp_os_get_distro_os`          | Get OS type (`linux`, `darwin`)                 |
-| `radp_os_get_distro_arch`        | Get architecture (`x86_64`, `aarch64`)          |
-| `radp_os_get_distro_pm`          | Get package manager (`apt`, `dnf`, `brew`)      |
-| `radp_os_is_pkg_installed <pkg>` | Check if package is installed (returns 0/1)     |
-| `radp_os_install_pkgs <pkgs...>` | Install packages using detected package manager |
-
-#### CLI (`toolkit/cli/`)
-
-| Function                                  | Description                      |
-|-------------------------------------------|----------------------------------|
-| `radp_app_run`                            | Main application entry point     |
-| `radp_app_bootstrap <root> <name>`        | Bootstrap and run application    |
-| `radp_app_config <name> [version] [desc]` | Configure application info       |
-| `radp_app_version`                        | Output application version       |
-| `radp_cli_set_app_name <name>`            | Set application name             |
-| `radp_cli_set_commands_dir <dir>`         | Set commands directory           |
-| `radp_cli_discover`                       | Discover commands from directory |
-| `radp_cli_dispatch <args...>`             | Dispatch to command handler      |
-| `radp_cli_help`                           | Show help for current command    |
-| `radp_cli_completion_generate <shell>`    | Generate shell completion script |
-| `radp_cli_scaffold_new <name> [dir]`      | Create new CLI project           |
-
-#### Naming Conventions
-
-- **Public functions**: `radp_<domain>_<verb>[_<object>]`
-- **Boolean functions**: `*_is_*` / `*_has_*` — return 0 (true) or 1 (false)
-- **Nameref functions**: `radp_nr_*` — first argument is variable name (without `$`)
-- **Private functions**: `__fw_*` or `__<module>_*` — internal use only
-
-## CI
-
-### How to release
-
-1. Trigger `release-prep` with a `bump_type` (patch/minor/major/manual, default patch). For manual, provide `vX.Y.Z`.
-   This updates `gr_fw_version`, syncs spec versions, and adds a changelog entry (branch `workflow/vX.Y.Z` + PR).
-2. Review/edit the changelog in the PR and merge to `main`.
-3. `create-version-tag` runs automatically on merge (or trigger it manually) to validate the version/changelog/spec and
-   create/push the tag.
-4. Tag workflows run:
-    - `update-homebrew-tap` updates the Homebrew formula.
-5. `update-spec-version` runs after `create-version-tag` (or manually if needed).
-6. `build-copr-package` triggers after `update-spec-version` completes on `main` (only when the release tag points to
-   the workflow run commit).
-7. `build-obs-package` syncs sources to OBS and triggers the build (only when the release tag points to the workflow run
-   commit).
-8. `attach-release-packages` pulls built packages from COPR/OBS and the Homebrew formula and uploads them to the GitHub
-   Release for manual installs.
-
-### GitHub Actions
-
-#### Release prep (`release-prep.yml`)
-
-- **Trigger:** Manual (`workflow_dispatch`) on `main`.
-- **Purpose:** Create a release branch (`workflow/vX.Y.Z`) from the resolved version (patch/minor/major bump, or manual
-  `vX.Y.Z`), update `gr_fw_version`, sync spec versions, insert a changelog entry with a TODO list of commits, and open
-  a PR for review.
-
-#### Create version tag (`create-version-tag.yml`)
-
-- **Trigger:** Manual (`workflow_dispatch`) on `main`, or merge of a `workflow/vX.Y.Z` PR.
-- **Purpose:** Read `gr_fw_version`, validate `vx.y.z`, the changelog entry, and spec versions, then create/push the Git
-  tag if it does not already exist.
-
-#### Update spec version (`update-spec-version.yml`)
-
-- **Trigger:** Successful completion of the `create-version-tag` workflow on `main`, or manual (`workflow_dispatch`).
-- **Purpose:** Validate `gr_fw_version` follows `vx.y.z`, update spec `Version` to `x.y.z` when the version changes.
-
-#### Build COPR package (`build-copr-package.yml`)
-
-- **Trigger:** Successful completion of the `update-spec-version` workflow on `main`.
-- **Purpose:** Trigger a COPR SCM build using the updated spec at `packaging/copr/radp-bash-framework.spec`, skipping
-  the build when the release tag is missing (the SCM source is generated from the tag).
-
-#### Update Homebrew tap (`update-homebrew-tap.yml`)
-
-- **Trigger:** On push of a version tag (`v*`), successful completion of the `create-version-tag` workflow on `main`, or
-  manual (`workflow_dispatch`).
-- **Purpose:** Validate the tag matches `gr_fw_version`, build release metadata from the tag, update the Homebrew tap
-  formula, and push the changes to the tap repository.
-
-#### Build OBS package (`build-obs-package.yml`)
-
-- **Trigger:** Successful completion of the `update-spec-version` workflow on `main`, or manual (`workflow_dispatch`).
-- **Purpose:** Sync the release tarball, spec, and Debian packaging metadata to OBS and trigger the build, skipping the
-  build when the release tag is missing (the tarball is created from the tag).
-
-#### Attach release packages (`attach-release-packages.yml`)
-
-- **Trigger:** Published GitHub Release, or manual (`workflow_dispatch` with optional tag).
-- **Purpose:** Download built packages from COPR/OBS and the Homebrew tap formula, then upload them as Release assets
-  for manual installation.
+[MIT](LICENSE)
