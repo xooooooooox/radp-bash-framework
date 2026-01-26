@@ -27,50 +27,7 @@ radp_cli_set_commands_dir() {
     __radp_cli_commands_dir="$commands_dir"
 
     # Update IDE completion hints with commands directory
-    __radp_cli_update_ide_hints "$commands_dir"
-}
-
-#######################################
-# Update IDE completion hints with commands directory
-# Appends commands files to completion.sh for BashSupport Pro
-# Arguments:
-#   1 - commands_dir: commands/ 目录的绝对路径
-#######################################
-__radp_cli_update_ide_hints() {
-    local commands_dir="$1"
-
-    # Check if completion.sh exists
-    local completion_file="${gr_fw_user_config_path:-}/completion.sh"
-    [[ ! -f "$completion_file" ]] && return 0
-
-    # Check if commands section already exists (avoid duplicates)
-    if grep -q "# User commands" "$completion_file" 2>/dev/null; then
-        return 0
-    fi
-
-    # Find all command files and append to completion.sh
-    local -a cmd_files=()
-    mapfile -t cmd_files < <(find "$commands_dir" -type f -name "*.sh" | sort)
-
-    [[ ${#cmd_files[@]} -eq 0 ]] && return 0
-
-    # Remove the closing part and append commands
-    # Remove last 4 lines (  :\n}\n\n__ide_hints\n)
-    local tmp_file total_lines keep_lines
-    tmp_file=$(mktemp)
-    total_lines=$(wc -l < "$completion_file")
-    keep_lines=$((total_lines - 4))
-    head -n "$keep_lines" "$completion_file" > "$tmp_file"
-
-    {
-        printf '\n  # User commands\n'
-        for cmd_file in "${cmd_files[@]}"; do
-            printf '  # shellcheck source=%s\n' "$cmd_file"
-        done
-        printf '  :\n}\n\n__ide_hints\n'
-    } >> "$tmp_file"
-
-    mv "$tmp_file" "$completion_file"
+    radp_ide_add_commands_dir "$commands_dir"
 }
 
 #######################################

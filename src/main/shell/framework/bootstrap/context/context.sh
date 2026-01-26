@@ -16,8 +16,7 @@ set -e
 #   0 - Success
 #######################################
 __fw_context_setup_code_completion() {
-  # shellcheck source=./compinit.sh
-  __fw_source_scripts "$gr_fw_context_path"/compinit.sh
+  radp_ide_init
 }
 
 #######################################
