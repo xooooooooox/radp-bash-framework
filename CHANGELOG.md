@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v0.4.12 - 2026-01-26
+
+### docs
+- 777a047 provide complete configuration reference with examples
+- 2e65b27 expand CONTRIBUTING.md and annotations documentation
+- 8eea22b add detailed documentation for annotations, API, configuration, and installation
+- 1495432 add CONTRIBUTING.md and restructure README files
+- 2c219ea add utility libraries and naming conventions sections
+
+### test
+- c863485 add comprehensive test suite and helper utilities
+
 ## v0.4.11 - 2026-01-26
 
 ### fix
