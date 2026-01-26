@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.19 - 2026-01-26
+
+### feat
+- f218fea add passthrough mode support and `@meta` annotations
+
 ## v0.4.18 - 2026-01-26
 
 ### fix
