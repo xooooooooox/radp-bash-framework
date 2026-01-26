@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.18 - 2026-01-26
+
+### fix
+- c3f991e prevent potential errors in argument index increment
+
 ## v0.4.17 - 2026-01-26
 
 ### fix
