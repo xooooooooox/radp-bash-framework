@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.4.16 - 2026-01-26
+
+- TODO: no commits found; add summary manually.
+
 ## v0.4.15 - 2026-01-26
 
 ### chore
