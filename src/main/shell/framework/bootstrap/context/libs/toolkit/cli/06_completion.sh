@@ -439,9 +439,10 @@ __radp_cli_zsh_gen_args_completion() {
     fi
   done <<<"${meta[options]}"
 
-  # 生成参数补全
+  # 收集参数补全规格
   local arg_line arg_idx=1
   local -a arg_states=()
+  local -a arg_specs=()
   while IFS= read -r arg_line; do
     [[ -z "$arg_line" ]] && continue
     local -A arg_info=()
@@ -452,26 +453,34 @@ __radp_cli_zsh_gen_args_completion() {
       # 动态补全
       arg_states+=("arg_${arg_info[name]}")
       if [[ "${arg_info[variadic]}" == "true" ]]; then
-        echo "${pad}        '*:${arg_info[name]}:->arg_${arg_info[name]}' \\"
+        arg_specs+=("'*:${arg_info[name]}:->arg_${arg_info[name]}'")
       else
-        echo "${pad}        '${arg_idx}:${arg_info[name]}:->arg_${arg_info[name]}' \\"
+        arg_specs+=("'${arg_idx}:${arg_info[name]}:->arg_${arg_info[name]}'")
       fi
     else
       if [[ "${arg_info[variadic]}" == "true" ]]; then
-        echo "${pad}        '*:${arg_info[name]}:_files' \\"
+        arg_specs+=("'*:${arg_info[name]}:_files'")
       else
-        echo "${pad}        '${arg_idx}:${arg_info[name]}:_files' \\"
+        arg_specs+=("'${arg_idx}:${arg_info[name]}:_files'")
       fi
     fi
     ((arg_idx++)) || true
   done <<<"${meta[args]}"
 
-  # 如果没有参数定义，添加默认文件补全
-  if [[ $arg_idx -eq 1 ]]; then
+  # 输出参数规格（最后一个不带反斜杠）
+  if [[ ${#arg_specs[@]} -eq 0 ]]; then
+    # 如果没有参数定义，添加默认文件补全
     echo "${pad}        '*:file:_files'"
   else
-    # 移除最后一行的反斜杠
-    echo ""
+    local i
+    for ((i = 0; i < ${#arg_specs[@]}; i++)); do
+      if [[ $i -eq $((${#arg_specs[@]} - 1)) ]]; then
+        # 最后一个参数不带反斜杠
+        echo "${pad}        ${arg_specs[$i]}"
+      else
+        echo "${pad}        ${arg_specs[$i]} \\"
+      fi
+    done
   fi
 
   # 生成动态补全的 state 处理
