@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.23 - 2026-01-26
+
+### feat
+- 1bff70b refactor zsh completion to use wrapper functions for dynamic args/options
+
 ## v0.4.22 - 2026-01-26
 
 ### fix
