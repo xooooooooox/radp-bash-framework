@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v0.4.15 - 2026-01-26
+
+### chore
+- b87c920 update project dictionary to include "homelabctl"
+
+### docs
+- 459863c update IDE integration details in CLAUDE.md
+- 7b9175b document IDE integration and completion hints
+
+### refactor
+- 4b50415 simplify user library path handling and improve scaffold initialization
+- 25ec2f6 reorganize IDE completion hints handling and improve modularity
+
 ## v0.4.14 - 2026-01-26
 
 ### feat
