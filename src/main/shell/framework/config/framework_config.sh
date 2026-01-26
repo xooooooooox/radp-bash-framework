@@ -33,7 +33,6 @@ declare -gr gr_radp_fw_log_color_error="${GX_RADP_FW_LOG_COLOR_ERROR:-${YAML_RAD
 #--------------------------------------------- user config ------------------------------------------------------------#
 declare -gr gr_radp_fw_user_config_automap="${GX_RADP_FW_USER_CONFIG_AUTOMAP:-${YAML_RADP_FW_USER_CONFIG_AUTOMAP:-false}}"
 declare -g gr_radp_fw_user_lib_path
-gr_radp_fw_user_lib_path="$(
-  __fw_normalize_path "${GX_RADP_FW_USER_LIB_PATH:-${YAML_RADP_FW_USER_LIB_PATH:-"${gr_fw_root_path}/../lib"}}"
-)"
+gr_radp_fw_user_lib_path="${GX_RADP_FW_USER_LIB_PATH:-${YAML_RADP_FW_USER_LIB_PATH:-}}"
+[[ -n "$gr_radp_fw_user_lib_path" ]] && gr_radp_fw_user_lib_path="$(__fw_normalize_path "$gr_radp_fw_user_lib_path")"
 readonly gr_radp_fw_user_lib_path

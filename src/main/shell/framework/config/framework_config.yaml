@@ -41,8 +41,10 @@ radp:
       config:
         automap: true
       lib:
-        # 如果为空, 默认为 ${gr_fw_root_path}/../lib
-        path: ${gr_fw_root_path}/../lib
+        # 用户库路径（非 scaffold 项目使用）
+        # scaffold 项目通过 GX_RADP_FW_USER_LIB_PATH 环境变量设置
+        # 默认为空，不加载任何用户库
+        path: ""
   # 可在 user yaml config (如 config.yaml) 中自行定义任何配置,
   # 只需要将这部分配置放置在 radp.extend.* 下, 框架会自动将此部分配置 automap to user config file(即config.sh) 中
   extend:

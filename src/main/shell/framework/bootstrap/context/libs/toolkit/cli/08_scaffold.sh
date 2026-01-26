@@ -178,8 +178,9 @@ __APPNAME___main() {
         export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
     fi
 
-    # 设置用户配置路径（在加载 framework 之前）
+    # 设置用户配置和库路径（在加载 framework 之前）
     export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
+    export GX_RADP_FW_USER_LIB_PATH="$project_root/src/main/shell/libs"
 
     # shellcheck source=/dev/null
     source "$(radp-bf --print-run)"
@@ -191,15 +192,6 @@ __APPNAME___main() {
     # 加载版本常量
     # shellcheck source=/dev/null
     source "$project_root/src/main/shell/vars/constants.sh"
-
-    # 加载项目私有库（如果存在）
-    if [[ -d "$project_root/src/main/shell/libs" ]]; then
-        local lib_file
-        while IFS= read -r -d '' lib_file; do
-            # shellcheck source=/dev/null
-            source "$lib_file"
-        done < <(find "$project_root/src/main/shell/libs" -type f -name "*.sh" -print0 | sort -z)
-    fi
 
     # 运行
     # 当没有参数时，显示帮助
@@ -626,6 +618,7 @@ __radp_cli_scaffold_constants() {
 
     cat > "$target_dir/src/main/shell/vars/constants.sh" << CONSTANTS
 #!/usr/bin/env bash
+# shellcheck source=../config/completion.sh
 
 # ${project_name} version - single source of truth for release management
 declare -gr gr_${project_var}_version=v0.1.0
