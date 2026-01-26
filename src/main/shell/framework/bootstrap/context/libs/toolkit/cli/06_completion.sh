@@ -167,7 +167,7 @@ __radp_cli_bash_gen_cmd_completion() {
     if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
       arg_complete_funcs[$arg_idx]="$complete_func"
     fi
-    ((arg_idx++))
+    ((arg_idx++)) || true
   done <<<"${meta[args]}"
 
   # 生成补全代码
@@ -446,7 +446,7 @@ __radp_cli_zsh_gen_args_completion() {
         echo "${pad}        '${arg_idx}:${arg_info[name]}:_files' \\"
       fi
     fi
-    ((arg_idx++))
+    ((arg_idx++)) || true
   done <<<"${meta[args]}"
 
   # 如果没有参数定义，添加默认文件补全
