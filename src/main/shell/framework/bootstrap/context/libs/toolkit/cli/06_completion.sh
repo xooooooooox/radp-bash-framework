@@ -129,46 +129,60 @@ __radp_cli_bash_gen_cmd_completion() {
     return
   fi
 
+  # 检查是否是透传模式 - 只生成 --help 补全
+  local is_passthrough=false
+  if [[ "${meta[metas]}" == *passthrough* ]]; then
+    is_passthrough=true
+  fi
+
   local options="--help"
   local -a opt_with_value=()
   local -A opt_complete_funcs=()
 
-  # 解析选项
-  local opt_line
-  while IFS= read -r opt_line; do
-    [[ -z "$opt_line" ]] && continue
-    local -A opt_info=()
-    radp_cli_parse_option_spec "$opt_line" opt_info
-    [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
-    [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
+  # 非透传模式才解析选项
+  if [[ "$is_passthrough" != "true" ]]; then
+    local opt_line
+    while IFS= read -r opt_line; do
+      [[ -z "$opt_line" ]] && continue
+      local -A opt_info=()
+      radp_cli_parse_option_spec "$opt_line" opt_info
+      [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
+      [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
 
-    # 记录需要值的选项
-    if [[ "${opt_info[has_value]}" == "true" && -n "${opt_info[long]}" ]]; then
-      opt_with_value+=("${opt_info[long]}")
-      [[ -n "${opt_info[short]}" ]] && opt_with_value+=("${opt_info[short]}")
+      # 记录需要值的选项
+      if [[ "${opt_info[has_value]}" == "true" && -n "${opt_info[long]}" ]]; then
+        opt_with_value+=("${opt_info[long]}")
+        [[ -n "${opt_info[short]}" ]] && opt_with_value+=("${opt_info[short]}")
 
-      # 检查是否有动态补全函数
-      local complete_func
-      if complete_func=$(radp_cli_get_complete_func "${opt_info[long]}" "${meta[completes]}" 2>/dev/null); then
-        opt_complete_funcs["${opt_info[long]}"]="$complete_func"
-        [[ -n "${opt_info[short]}" ]] && opt_complete_funcs["${opt_info[short]}"]="$complete_func"
+        # 检查是否有动态补全函数
+        local complete_func
+        if complete_func=$(radp_cli_get_complete_func "${opt_info[long]}" "${meta[completes]}" 2>/dev/null); then
+          opt_complete_funcs["${opt_info[long]}"]="$complete_func"
+          [[ -n "${opt_info[short]}" ]] && opt_complete_funcs["${opt_info[short]}"]="$complete_func"
+        fi
       fi
-    fi
-  done <<<"${meta[options]}"
+    done <<<"${meta[options]}"
+  fi
 
-  # 解析参数的动态补全
+  # 解析参数的动态补全（非透传模式）
   local -a arg_complete_funcs=()
-  local arg_line arg_idx=0
-  while IFS= read -r arg_line; do
-    [[ -z "$arg_line" ]] && continue
-    local -A arg_info=()
-    radp_cli_parse_arg_spec "$arg_line" arg_info
-    local complete_func
-    if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
-      arg_complete_funcs[$arg_idx]="$complete_func"
-    fi
-    ((arg_idx++)) || true
-  done <<<"${meta[args]}"
+  if [[ "$is_passthrough" != "true" ]]; then
+    local arg_line arg_idx=0
+    while IFS= read -r arg_line; do
+      [[ -z "$arg_line" ]] && continue
+      local -A arg_info=()
+      radp_cli_parse_arg_spec "$arg_line" arg_info
+      local complete_func
+      if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
+        arg_complete_funcs[$arg_idx]="$complete_func"
+      fi
+      ((arg_idx++)) || true
+    done <<<"${meta[args]}"
+  fi
+
+  # 计算命令路径深度（用于 arg_idx 偏移）
+  local cmd_depth
+  cmd_depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
 
   # 生成补全代码
   echo "        '$cmd_path')"
@@ -176,34 +190,30 @@ __radp_cli_bash_gen_cmd_completion() {
   # 检查是否需要复杂的补全逻辑
   if [[ ${#opt_complete_funcs[@]} -gt 0 || ${#arg_complete_funcs[@]} -gt 0 ]]; then
     # 有动态补全：生成复杂逻辑
-    echo "            case \"\$prev\" in"
 
-    # 为每个有动态补全的选项生成 case
-    for opt in "${!opt_complete_funcs[@]}"; do
-      local func="${opt_complete_funcs[$opt]}"
-      if [[ ${#opt} -eq 1 ]]; then
-        echo "                -$opt)"
-      else
-        echo "                --$opt)"
-      fi
-      echo "                    local completions"
-      echo "                    completions=\$($func 2>/dev/null)"
-      echo "                    COMPREPLY=(\$(compgen -W \"\$completions\" -- \"\$cur\"))"
-      echo "                    return"
-      echo "                    ;;"
-    done
-
-    echo "                *)"
-    # 检查是否在选项值位置
-    if [[ ${#opt_with_value[@]} -gt 0 ]]; then
-      echo "                    # 检查是否是需要值的选项"
-      echo "                    ;;"
+    # 只有当有选项动态补全时才生成 case "$prev"
+    if [[ ${#opt_complete_funcs[@]} -gt 0 ]]; then
+      echo "            case \"\$prev\" in"
+      # 为每个有动态补全的选项生成 case
+      for opt in "${!opt_complete_funcs[@]}"; do
+        local func="${opt_complete_funcs[$opt]}"
+        if [[ ${#opt} -eq 1 ]]; then
+          echo "                -$opt)"
+        else
+          echo "                --$opt)"
+        fi
+        echo "                    local completions"
+        echo "                    completions=\$($func 2>/dev/null)"
+        echo "                    COMPREPLY=(\$(compgen -W \"\$completions\" -- \"\$cur\"))"
+        echo "                    return"
+        echo "                    ;;"
+      done
+      echo "            esac"
     fi
-    echo "            esac"
 
     # 参数位置的动态补全
     if [[ ${#arg_complete_funcs[@]} -gt 0 ]]; then
-      echo "            # 计算参数位置"
+      echo "            # 计算参数位置（减去命令路径深度）"
       echo "            local arg_idx=0"
       echo "            for ((i = 1; i < cword; i++)); do"
       echo "                case \"\${words[i]}\" in"
@@ -211,6 +221,7 @@ __radp_cli_bash_gen_cmd_completion() {
       echo "                    *) ((arg_idx++)) ;;"
       echo "                esac"
       echo "            done"
+      echo "            ((arg_idx -= $cmd_depth)) || true"
       echo "            # 根据参数位置补全"
       echo "            case \"\$arg_idx\" in"
       for idx in "${!arg_complete_funcs[@]}"; do
@@ -388,6 +399,12 @@ __radp_cli_zsh_gen_args_completion() {
   local -A meta=()
   if ! radp_cli_get_cmd_meta "$cmd_path" meta 2>/dev/null; then
     echo "${pad}        '*:file:_files'"
+    return
+  fi
+
+  # 检查是否是透传模式 - 只保留 --help，其余作为 passthrough
+  if [[ "${meta[metas]}" == *passthrough* ]]; then
+    echo "${pad}        '*:args:'"
     return
   fi
 
