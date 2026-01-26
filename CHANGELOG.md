@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.4.20 - 2026-01-26
+
+### fix
+- 9f99a2f enhance completion logic with passthrough mode support
+
+### docs
+- 969fd0a document passthrough mode with examples
+
 ## v0.4.19 - 2026-01-26
 
 ### feat
