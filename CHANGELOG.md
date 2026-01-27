@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.28 - 2026-01-27
+
+### feat
+- 8b87f19 Support global option
+
 ## v0.4.27 - 2026-01-27
 
 ### feat
