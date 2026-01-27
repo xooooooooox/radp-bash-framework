@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.27 - 2026-01-27
+
+### feat
+- 748b0ee Support customize banner
+- 4abd0d2 Support customize banner
+
 ## v0.4.26 - 2026-01-27
 
 ### chore
