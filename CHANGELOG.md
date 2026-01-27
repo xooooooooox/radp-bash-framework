@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.4 - 2026-01-27
+
+### fix
+- 8af3098 fix IDE code completion not work
+- b885fb5 fix IDE code completion not work
+
 ## v0.6.3 - 2026-01-27
 
 ### fix
