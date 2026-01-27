@@ -187,8 +187,14 @@ __APPNAME___main() {
         export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
     fi
 
-    # 设置用户配置路径（使用用户目录，系统安装时可写）
-    export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/__APPNAME__"
+    # 设置用户配置路径
+    # 开发态: src/main/shell/config 目录存在 → 使用项目内路径
+    # 安装态: 目录不存在 → 使用 XDG 标准路径
+    if [[ -d "$project_root/src/main/shell/config" ]]; then
+        export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
+    else
+        export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/__APPNAME__"
+    fi
     export GX_RADP_FW_USER_LIB_PATH="$project_root/src/main/shell/libs"
 
     # 加载版本常量（在 framework 之前，供 banner 使用）
