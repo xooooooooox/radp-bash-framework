@@ -266,7 +266,11 @@ __fw_autoconfigure() {
     # 需要传入最终合并后的变量，这里使用全局变量 gw_final_yaml_vars
     if [[ ${#gw_final_yaml_vars[@]} -gt 0 ]]; then
       if [[ "$gr_fw_user_config_path_exists" == "true" ]]; then
-        __fw_generate_user_config gw_final_yaml_vars
+        # Only regenerate config.sh when the config directory is writable (dev mode).
+        # In install mode (e.g. RPM under /usr/lib64), the pre-packaged config.sh is used as-is.
+        if [[ -w "$gr_fw_user_config_path" ]]; then
+          __fw_generate_user_config gw_final_yaml_vars
+        fi
         # include use config.sh
         __fw_source_scripts "$gr_fw_user_config_file"
         if [[ "$gr_radp_fw_log_console_enabled" == 'true' && "$gr_radp_fw_log_debug" == 'true' && "$gr_radp_fw_log_level" == 'debug' ]]; then
