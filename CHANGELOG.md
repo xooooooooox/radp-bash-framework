@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.25 - 2026-01-27
+
+### fix
+- 50a3b44 fix default user config dir
+
 ## v0.4.24 - 2026-01-27
 
 ### fix
