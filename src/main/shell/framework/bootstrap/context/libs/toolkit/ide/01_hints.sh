@@ -157,4 +157,9 @@ __radp_ide_append_sources() {
     } >> "$tmp_file"
 
     mv "$tmp_file" "$__radp_ide_hints_file"
+
+    # Keep cache copy in sync
+    if [[ -d "$gr_fw_context_cache_path" && -w "$gr_fw_context_cache_path" ]]; then
+        cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/completion.sh"
+    fi
 }
