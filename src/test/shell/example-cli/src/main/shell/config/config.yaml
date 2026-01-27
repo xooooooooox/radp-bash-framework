@@ -3,7 +3,7 @@
 # Priority: Environment variables (GX_*) > YAML values > defaults
 
 radp:
-  env: dev
+  env: local
 
   # Framework settings override (optional)
   fw:
