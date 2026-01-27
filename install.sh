@@ -609,7 +609,7 @@ install_manual() {
   log "Installed ${REPO_NAME} (ref: ${ref}) to ${install_dir}"
   log "Symlinked to ${bin_dir}/radp-bf and ${bin_dir}/radp-bash-framework"
   log "Ensure ${bin_dir} is in your PATH."
-  log "Run: source \"\$(radp-bf path init)\""
+  log "Run: hash -r && source \"\$(radp-bf path init)\""
 }
 
 # ============================================================================
@@ -689,7 +689,7 @@ main() {
   }
 
   log "Successfully installed ${REPO_NAME} via ${pkm}"
-  log "Run: source \"\$(radp-bf path init)\""
+  log "Run: hash -r && source \"\$(radp-bf path init)\""
 }
 
 main "$@"
