@@ -119,11 +119,11 @@ source "\$RADP_APP_ROOT/src/main/shell/vars/constants.sh"
 # shellcheck disable=SC2154
 radp_app_banner() {
   cat << 'BANNER'
-     ____  ___    ____  ____     ________    ____
-   / __ \\/   |  / __ \\/ __ \\   / ____/ /   /  _/
+    ____  ___    ____  ____     ________    ____
+   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
   / /_/ / /| | / / / / /_/ /  / /   / /    / /
  / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
-/_/ |_/_/  |_/_____/_/       \\____/_____/___/
+/_/ |_/_/  |_/_____/_/       \____/_____/___/
 BANNER
   printf ' :: ${project_name} ::                       (%s)\\n' "\$gr_${project_var}_version"
   printf ' :: radp-bash-framework ::               (%s)\\n' "\$gr_fw_version"
@@ -225,7 +225,7 @@ __radp_cli_scaffold_config() {
 # Priority: Environment variables (GX_*) > YAML values > defaults
 
 radp:
-  env: dev
+  env: default
 
   # Framework settings override (optional)
   fw:
