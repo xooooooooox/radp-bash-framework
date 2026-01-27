@@ -223,6 +223,70 @@ Later sources override earlier ones.
 | `off` | No banner                        |
 | `log` | Log banner instead of displaying |
 
+### Banner Customization
+
+Applications can customize the startup banner using one of two methods (in priority order):
+
+#### Method 1: Banner Hook Function (Recommended)
+
+Define `radp_app_banner()` function **before** sourcing the framework:
+
+```bash
+#!/usr/bin/env bash
+
+# Define custom banner hook BEFORE sourcing framework
+radp_app_banner() {
+  cat << 'EOF'
+  __  __         _
+ |  \/  |_   _  / \   _ __  _ __
+ | |\/| | | | |/ _ \ | '_ \| '_ \
+ | |  | | |_| / ___ \| |_) | |_) |
+ |_|  |_|\__, /_/   \_\ .__/| .__/
+         |___/        |_|   |_|
+EOF
+  printf ' :: MyApp ::                     (%s)\n' "$gr_myapp_version"
+  printf ' :: radp-bash-framework ::       (%s)\n' "$gr_fw_version"
+}
+
+# Source framework - banner will be printed using radp_app_banner()
+source "$(radp-bf --print-run)"
+```
+
+This method is ideal when:
+- You need dynamic content (e.g., detecting installed components)
+- You want to show multiple version numbers
+- You need conditional banner content
+
+#### Method 2: Banner File
+
+Place a `banner.txt` file in your user config path (`$GX_RADP_FW_USER_CONFIG_PATH`):
+
+```bash
+# Set user config path before sourcing
+export GX_RADP_FW_USER_CONFIG_PATH="$HOME/.config/myapp"
+
+# Create banner file
+cat > "$HOME/.config/myapp/banner.txt" << 'EOF'
+  __  __         _
+ |  \/  |_   _  / \   _ __  _ __
+ | |\/| | | | |/ _ \ | '_ \| '_ \
+ | |  | | |_| / ___ \| |_) | |_) |
+ |_|  |_|\__, /_/   \_\ .__/| .__/
+         |___/        |_|   |_|
+ :: MyApp ::                     ($gr_myapp_version)
+EOF
+
+source "$(radp-bf --print-run)"
+```
+
+The banner file supports variable substitution (e.g., `$gr_fw_version`).
+
+#### Banner Priority
+
+1. **`radp_app_banner()` function** - If defined before framework loads
+2. **`$gr_fw_user_config_path/banner.txt`** - User config path banner file
+3. **Framework default banner** - Built-in RADP BASH banner
+
 ### Log Levels
 
 | Level   | Description                    |

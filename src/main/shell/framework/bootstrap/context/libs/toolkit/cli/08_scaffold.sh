@@ -106,13 +106,24 @@ __APPNAME___get_project_root() {
     dirname "$bin_dir"
 }
 
+# 全局变量：存储过滤后的参数
+declare -ga ____APPNAME___filtered_args=()
+
 # 解析全局选项 (--verbose, --debug)
+# 注意：此函数必须直接调用（不能在子 shell 中），以便 export 生效
 __APPNAME___parse_global_opts() {
-    local -a filtered_args=()
+    ____APPNAME___filtered_args=()
     local verbose=false
     local debug=false
+    local found_command=false
 
     while [[ $# -gt 0 ]]; do
+        if [[ "$found_command" == "true" ]]; then
+            ____APPNAME___filtered_args+=("$1")
+            shift
+            continue
+        fi
+
         case "$1" in
             -v|--verbose)
                 verbose=true
@@ -124,11 +135,16 @@ __APPNAME___parse_global_opts() {
                 ;;
             --)
                 shift
-                filtered_args+=("$@")
+                ____APPNAME___filtered_args+=("$@")
                 break
                 ;;
+            -*)
+                ____APPNAME___filtered_args+=("$1")
+                shift
+                ;;
             *)
-                filtered_args+=("$1")
+                found_command=true
+                ____APPNAME___filtered_args+=("$1")
                 shift
                 ;;
         esac
@@ -147,11 +163,6 @@ __APPNAME___parse_global_opts() {
         export GX_RADP_FW_BANNER_MODE=off
         export GX_RADP_FW_LOG_LEVEL=error
     fi
-
-    # 注意：当数组为空时不输出任何内容
-    if [[ ${#filtered_args[@]} -gt 0 ]]; then
-        printf '%s\0' "${filtered_args[@]}"
-    fi
 }
 
 # 主函数
@@ -166,11 +177,9 @@ __APPNAME___main() {
         exit 1
     fi
 
-    # 解析全局选项
-    local -a args=()
-    while IFS= read -r -d '' arg; do
-        args+=("$arg")
-    done < <(__APPNAME___parse_global_opts "$@")
+    # 解析全局选项（直接调用以保证 export 生效）
+    __APPNAME___parse_global_opts "$@"
+    local -a args=("${____APPNAME___filtered_args[@]}")
 
     # 生成补全脚本时禁用所有输出
     if [[ "${args[0]:-}" == "completion" ]]; then
@@ -178,9 +187,26 @@ __APPNAME___main() {
         export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
     fi
 
-    # 设置用户配置和库路径（在加载 framework 之前）
-    export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
+    # 设置用户配置路径（使用用户目录，系统安装时可写）
+    export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/__APPNAME__"
     export GX_RADP_FW_USER_LIB_PATH="$project_root/src/main/shell/libs"
+
+    # 加载版本常量（在 framework 之前，供 banner 使用）
+    # shellcheck source=/dev/null
+    source "$project_root/src/main/shell/vars/constants.sh"
+
+    # 定义自定义 banner（可选，在 framework 之前定义）
+    # shellcheck disable=SC2154
+    radp_app_banner() {
+        cat << 'BANNER'
+  ___  ___  ___  ___    _  _   _   __  __ ___
+ | _ \| _ \/ _ \/ _ \  | \| | /_\ |  \/  | __|
+ |  _/|   / (_) \_, /  | .` |/ _ \| |\/| | _|
+ |_|  |_|_\\___/  /_/   |_|\_/_/ \_\_|  |_|___|
+BANNER
+        printf ' :: __APPNAME__ ::                       (%s)\n' "$gr___APPNAME_VAR___version"
+        printf ' :: radp-bash-framework ::               (%s)\n' "$gr_fw_version"
+    }
 
     # shellcheck source=/dev/null
     source "$(radp-bf --print-run)"
@@ -189,12 +215,7 @@ __APPNAME___main() {
     radp_cli_set_app_name "__APPNAME__"
     radp_cli_set_commands_dir "$project_root/src/main/shell/commands"
 
-    # 加载版本常量
-    # shellcheck source=/dev/null
-    source "$project_root/src/main/shell/vars/constants.sh"
-
     # 运行
-    # 当没有参数时，显示帮助
     if [[ ${#args[@]} -eq 0 ]]; then
         radp_app_run --help
     else
@@ -206,7 +227,9 @@ __APPNAME___main "$@"
 ENTRY_SCRIPT
 
     # 替换占位符
-    sed -i.bak "s/__APPNAME__/${project_name//-/_}/g" "$target_dir/bin/$project_name"
+    local project_var="${project_name//-/_}"
+    sed -i.bak "s/__APPNAME_VAR__/${project_var}/g" "$target_dir/bin/$project_name"
+    sed -i.bak "s/__APPNAME__/${project_var}/g" "$target_dir/bin/$project_name"
     rm -f "$target_dir/bin/$project_name.bak"
 
     # 设置执行权限
