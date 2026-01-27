@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-# shellcheck source=../run.sh
+# shellcheck source=../init.sh
 
 #######################################
 # 声明框架能正常运行的依赖和版本要求(requirements)

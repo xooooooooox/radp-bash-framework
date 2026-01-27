@@ -5,7 +5,7 @@ This repository contains `radp-bash-framework`, a modular Bash framework.
 ## Project Structure
 
 - `src/main/shell/framework/` — framework source code
-    - `run.sh` — main entrypoint (sets paths, runs `preflight`, then `bootstrap`) and is idempotent via
+    - `init.sh` — main entrypoint (sets paths, runs `preflight`, then `bootstrap`) and is idempotent via
       `gw_fw_run_initialized`.
     - `preflight/` — environment + dependency checks
         - `requirements/` — individual requirement checks (e.g. `require_bash.sh`, `require_yq.sh`).
@@ -34,7 +34,7 @@ This repository contains `radp-bash-framework`, a modular Bash framework.
     - Many scripts use `set -e` or `set -euo pipefail`.
     - Quote variables unless you intentionally want word splitting / globbing.
 - Keep compatibility constraints in mind:
-    - Per `src/main/shell/framework/run.sh`, the entry scripts (`bootstrap.sh` and `preflight/*.sh`) should use
+    - Per `src/main/shell/framework/init.sh`, the entry scripts (`bootstrap.sh` and `preflight/*.sh`) should use
       POSIX-compatible syntax as much as possible for portability.
 
 ### Naming conventions seen in this repo
@@ -64,7 +64,7 @@ completion.
 ### Interpreter / Bash version
 
 - Many framework scripts are `#!/usr/bin/env bash` and use Bash features such as `[[ ... ]]`, arrays, and `mapfile`.
-- Some entry scripts are intentionally written in POSIX `sh` for portability (see `src/main/shell/framework/run.sh` and
+- Some entry scripts are intentionally written in POSIX `sh` for portability (see `src/main/shell/framework/init.sh` and
   `src/main/shell/framework/preflight/*.sh`).
 - In your JetBrains settings, point BashSupport Pro to the Bash interpreter you actually run with.
 
@@ -85,9 +85,9 @@ This repo uses a dedicated “hint” function to make IDE navigation and comple
 
 ### Run/Debug in JetBrains
 
-- Prefer running the framework via `src/main/shell/framework/run.sh`.
+- Prefer running the framework via `src/main/shell/framework/init.sh`.
 - When creating a Run Configuration:
-    - Script: `src/main/shell/framework/run.sh`
+    - Script: `src/main/shell/framework/init.sh`
     - Working directory: repository root (so relative paths in configs/scripts remain stable)
     - Environment: set only what you need; keep runs reproducible
 

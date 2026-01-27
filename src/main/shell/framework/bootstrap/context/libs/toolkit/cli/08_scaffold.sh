@@ -77,168 +77,66 @@ radp_cli_scaffold_new() {
 }
 
 #######################################
-# 生成入口脚本
+# 生成入口脚本（thin entry script）
+# 所有 boilerplate 逻辑由 framework/launcher.sh 处理
 #######################################
 __radp_cli_scaffold_bin() {
   local project_name="$1"
   local target_dir="$2"
+  local project_var="${project_name//-/_}"
 
-  cat >"$target_dir/bin/$project_name" <<'ENTRY_SCRIPT'
+  cat >"$target_dir/bin/$project_name" <<ENTRY_SCRIPT
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 解析脚本真实路径
-__APPNAME___resolve_script_dir() {
-    local src="${BASH_SOURCE[0]}"
-    while [[ -L "$src" ]]; do
-        local dir
-        dir="$(cd -P "$(dirname "$src")" && pwd)"
-        src="$(readlink "$src")"
-        [[ "$src" != /* ]] && src="$dir/$src"
-    done
-    cd -P "$(dirname "$src")" && pwd
+# 解析脚本真实路径（支持 symlink，如 Homebrew 安装）
+__resolve_project_root() {
+  local src="\${BASH_SOURCE[0]}"
+  local dir
+  while [[ -L "\$src" ]]; do
+    dir="\$(cd -P "\$(dirname "\$src")" && pwd)"
+    src="\$(readlink "\$src")"
+    [[ "\$src" != /* ]] && src="\$dir/\$src"
+  done
+  local bin_dir
+  bin_dir="\$(cd -P "\$(dirname "\$src")" && pwd)"
+  dirname "\$bin_dir"
 }
 
-# 获取项目根目录
-__APPNAME___get_project_root() {
-    local bin_dir
-    bin_dir=$(__APPNAME___resolve_script_dir)
-    dirname "$bin_dir"
-}
+export RADP_APP_ROOT="\$(__resolve_project_root)"
 
-# 全局变量：存储过滤后的参数
-declare -ga ____APPNAME___filtered_args=()
+# 加载 radp-bash-framework
+if ! command -v radp-bf &>/dev/null; then
+  echo "Error: radp-bash-framework not found. Please install it first." >&2
+  echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
+  exit 1
+fi
 
-# 解析全局选项 (--verbose, --debug)
-# 注意：此函数必须直接调用（不能在子 shell 中），以便 export 生效
-__APPNAME___parse_global_opts() {
-    ____APPNAME___filtered_args=()
-    local verbose=false
-    local debug=false
-    local found_command=false
+# shellcheck source=/dev/null
+source "\$RADP_APP_ROOT/src/main/shell/vars/constants.sh"
 
-    while [[ $# -gt 0 ]]; do
-        if [[ "$found_command" == "true" ]]; then
-            ____APPNAME___filtered_args+=("$1")
-            shift
-            continue
-        fi
-
-        case "$1" in
-            -v|--verbose)
-                verbose=true
-                shift
-                ;;
-            --debug)
-                debug=true
-                shift
-                ;;
-            --)
-                shift
-                ____APPNAME___filtered_args+=("$@")
-                break
-                ;;
-            -*)
-                ____APPNAME___filtered_args+=("$1")
-                shift
-                ;;
-            *)
-                found_command=true
-                ____APPNAME___filtered_args+=("$1")
-                shift
-                ;;
-        esac
-    done
-
-    # 设置输出模式环境变量
-    if [[ "$debug" == "true" ]]; then
-        export GX_RADP_FW_BANNER_MODE=on
-        export GX_RADP_FW_LOG_LEVEL=debug
-        export GX_RADP_FW_LOG_DEBUG=true
-    elif [[ "$verbose" == "true" ]]; then
-        export GX_RADP_FW_BANNER_MODE=on
-        export GX_RADP_FW_LOG_LEVEL=info
-    else
-        # 默认: banner off, 只显示错误
-        export GX_RADP_FW_BANNER_MODE=off
-        export GX_RADP_FW_LOG_LEVEL=error
-    fi
-}
-
-# 主函数
-__APPNAME___main() {
-    local project_root
-    project_root=$(__APPNAME___get_project_root)
-
-    # 加载 radp-bash-framework
-    if ! command -v radp-bf &>/dev/null; then
-        echo "Error: radp-bash-framework not found. Please install it first." >&2
-        echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
-        exit 1
-    fi
-
-    # 解析全局选项（直接调用以保证 export 生效）
-    __APPNAME___parse_global_opts "$@"
-    local -a args=("${____APPNAME___filtered_args[@]}")
-
-    # 生成补全脚本时禁用所有输出
-    if [[ "${args[0]:-}" == "completion" ]]; then
-        export GX_RADP_FW_BANNER_MODE=off
-        export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
-    fi
-
-    # 设置用户配置路径
-    # 开发态: src/main/shell/config 目录存在 → 使用项目内路径
-    # 安装态: 目录不存在 → 使用 XDG 标准路径
-    if [[ -d "$project_root/src/main/shell/config" ]]; then
-        export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
-    else
-        export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/__APPNAME__"
-    fi
-    export GX_RADP_FW_USER_LIB_PATH="$project_root/src/main/shell/libs"
-
-    # 加载版本常量（在 framework 之前，供 banner 使用）
-    # shellcheck source=/dev/null
-    source "$project_root/src/main/shell/vars/constants.sh"
-
-    # 定义自定义 banner（可选，在 framework 之前定义）
-    # shellcheck disable=SC2154
-    radp_app_banner() {
-        cat << 'BANNER'
+# 自定义 banner（可选，在 framework 之前定义）
+# shellcheck disable=SC2154
+radp_app_banner() {
+  cat << 'BANNER'
      ____  ___    ____  ____     ________    ____
-   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
+   / __ \\/   |  / __ \\/ __ \\   / ____/ /   /  _/
   / /_/ / /| | / / / / /_/ /  / /   / /    / /
  / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
-/_/ |_/_/  |_/_____/_/       \____/_____/___/
+/_/ |_/_/  |_/_____/_/       \\____/_____/___/
 BANNER
-        printf ' :: __APPNAME__ ::                       (%s)\n' "$gr___APPNAME_VAR___version"
-        printf ' :: radp-bash-framework ::               (%s)\n' "$gr_fw_version"
-    }
-
-    # shellcheck source=/dev/null
-    source "$(radp-bf --print-run)"
-
-    # 设置应用信息
-    radp_cli_set_app_name "__APPNAME__"
-    radp_cli_set_commands_dir "$project_root/src/main/shell/commands"
-    radp_cli_set_global_options "-v" "--verbose" "--debug"
-
-    # 运行
-    if [[ ${#args[@]} -eq 0 ]]; then
-        radp_app_run --help
-    else
-        radp_app_run "${args[@]}"
-    fi
+  printf ' :: ${project_name} ::                       (%s)\\n' "\$gr_${project_var}_version"
+  printf ' :: radp-bash-framework ::               (%s)\\n' "\$gr_fw_version"
 }
 
-__APPNAME___main "$@"
-ENTRY_SCRIPT
+# 应用声明式配置
+export RADP_APP_NAME="${project_name}"
+export RADP_APP_GLOBAL_OPTIONS="-v --verbose --debug"
 
-  # 替换占位符
-  local project_var="${project_name//-/_}"
-  sed -i.bak "s/__APPNAME_VAR__/${project_var}/g" "$target_dir/bin/$project_name"
-  sed -i.bak "s/__APPNAME__/${project_var}/g" "$target_dir/bin/$project_name"
-  rm -f "$target_dir/bin/$project_name.bak"
+# 启动：框架负责全部初始化和 dispatch
+# shellcheck source=/dev/null
+source "\$(radp-bf path launcher)" "\$@"
+ENTRY_SCRIPT
 
   # 设置执行权限
   chmod +x "$target_dir/bin/$project_name"

@@ -12,7 +12,7 @@ cd radp-bash-framework
 2. Source the framework directly:
 
 ```shell
-source src/main/shell/framework/run.sh
+source src/main/shell/framework/init.sh
 ```
 
 ## Testing
@@ -34,7 +34,7 @@ See [src/test/shell/README.md](src/test/shell/README.md) for writing new tests.
 
 ## Code Style
 
-- Entry scripts (`run.sh`, `preflight/*.sh`) use POSIX-compatible syntax
+- Entry scripts (`init.sh`, `preflight/*.sh`) use POSIX-compatible syntax
 - Bootstrap and beyond use Bash features (`[[ ]]`, arrays, `mapfile`)
 - Quote variables unless intentional word splitting
 - Use `radp_log_*` functions instead of ad-hoc `echo` for output

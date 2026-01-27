@@ -1,146 +1,50 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 解析脚本真实路径
-example_cli_resolve_script_dir() {
+# 解析脚本真实路径（支持 symlink，如 Homebrew 安装）
+__resolve_project_root() {
   local src="${BASH_SOURCE[0]}"
+  local dir
   while [[ -L "$src" ]]; do
-    local dir
     dir="$(cd -P "$(dirname "$src")" && pwd)"
     src="$(readlink "$src")"
     [[ "$src" != /* ]] && src="$dir/$src"
   done
-  cd -P "$(dirname "$src")" && pwd
-}
-
-# 获取项目根目录
-example_cli_get_project_root() {
   local bin_dir
-  bin_dir=$(example_cli_resolve_script_dir)
+  bin_dir="$(cd -P "$(dirname "$src")" && pwd)"
   dirname "$bin_dir"
 }
 
-# 全局变量：存储过滤后的参数
-declare -ga __example_cli_filtered_args=()
+export RADP_APP_ROOT="$(__resolve_project_root)"
 
-# 解析全局选项 (--verbose, --debug)
-# 注意：此函数必须直接调用（不能在子 shell 中），以便 export 生效
-example_cli_parse_global_opts() {
-  __example_cli_filtered_args=()
-  local verbose=false
-  local debug=false
-  local found_command=false
+# 加载 radp-bash-framework
+if ! command -v radp-bf &>/dev/null; then
+  echo "Error: radp-bash-framework not found. Please install it first." >&2
+  echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
+  exit 1
+fi
 
-  while [[ $# -gt 0 ]]; do
-    if [[ "$found_command" == "true" ]]; then
-      __example_cli_filtered_args+=("$1")
-      shift
-      continue
-    fi
+# shellcheck source=/dev/null
+source "$RADP_APP_ROOT/src/main/shell/vars/constants.sh"
 
-    case "$1" in
-    -v | --verbose)
-      verbose=true
-      shift
-      ;;
-    --debug)
-      debug=true
-      shift
-      ;;
-    --)
-      shift
-      __example_cli_filtered_args+=("$@")
-      break
-      ;;
-    -*)
-      __example_cli_filtered_args+=("$1")
-      shift
-      ;;
-    *)
-      found_command=true
-      __example_cli_filtered_args+=("$1")
-      shift
-      ;;
-    esac
-  done
-
-  # 设置输出模式环境变量
-  if [[ "$debug" == "true" ]]; then
-    export GX_RADP_FW_BANNER_MODE=on
-    export GX_RADP_FW_LOG_LEVEL=debug
-    export GX_RADP_FW_LOG_DEBUG=true
-  elif [[ "$verbose" == "true" ]]; then
-    export GX_RADP_FW_BANNER_MODE=on
-    export GX_RADP_FW_LOG_LEVEL=info
-  else
-    # 默认: banner off, 只显示错误
-    export GX_RADP_FW_BANNER_MODE=off
-    export GX_RADP_FW_LOG_LEVEL=error
-  fi
-}
-
-# 主函数
-example_cli_main() {
-  local project_root
-  project_root=$(example_cli_get_project_root)
-
-  # 加载 radp-bash-framework
-  if ! command -v radp-bf &>/dev/null; then
-    echo "Error: radp-bash-framework not found. Please install it first." >&2
-    echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
-    exit 1
-  fi
-
-  # 解析全局选项（直接调用以保证 export 生效）
-  example_cli_parse_global_opts "$@"
-  local -a args=("${__example_cli_filtered_args[@]}")
-
-  # 生成补全脚本时禁用所有输出
-  if [[ "${args[0]:-}" == "completion" ]]; then
-    export GX_RADP_FW_BANNER_MODE=off
-    export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
-  fi
-
-  # 设置用户配置路径（使用用户目录，系统安装时可写）
-  if [[ -d "$project_root/src/main/shell/config" ]]; then
-    export GX_RADP_FW_USER_CONFIG_PATH="$project_root/src/main/shell/config"
-  else
-    export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/example_cli"
-  fi
-  export GX_RADP_FW_USER_LIB_PATH="$project_root/src/main/shell/libs"
-
-  # 加载版本常量（在 framework 之前，供 banner 使用）
-  # shellcheck source=/dev/null
-  source "$project_root/src/main/shell/vars/constants.sh"
-
-  # 定义自定义 banner（可选，在 framework 之前定义）
-  # shellcheck disable=SC2154
-  radp_app_banner() {
-    cat <<'BANNER'
+# 自定义 banner（可选，在 framework 之前定义）
+# shellcheck disable=SC2154
+radp_app_banner() {
+  cat <<'BANNER'
     ____  ___    ____  ____     ________    ____
    / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
   / /_/ / /| | / / / / /_/ /  / /   / /    / /
  / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
 /_/ |_/_/  |_/_____/_/       \____/_____/___/
 BANNER
-    printf ' :: example_cli ::                       (%s)\n' "$gr_example_cli_version"
-    printf ' :: radp-bash-framework ::               (%s)\n' "$gr_fw_version"
-  }
-
-  # shellcheck source=/dev/null
-  source "$(radp-bf --print-run)"
-
-  # 设置应用信息
-  radp_cli_set_app_name "example_cli"
-  radp_cli_set_commands_dir "$project_root/src/main/shell/commands"
-  radp_cli_set_global_options "-v" "--verbose" "--debug"
-
-  # 运行
-  if [[ ${#args[@]} -eq 0 ]]; then
-    radp_app_run --help
-  else
-    radp_app_run "${args[@]}"
-  fi
+  printf ' :: example_cli ::                       (%s)\n' "$gr_example_cli_version"
+  printf ' :: radp-bash-framework ::               (%s)\n' "$gr_fw_version"
 }
 
-example_cli_main "$@"
+# 应用声明式配置
+export RADP_APP_NAME="example_cli"
+export RADP_APP_GLOBAL_OPTIONS="-v --verbose --debug"
+
+# 启动：框架负责全部初始化和 dispatch
+# shellcheck source=/dev/null
+source "$(radp-bf path launcher)" "$@"

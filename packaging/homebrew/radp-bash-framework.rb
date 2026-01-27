@@ -41,7 +41,7 @@ class RadpBashFramework < Formula
         radp-bf new mycli    # Create a new CLI project
 
       To use the framework in your scripts:
-        source "$(radp-bf --print-run)"
+        source "$(radp-bf path init)"
     EOS
   end
 

@@ -16,22 +16,25 @@ bats src/test/shell/<file>.bats        # Run specific test file
 
 ### Framework Entry
 ```bash
-source src/main/shell/framework/run.sh              # Source framework directly
-source "$(./src/main/shell/bin/radp-bf --print-run)" # Via CLI wrapper
+source src/main/shell/framework/init.sh              # Source framework directly
+source "$(./src/main/shell/bin/radp-bf path init)"    # Via CLI wrapper
+source "$(radp-bf path launcher)" "$@"                # App launcher (thin entry script)
 ```
 
 ### CLI Options
 ```bash
-radp-bf --print-run    # Print path to run.sh
-radp-bf --print-root   # Print framework root path
-radp-bf --version      # Print version
+radp-bf path init       # Print path to init.sh (framework initializer)
+radp-bf path launcher   # Print path to launcher.sh (app launcher)
+radp-bf path root       # Print framework root path
+radp-bf path            # Print all paths
+radp-bf --version       # Print version
 ```
 
 ## Architecture
 
 ### Execution Flow
 ```
-run.sh (idempotent via gw_fw_run_initialized)
+init.sh (idempotent via gw_fw_run_initialized)
   ↓
 preflight/ (environment & dependency checks)
   ↓
@@ -133,14 +136,14 @@ EOF
   printf ' :: radp-bash-framework ::  (%s)\n' "$gr_fw_version"
 }
 
-source "$(radp-bf --print-run)"
+source "$(radp-bf path init)"
 ```
 
 The hook function has access to all framework variables (`$gr_fw_version`, etc.) since it's called after context initialization.
 
 ## Code Style
 
-- Entry scripts (`run.sh`, `preflight/*.sh`) use POSIX-compatible syntax
+- Entry scripts (`init.sh`, `preflight/*.sh`) use POSIX-compatible syntax
 - Bootstrap and beyond use Bash features (`[[ ]]`, arrays, `mapfile`)
 - Quote variables unless intentional word splitting
 - Preserve existing ShellCheck annotations (`# shellcheck source=...`)

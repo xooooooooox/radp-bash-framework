@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-# shellcheck source=../run.sh
+# shellcheck source=../init.sh
 
 #######################################
 # 导入指定目录下的脚本(.sh 后缀)

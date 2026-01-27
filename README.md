@@ -66,7 +66,7 @@ See [Installation Guide](docs/installation.md) for more options (OBS, manual ins
 After installation, load the framework in your shell:
 
 ```shell
-source "$(radp-bf --print-run)"
+source "$(radp-bf path init)"
 ```
 
 Add this to `~/.bashrc` for automatic loading.

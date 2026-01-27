@@ -442,7 +442,7 @@ install_manual() {
 
   log "Installed to ${install_dir}"
   log "Ensure ${bin_dir} is in your PATH."
-  log "Run: source \"\$(radp-bf --print-run)\""
+  log "Run: source \"\$(radp-bf path init)\""
 }
 
 # ============================================================================
@@ -503,7 +503,7 @@ main() {
   }
 
   log "Successfully installed ${REPO_NAME} via ${pkm}"
-  log "Run: source \"\$(radp-bf --print-run)\""
+  log "Run: source \"\$(radp-bf path init)\""
 }
 
 main "$@"

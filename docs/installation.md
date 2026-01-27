@@ -100,7 +100,7 @@ sudo apt-get -f install
 Or run directly from source:
 
 ```shell
-source /path/to/radp-bash-framework/src/main/shell/framework/run.sh
+source /path/to/radp-bash-framework/src/main/shell/framework/init.sh
 ```
 
 ## Load the Framework
@@ -108,7 +108,7 @@ source /path/to/radp-bash-framework/src/main/shell/framework/run.sh
 After installation, load the framework in your shell:
 
 ```shell
-source "$(radp-bf --print-run)"
+source "$(radp-bf path init)"
 ```
 
 Add to `~/.bashrc` for automatic loading on shell startup.

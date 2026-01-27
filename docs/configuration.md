@@ -237,19 +237,18 @@ Define `radp_app_banner()` function **before** sourcing the framework:
 # Define custom banner hook BEFORE sourcing framework
 radp_app_banner() {
   cat << 'EOF'
-  __  __         _
- |  \/  |_   _  / \   _ __  _ __
- | |\/| | | | |/ _ \ | '_ \| '_ \
- | |  | | |_| / ___ \| |_) | |_) |
- |_|  |_|\__, /_/   \_\ .__/| .__/
-         |___/        |_|   |_|
+    ____  ___    ____  ____     ________    ____
+   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
+  / /_/ / /| | / / / / /_/ /  / /   / /    / /  
+ / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
+/_/ |_/_/  |_/_____/_/       \____/_____/___/   
 EOF
   printf ' :: MyApp ::                     (%s)\n' "$gr_myapp_version"
   printf ' :: radp-bash-framework ::       (%s)\n' "$gr_fw_version"
 }
 
 # Source framework - banner will be printed using radp_app_banner()
-source "$(radp-bf --print-run)"
+source "$(radp-bf path init)"
 ```
 
 This method is ideal when:
@@ -267,16 +266,15 @@ export GX_RADP_FW_USER_CONFIG_PATH="$HOME/.config/myapp"
 
 # Create banner file
 cat > "$HOME/.config/myapp/banner.txt" << 'EOF'
-  __  __         _
- |  \/  |_   _  / \   _ __  _ __
- | |\/| | | | |/ _ \ | '_ \| '_ \
- | |  | | |_| / ___ \| |_) | |_) |
- |_|  |_|\__, /_/   \_\ .__/| .__/
-         |___/        |_|   |_|
+    ____  ___    ____  ____     ________    ____
+   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
+  / /_/ / /| | / / / / /_/ /  / /   / /    / /  
+ / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
+/_/ |_/_/  |_/_____/_/       \____/_____/___/   
  :: MyApp ::                     ($gr_myapp_version)
 EOF
 
-source "$(radp-bf --print-run)"
+source "$(radp-bf path init)"
 ```
 
 The banner file supports variable substitution (e.g., `$gr_fw_version`).

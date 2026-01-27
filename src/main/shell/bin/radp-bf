@@ -8,15 +8,18 @@ Usage:
   radp-bf [command] [options...]
 
 Commands:
-  new <name>    Create a new CLI project based on radp-bash-framework.
-  --print-run   Print full path to run.sh.
-  --print-root  Print framework root directory.
-  --print       Print all default paths.
-  -h, --help    Show this help.
-  --version     Show version number.
+  new <name>          Create a new CLI project based on radp-bash-framework.
+  path [name]         Print framework paths.
+                        init       Path to init.sh (framework initializer).
+                        launcher   Path to launcher.sh (app launcher).
+                        root       Framework root directory.
+                        (no args)  Print all paths.
+  -h, --help          Show this help.
+  --version           Show version number.
 
 Examples:
-  source "$(radp-bf --print-run)"
+  source "$(radp-bf path init)"
+  source "$(radp-bf path launcher)" "$@"
   radp-bf new my-cli
 USAGE
 }
@@ -47,8 +50,33 @@ __radp_bf_setup() {
   local project_src_root
   project_src_root=$(dirname "$bin_dir")
 
-  # shellcheck source=../framework/run.sh
-  source "$project_src_root"/framework/run.sh "$@"
+  # shellcheck source=../framework/init.sh
+  source "$project_src_root"/framework/init.sh "$@"
+}
+
+__radp_bf_path() {
+  case "${1:-}" in
+  init)
+    echo "${gr_fw_root_path}/init.sh"
+    ;;
+  launcher)
+    echo "${gr_fw_root_path}/launcher.sh"
+    ;;
+  root)
+    echo "${gr_fw_root_path}"
+    ;;
+  "")
+    printf "%-17s %s\n" "Root path:" "$gr_fw_root_path"
+    printf "%-17s %s\n" "Config path:" "$gr_fw_config_path"
+    printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
+    printf "%-17s %s\n" "User lib path:" "$gr_radp_fw_user_lib_path"
+    ;;
+  *)
+    echo "radp-bf path: unknown name '${1}'" >&2
+    echo "Available: init, launcher, root" >&2
+    return 2
+    ;;
+  esac
 }
 
 __radp_bf_main() {
@@ -60,24 +88,14 @@ __radp_bf_main() {
     __radp_bf_usage
     return 0
     ;;
-  --print-run)
-    echo "${gr_fw_root_path}/run.sh"
-    return 0
-    ;;
-  --print-root)
-    echo "${gr_fw_root_path}"
-    return 0
-    ;;
   --version)
     echo "$gr_fw_version"
     return 0
     ;;
-  --print)
-    printf "%-17s %s\n" "Root path:" "$gr_fw_root_path"
-    printf "%-17s %s\n" "Config path:" "$gr_fw_config_path"
-    printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
-    printf "%-17s %s\n" "User lib path:" "$gr_radp_fw_user_lib_path"
-    return 0
+  path)
+    shift
+    __radp_bf_path "${1:-}"
+    return $?
     ;;
   new)
     shift

@@ -65,7 +65,7 @@ sudo dnf install -y radp-bash-framework
 安装后，在 shell 中加载框架：
 
 ```shell
-source "$(radp-bf --print-run)"
+source "$(radp-bf path init)"
 ```
 
 将此命令添加到 `~/.bashrc` 可实现自动加载。
