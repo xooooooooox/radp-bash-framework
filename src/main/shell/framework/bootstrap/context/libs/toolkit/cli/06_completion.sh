@@ -548,9 +548,12 @@ __radp_cli_zsh_gen_args_completion() {
   depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
 
   # 移位 words 和 CURRENT，使 _arguments 从正确位置开始解析
-  echo "${pad}    # Shift words array for nested subcommand (depth=$depth)"
-  echo "${pad}    words=(\"\${words[@]:$depth}\")"
-  echo "${pad}    (( CURRENT -= $depth ))"
+  # 保留 words[1] 作为命令名（_arguments 要求 words[1] 为命令名，参数从 words[2] 开始）
+  if [[ $depth -gt 1 ]]; then
+    echo "${pad}    # Shift words array for nested subcommand (depth=$depth)"
+    echo "${pad}    words=(\"\${words[1]}\" \"\${words[@]:$((depth + 1))}\")"
+    echo "${pad}    (( CURRENT -= $((depth - 1)) ))"
+  fi
   echo ""
   echo "${pad}    _arguments \\"
   echo "${pad}        '(-h --help)'{-h,--help}'[Show help]' \\"
