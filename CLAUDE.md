@@ -125,12 +125,11 @@ Applications can customize the startup banner (shown when `banner-mode: on`):
 # Define BEFORE sourcing framework
 radp_app_banner() {
   cat << 'EOF'
-    __  __         _
-   |  \/  |_   _  / \   _ __  _ __
-   | |\/| | | | |/ _ \ | '_ \| '_ \
-   | |  | | |_| / ___ \| |_) | |_) |
-   |_|  |_|\__, /_/   \_\ .__/| .__/
-           |___/        |_|   |_|
+    ____  ___    ____  ____     ________    ____
+   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
+  / /_/ / /| | / / / / /_/ /  / /   / /    / /  
+ / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
+/_/ |_/_/  |_/_____/_/       \____/_____/___/   
 EOF
   printf ' :: MyApp ::                (%s)\n' "$gr_myapp_version"
   printf ' :: radp-bash-framework ::  (%s)\n' "$gr_fw_version"
