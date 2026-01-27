@@ -611,6 +611,9 @@ __radp_cli_scaffold_gitignore() {
   local target_dir="$1"
 
   cat >"$target_dir/.gitignore" <<'GITIGNORE'
+src/main/shell/config/config.sh
+src/main/shell/config/completion.sh
+
 # IDE
 .idea/
 .vscode/
