@@ -12,78 +12,78 @@
 #   1 - 失败
 #######################################
 radp_cli_scaffold_new() {
-    local project_name="$1"
-    local target_dir="${2:-$project_name}"
+  local project_name="$1"
+  local target_dir="${2:-$project_name}"
 
-    # 验证项目名称
-    if [[ ! "$project_name" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
-        radp_log_error "Invalid project name: $project_name"
-        radp_log_error "Project name must start with a letter and contain only letters, numbers, underscores, and hyphens."
-        return 1
+  # 验证项目名称
+  if [[ ! "$project_name" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+    radp_log_error "Invalid project name: $project_name"
+    radp_log_error "Project name must start with a letter and contain only letters, numbers, underscores, and hyphens."
+    return 1
+  fi
+
+  # 检查目标目录
+  if [[ -d "$target_dir" ]]; then
+    if [[ -n "$(ls -A "$target_dir" 2>/dev/null)" ]]; then
+      radp_log_error "Directory already exists and is not empty: $target_dir"
+      return 1
     fi
+  fi
 
-    # 检查目标目录
-    if [[ -d "$target_dir" ]]; then
-        if [[ -n "$(ls -A "$target_dir" 2>/dev/null)" ]]; then
-            radp_log_error "Directory already exists and is not empty: $target_dir"
-            return 1
-        fi
-    fi
+  radp_log_info "Creating new CLI project: $project_name"
 
-    radp_log_info "Creating new CLI project: $project_name"
+  # 创建目录结构
+  mkdir -p "$target_dir"/{bin,src/main/shell/{commands,config,libs,vars}}
+  mkdir -p "$target_dir"/packaging/{copr,homebrew,obs/debian/source}
+  mkdir -p "$target_dir"/.github/workflows
 
-    # 创建目录结构
-    mkdir -p "$target_dir"/{bin,src/main/shell/{commands,config,libs,vars}}
-    mkdir -p "$target_dir"/packaging/{copr,homebrew,obs/debian/source}
-    mkdir -p "$target_dir"/.github/workflows
+  # 生成入口脚本
+  __radp_cli_scaffold_bin "$project_name" "$target_dir"
 
-    # 生成入口脚本
-    __radp_cli_scaffold_bin "$project_name" "$target_dir"
+  # 生成示例命令
+  __radp_cli_scaffold_commands "$project_name" "$target_dir"
 
-    # 生成示例命令
-    __radp_cli_scaffold_commands "$project_name" "$target_dir"
+  # 生成配置文件
+  __radp_cli_scaffold_config "$project_name" "$target_dir"
 
-    # 生成配置文件
-    __radp_cli_scaffold_config "$project_name" "$target_dir"
+  # 生成版本常量
+  __radp_cli_scaffold_constants "$project_name" "$target_dir"
 
-    # 生成版本常量
-    __radp_cli_scaffold_constants "$project_name" "$target_dir"
+  # 生成 README
+  __radp_cli_scaffold_readme "$project_name" "$target_dir"
 
-    # 生成 README
-    __radp_cli_scaffold_readme "$project_name" "$target_dir"
+  # 生成 .gitignore
+  __radp_cli_scaffold_gitignore "$target_dir"
 
-    # 生成 .gitignore
-    __radp_cli_scaffold_gitignore "$target_dir"
+  # 生成 CHANGELOG
+  __radp_cli_scaffold_changelog "$project_name" "$target_dir"
 
-    # 生成 CHANGELOG
-    __radp_cli_scaffold_changelog "$project_name" "$target_dir"
+  # 生成安装脚本
+  __radp_cli_scaffold_install "$project_name" "$target_dir"
 
-    # 生成安装脚本
-    __radp_cli_scaffold_install "$project_name" "$target_dir"
+  # 生成打包文件
+  __radp_cli_scaffold_packaging "$project_name" "$target_dir"
 
-    # 生成打包文件
-    __radp_cli_scaffold_packaging "$project_name" "$target_dir"
+  # 生成 GitHub workflows
+  __radp_cli_scaffold_workflows "$project_name" "$target_dir"
 
-    # 生成 GitHub workflows
-    __radp_cli_scaffold_workflows "$project_name" "$target_dir"
-
-    radp_log_info "Project created successfully: $target_dir"
-    radp_log_info ""
-    radp_log_info "Next steps:"
-    radp_log_info "  cd $target_dir"
-    radp_log_info "  ./bin/$project_name --help"
-    radp_log_info ""
-    radp_log_info "Add new commands by creating files in src/main/shell/commands/"
+  radp_log_info "Project created successfully: $target_dir"
+  radp_log_info ""
+  radp_log_info "Next steps:"
+  radp_log_info "  cd $target_dir"
+  radp_log_info "  ./bin/$project_name --help"
+  radp_log_info ""
+  radp_log_info "Add new commands by creating files in src/main/shell/commands/"
 }
 
 #######################################
 # 生成入口脚本
 #######################################
 __radp_cli_scaffold_bin() {
-    local project_name="$1"
-    local target_dir="$2"
+  local project_name="$1"
+  local target_dir="$2"
 
-    cat > "$target_dir/bin/$project_name" << 'ENTRY_SCRIPT'
+  cat >"$target_dir/bin/$project_name" <<'ENTRY_SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -226,26 +226,26 @@ BANNER
 __APPNAME___main "$@"
 ENTRY_SCRIPT
 
-    # 替换占位符
-    local project_var="${project_name//-/_}"
-    sed -i.bak "s/__APPNAME_VAR__/${project_var}/g" "$target_dir/bin/$project_name"
-    sed -i.bak "s/__APPNAME__/${project_var}/g" "$target_dir/bin/$project_name"
-    rm -f "$target_dir/bin/$project_name.bak"
+  # 替换占位符
+  local project_var="${project_name//-/_}"
+  sed -i.bak "s/__APPNAME_VAR__/${project_var}/g" "$target_dir/bin/$project_name"
+  sed -i.bak "s/__APPNAME__/${project_var}/g" "$target_dir/bin/$project_name"
+  rm -f "$target_dir/bin/$project_name.bak"
 
-    # 设置执行权限
-    chmod +x "$target_dir/bin/$project_name"
+  # 设置执行权限
+  chmod +x "$target_dir/bin/$project_name"
 }
 
 #######################################
 # 生成示例命令
 #######################################
 __radp_cli_scaffold_commands() {
-    local project_name="$1"
-    local target_dir="$2"
+  local project_name="$1"
+  local target_dir="$2"
 
-    # version 命令
-    local project_var="${project_name//-/_}"
-    cat > "$target_dir/src/main/shell/commands/version.sh" << VERSION_CMD
+  # version 命令
+  local project_var="${project_name//-/_}"
+  cat >"$target_dir/src/main/shell/commands/version.sh" <<VERSION_CMD
 #!/usr/bin/env bash
 # @cmd
 # @desc Show version information
@@ -256,8 +256,8 @@ cmd_version() {
 }
 VERSION_CMD
 
-    # completion 命令
-    cat > "$target_dir/src/main/shell/commands/completion.sh" << 'COMPLETION_CMD'
+  # completion 命令
+  cat >"$target_dir/src/main/shell/commands/completion.sh" <<'COMPLETION_CMD'
 #!/usr/bin/env bash
 # @cmd
 # @desc Generate shell completion script
@@ -276,11 +276,11 @@ cmd_completion() {
     radp_cli_completion_generate "$shell"
 }
 COMPLETION_CMD
-    sed -i.bak "s/__APP_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/completion.sh"
-    rm -f "$target_dir/src/main/shell/commands/completion.sh.bak"
+  sed -i.bak "s/__APP_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/completion.sh"
+  rm -f "$target_dir/src/main/shell/commands/completion.sh.bak"
 
-    # hello 示例命令
-    cat > "$target_dir/src/main/shell/commands/hello.sh" << 'HELLO_CMD'
+  # hello 示例命令
+  cat >"$target_dir/src/main/shell/commands/hello.sh" <<'HELLO_CMD'
 #!/usr/bin/env bash
 # @cmd
 # @desc Say hello (example command)
@@ -308,12 +308,12 @@ HELLO_CMD
 # 遵循 radp-bash-framework 的 YAML 配置机制
 #######################################
 __radp_cli_scaffold_config() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="${project_name//-/_}"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="${project_name//-/_}"
 
-    # 生成 config.yaml（遵循 radp-bash-framework 的配置结构）
-    cat > "$target_dir/src/main/shell/config/config.yaml" << YAML_CONFIG
+  # 生成 config.yaml（遵循 radp-bash-framework 的配置结构）
+  cat >"$target_dir/src/main/shell/config/config.yaml" <<YAML_CONFIG
 # $project_name configuration
 # This file follows radp-bash-framework's configuration structure
 # Priority: Environment variables (GX_*) > YAML values > defaults
@@ -344,8 +344,8 @@ radp:
       #   some_setting: value
 YAML_CONFIG
 
-    # 生成环境特定配置示例
-    cat > "$target_dir/src/main/shell/config/config-dev.yaml" << YAML_DEV
+  # 生成环境特定配置示例
+  cat >"$target_dir/src/main/shell/config/config-dev.yaml" <<YAML_DEV
 # Development environment overrides for $project_name
 
 radp:
@@ -364,10 +364,10 @@ YAML_DEV
 # 生成 README
 #######################################
 __radp_cli_scaffold_readme() {
-    local project_name="$1"
-    local target_dir="$2"
+  local project_name="$1"
+  local target_dir="$2"
 
-    cat > "$target_dir/README.md" << README
+  cat >"$target_dir/README.md" <<README
 # $project_name
 
 A CLI tool built with [radp-bash-framework](https://github.com/xooooooooox/radp-bash-framework).
@@ -605,9 +605,9 @@ README
 # 生成 .gitignore
 #######################################
 __radp_cli_scaffold_gitignore() {
-    local target_dir="$1"
+  local target_dir="$1"
 
-    cat > "$target_dir/.gitignore" << 'GITIGNORE'
+  cat >"$target_dir/.gitignore" <<'GITIGNORE'
 # IDE
 .idea/
 .vscode/
@@ -635,11 +635,11 @@ GITIGNORE
 # 生成版本常量文件
 #######################################
 __radp_cli_scaffold_constants() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="${project_name//-/_}"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="${project_name//-/_}"
 
-    cat > "$target_dir/src/main/shell/vars/constants.sh" << CONSTANTS
+  cat >"$target_dir/src/main/shell/vars/constants.sh" <<CONSTANTS
 #!/usr/bin/env bash
 # shellcheck source=../config/completion.sh
 
@@ -652,10 +652,10 @@ CONSTANTS
 # 生成 CHANGELOG
 #######################################
 __radp_cli_scaffold_changelog() {
-    local project_name="$1"
-    local target_dir="$2"
+  local project_name="$1"
+  local target_dir="$2"
 
-    cat > "$target_dir/CHANGELOG.md" << 'CHANGELOG'
+  cat >"$target_dir/CHANGELOG.md" <<'CHANGELOG'
 # CHANGELOG
 
 ## v0.1.0 - Initial Release
@@ -668,12 +668,12 @@ CHANGELOG
 # 生成安装脚本
 #######################################
 __radp_cli_scaffold_install() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="${project_name//-/_}"
-    local project_upper="${project_var^^}"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="${project_name//-/_}"
+  local project_upper="${project_var^^}"
 
-    cat > "$target_dir/install.sh" << 'INSTALL_SCRIPT'
+  cat >"$target_dir/install.sh" <<'INSTALL_SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -795,8 +795,21 @@ setup_repo() {
   esac
 }
 
+refresh_cache() {
+  local pkm="$1"
+  log "Refreshing package cache..."
+  case "${pkm}" in
+    homebrew) brew update >/dev/null 2>&1 || true ;;
+    dnf) sudo dnf clean all >/dev/null 2>&1 || true; sudo dnf makecache >/dev/null 2>&1 || true ;;
+    yum) sudo yum clean all >/dev/null 2>&1 || true; sudo yum makecache >/dev/null 2>&1 || true ;;
+    apt) sudo apt-get update >/dev/null 2>&1 || true ;;
+    zypper) sudo zypper refresh >/dev/null 2>&1 || true ;;
+  esac
+}
+
 install_via_pkm() {
   local pkm="$1"
+  refresh_cache "${pkm}"
   log "Installing ${REPO_NAME} via ${pkm}..."
   case "${pkm}" in
     homebrew) brew install __PROJECT_NAME__ ;;
@@ -977,24 +990,24 @@ main() {
 main "$@"
 INSTALL_SCRIPT
 
-    # 替换占位符
-    sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/install.sh"
-    sed -i.bak "s/__PROJECT_UPPER__/${project_upper}/g" "$target_dir/install.sh"
-    rm -f "$target_dir/install.sh.bak"
-    chmod +x "$target_dir/install.sh"
+  # 替换占位符
+  sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/install.sh"
+  sed -i.bak "s/__PROJECT_UPPER__/${project_upper}/g" "$target_dir/install.sh"
+  rm -f "$target_dir/install.sh.bak"
+  chmod +x "$target_dir/install.sh"
 }
 
 #######################################
 # 生成打包文件
 #######################################
 __radp_cli_scaffold_packaging() {
-    local project_name="$1"
-    local target_dir="$2"
-    local today
-    today="$(date '+%a %b %d %Y')"
+  local project_name="$1"
+  local target_dir="$2"
+  local today
+  today="$(date '+%a %b %d %Y')"
 
-    # COPR spec
-    cat > "$target_dir/packaging/copr/${project_name}.spec" << SPEC
+  # COPR spec
+  cat >"$target_dir/packaging/copr/${project_name}.spec" <<SPEC
 Name:           ${project_name}
 Version:        0.1.0
 Release:        1%{?dist}
@@ -1038,11 +1051,11 @@ ln -s %{_libdir}/${project_name}/bin/${project_name} %{buildroot}%{_bindir}/${pr
 - Initial RPM package
 SPEC
 
-    # OBS spec (same as COPR)
-    cp "$target_dir/packaging/copr/${project_name}.spec" "$target_dir/packaging/obs/${project_name}.spec"
+  # OBS spec (same as COPR)
+  cp "$target_dir/packaging/copr/${project_name}.spec" "$target_dir/packaging/obs/${project_name}.spec"
 
-    # Debian control
-    cat > "$target_dir/packaging/obs/debian/control" << CONTROL
+  # Debian control
+  cat >"$target_dir/packaging/obs/debian/control" <<CONTROL
 Source: ${project_name}
 Section: utils
 Priority: optional
@@ -1059,8 +1072,8 @@ Description: CLI tool built with radp-bash-framework.
  ${project_name} is a CLI tool built with radp-bash-framework.
 CONTROL
 
-    # Debian rules
-    cat > "$target_dir/packaging/obs/debian/rules" << 'RULES'
+  # Debian rules
+  cat >"$target_dir/packaging/obs/debian/rules" <<'RULES'
 #!/usr/bin/make -f
 
 %:
@@ -1080,22 +1093,22 @@ override_dh_fixperms:
 	chmod 0755 debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/bin/__PROJECT_NAME__
 	find debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/src -type f -name '*.sh' -exec chmod 0755 {} \;
 RULES
-    sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/packaging/obs/debian/rules"
-    rm -f "$target_dir/packaging/obs/debian/rules.bak"
+  sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/packaging/obs/debian/rules"
+  rm -f "$target_dir/packaging/obs/debian/rules.bak"
 
-    # Debian install
-    cat > "$target_dir/packaging/obs/debian/${project_name}.install" << INSTALL
+  # Debian install
+  cat >"$target_dir/packaging/obs/debian/${project_name}.install" <<INSTALL
 bin usr/lib/${project_name}
 src usr/lib/${project_name}
 INSTALL
 
-    # Debian links
-    cat > "$target_dir/packaging/obs/debian/${project_name}.links" << LINKS
+  # Debian links
+  cat >"$target_dir/packaging/obs/debian/${project_name}.links" <<LINKS
 usr/lib/${project_name}/bin/${project_name} usr/bin/${project_name}
 LINKS
 
-    # Debian changelog
-    cat > "$target_dir/packaging/obs/debian/changelog" << CHANGELOG
+  # Debian changelog
+  cat >"$target_dir/packaging/obs/debian/changelog" <<CHANGELOG
 ${project_name} (0.0.0-1) unstable; urgency=medium
 
   * Placeholder entry. The CI workflow rewrites this changelog.
@@ -1103,8 +1116,8 @@ ${project_name} (0.0.0-1) unstable; urgency=medium
  -- xooooooooox <xozoz.sos@gmail.com>  Thu, 01 Jan 1970 00:00:00 +0000
 CHANGELOG
 
-    # Debian copyright
-    cat > "$target_dir/packaging/obs/debian/copyright" << COPYRIGHT
+  # Debian copyright
+  cat >"$target_dir/packaging/obs/debian/copyright" <<COPYRIGHT
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: ${project_name}
 Source: https://github.com/xooooooooox/${project_name}
@@ -1133,15 +1146,15 @@ License: MIT
  THE SOFTWARE.
 COPYRIGHT
 
-    # Debian source format
-    echo "3.0 (quilt)" > "$target_dir/packaging/obs/debian/source/format"
+  # Debian source format
+  echo "3.0 (quilt)" >"$target_dir/packaging/obs/debian/source/format"
 
-    # Homebrew formula template
-    # Convert project name to Ruby class name (capitalize first letter, remove hyphens and capitalize following letters)
-    local class_name
-    class_name="$(echo "${project_name}" | sed -r 's/(^|-)([a-z])/\U\2/g')"
+  # Homebrew formula template
+  # Convert project name to Ruby class name (capitalize first letter, remove hyphens and capitalize following letters)
+  local class_name
+  class_name="$(echo "${project_name}" | sed -r 's/(^|-)([a-z])/\U\2/g')"
 
-    cat > "$target_dir/packaging/homebrew/${project_name}.rb" << FORMULA
+  cat >"$target_dir/packaging/homebrew/${project_name}.rb" <<FORMULA
 # Homebrew formula template for ${project_name}
 # The CI workflow uses this template and replaces placeholders with actual values.
 #
@@ -1195,24 +1208,24 @@ FORMULA
 # 生成 GitHub workflows
 #######################################
 __radp_cli_scaffold_workflows() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="${project_name//-/_}"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="${project_name//-/_}"
 
-    __radp_cli_scaffold_workflow_release_prep "$project_name" "$target_dir" "$project_var"
-    __radp_cli_scaffold_workflow_create_tag "$project_name" "$target_dir" "$project_var"
-    __radp_cli_scaffold_workflow_update_spec "$project_name" "$target_dir" "$project_var"
-    __radp_cli_scaffold_workflow_build_copr "$project_name" "$target_dir" "$project_var"
-    __radp_cli_scaffold_workflow_build_obs "$project_name" "$target_dir" "$project_var"
-    __radp_cli_scaffold_workflow_homebrew "$project_name" "$target_dir" "$project_var"
+  __radp_cli_scaffold_workflow_release_prep "$project_name" "$target_dir" "$project_var"
+  __radp_cli_scaffold_workflow_create_tag "$project_name" "$target_dir" "$project_var"
+  __radp_cli_scaffold_workflow_update_spec "$project_name" "$target_dir" "$project_var"
+  __radp_cli_scaffold_workflow_build_copr "$project_name" "$target_dir" "$project_var"
+  __radp_cli_scaffold_workflow_build_obs "$project_name" "$target_dir" "$project_var"
+  __radp_cli_scaffold_workflow_homebrew "$project_name" "$target_dir" "$project_var"
 }
 
 __radp_cli_scaffold_workflow_release_prep() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="$3"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="$3"
 
-    cat > "$target_dir/.github/workflows/release-prep.yml" << WORKFLOW
+  cat >"$target_dir/.github/workflows/release-prep.yml" <<WORKFLOW
 name: Release prep
 
 on:
@@ -1282,11 +1295,11 @@ WORKFLOW
 }
 
 __radp_cli_scaffold_workflow_create_tag() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="$3"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="$3"
 
-    cat > "$target_dir/.github/workflows/create-version-tag.yml" << WORKFLOW
+  cat >"$target_dir/.github/workflows/create-version-tag.yml" <<WORKFLOW
 name: Create version tag
 
 on:
@@ -1322,11 +1335,11 @@ WORKFLOW
 }
 
 __radp_cli_scaffold_workflow_update_spec() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="$3"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="$3"
 
-    cat > "$target_dir/.github/workflows/update-spec-version.yml" << WORKFLOW
+  cat >"$target_dir/.github/workflows/update-spec-version.yml" <<WORKFLOW
 name: Update spec version
 
 on:
@@ -1365,11 +1378,11 @@ WORKFLOW
 }
 
 __radp_cli_scaffold_workflow_build_copr() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="$3"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="$3"
 
-    cat > "$target_dir/.github/workflows/build-copr-package.yml" << WORKFLOW
+  cat >"$target_dir/.github/workflows/build-copr-package.yml" <<WORKFLOW
 name: Build COPR package
 
 on:
@@ -1417,11 +1430,11 @@ WORKFLOW
 }
 
 __radp_cli_scaffold_workflow_build_obs() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="$3"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="$3"
 
-    cat > "$target_dir/.github/workflows/build-obs-package.yml" << WORKFLOW
+  cat >"$target_dir/.github/workflows/build-obs-package.yml" <<WORKFLOW
 name: Build OBS package
 
 on:
@@ -1478,11 +1491,11 @@ WORKFLOW
 }
 
 __radp_cli_scaffold_workflow_homebrew() {
-    local project_name="$1"
-    local target_dir="$2"
-    local project_var="$3"
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="$3"
 
-    cat > "$target_dir/.github/workflows/update-homebrew-tap.yml" << WORKFLOW
+  cat >"$target_dir/.github/workflows/update-homebrew-tap.yml" <<WORKFLOW
 name: Update Homebrew Tap
 
 on:
