@@ -24,21 +24,21 @@ declare -g __radp_ide_hints_file=""
 #   0 - success
 #######################################
 radp_ide_init() {
-    # Only generate if user config directory exists and is writable.
-    # In install mode (e.g. RPM under /usr/lib64), the directory is read-only
-    # and IDE hints are not useful on headless systems anyway.
-    [[ ! -d "$gr_fw_user_config_path" ]] && return 0
-    [[ ! -w "$gr_fw_user_config_path" ]] && return 0
+  # Only generate if user config directory exists and is writable.
+  # In install mode (e.g. RPM under /usr/lib64), the directory is read-only
+  # and IDE hints are not useful on headless systems anyway.
+  [[ ! -d "$gr_fw_user_config_path" ]] && return 0
+  [[ ! -w "$gr_fw_user_config_path" ]] && return 0
 
-    __radp_ide_hints_file="$gr_fw_user_config_path/completion.sh"
-    __radp_ide_generate_hints_file
+  __radp_ide_hints_file="$gr_fw_user_config_path/completion.sh"
+  __radp_ide_generate_hints_file
 
-    # Also write a copy into the framework context cache directory so that
-    # toolkit scripts can add a shellcheck source directive pointing to it,
-    # enabling BashSupport Pro code completion during development.
-    if [[ -d "$gr_fw_context_cache_path" && -w "$gr_fw_context_cache_path" ]]; then
-        cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/completion.sh"
-    fi
+  # Also write a copy into the framework context cache directory so that
+  # toolkit scripts can add a shellcheck source directive pointing to it,
+  # enabling BashSupport Pro code completion during development.
+  if [[ -d "$gr_fw_context_cache_path" && -w "$gr_fw_context_cache_path" ]]; then
+    cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/completion.sh"
+  fi
 }
 
 #######################################
@@ -47,15 +47,15 @@ radp_ide_init() {
 #   1 - commands_dir: absolute path to commands directory
 #######################################
 radp_ide_add_commands_dir() {
-    local commands_dir="$1"
+  local commands_dir="$1"
 
-    [[ ! -f "$__radp_ide_hints_file" ]] && return 0
-    [[ ! -d "$commands_dir" ]] && return 0
+  [[ ! -f "$__radp_ide_hints_file" ]] && return 0
+  [[ ! -d "$commands_dir" ]] && return 0
 
-    # Check if already added
-    grep -q "# User commands" "$__radp_ide_hints_file" 2>/dev/null && return 0
+  # Check if already added
+  grep -q "# User commands" "$__radp_ide_hints_file" 2>/dev/null && return 0
 
-    __radp_ide_append_sources "$commands_dir" "User commands"
+  __radp_ide_append_sources "$commands_dir" "User commands"
 }
 
 #######################################
@@ -64,7 +64,7 @@ radp_ide_add_commands_dir() {
 #   Writes completion.sh to user config directory
 #######################################
 __radp_ide_generate_hints_file() {
-    cat >"$__radp_ide_hints_file" <<'EOF'
+  cat >"$__radp_ide_hints_file" <<'EOF'
 #!/usr/bin/env bash
 set -e
 
@@ -85,40 +85,40 @@ set -e
 __ide_hints() {
 EOF
 
-    # 1. Framework global vars
-    printf '\n  # Framework global vars\n' >>"$__radp_ide_hints_file"
-    printf '  # shellcheck source=%s\n' "$gr_fw_context_vars_path/global_vars.sh" >>"$__radp_ide_hints_file"
-    printf '  # shellcheck source=%s\n' "$gr_fw_config_file" >>"$__radp_ide_hints_file"
+  # 1. Framework global vars
+  printf '\n  # Framework global vars\n' >>"$__radp_ide_hints_file"
+  printf '  # shellcheck source=%s\n' "$gr_fw_context_vars_path/global_vars.sh" >>"$__radp_ide_hints_file"
+  printf '  # shellcheck source=%s\n' "$gr_fw_config_file" >>"$__radp_ide_hints_file"
 
-    # 2. Framework libs
-    if [[ -d "$gr_fw_context_libs_path" ]]; then
-        printf '\n  # Framework libs\n' >>"$__radp_ide_hints_file"
-        local -a fw_libs=()
-        mapfile -t fw_libs < <(find "$gr_fw_context_libs_path" -type f -name "*.sh" | sort -t '_' -k 1,1n)
-        local fw_lib
-        for fw_lib in "${fw_libs[@]}"; do
-            printf '  # shellcheck source=%s\n' "$fw_lib" >>"$__radp_ide_hints_file"
-        done
-    fi
+  # 2. Framework libs
+  if [[ -d "$gr_fw_context_libs_path" ]]; then
+    printf '\n  # Framework libs\n' >>"$__radp_ide_hints_file"
+    local -a fw_libs=()
+    mapfile -t fw_libs < <(find "$gr_fw_context_libs_path" -type f -name "*.sh" | sort -t '_' -k 1,1n)
+    local fw_lib
+    for fw_lib in "${fw_libs[@]}"; do
+      printf '  # shellcheck source=%s\n' "$fw_lib" >>"$__radp_ide_hints_file"
+    done
+  fi
 
-    # 3. User config file (contains gr_radp_extend_* vars)
-    if [[ -f "$gr_fw_user_config_file" ]]; then
-        printf '\n  # User config (user global vars: gr_radp_extend_*)\n' >>"$__radp_ide_hints_file"
-        printf '  # shellcheck source=%s\n' "$gr_fw_user_config_file" >>"$__radp_ide_hints_file"
-    fi
+  # 3. User config file (contains gr_radp_extend_* vars)
+  if [[ -f "$gr_fw_user_config_file" ]]; then
+    printf '\n  # User config (user global vars: gr_radp_extend_*)\n' >>"$__radp_ide_hints_file"
+    printf '  # shellcheck source=%s\n' "$gr_fw_user_config_file" >>"$__radp_ide_hints_file"
+  fi
 
-    # 4. User libs
-    if [[ -d "$gr_radp_fw_user_lib_path" ]]; then
-        printf '\n  # User libs\n' >>"$__radp_ide_hints_file"
-        local -a user_libs=()
-        mapfile -t user_libs < <(find "$gr_radp_fw_user_lib_path" -type f -name "*.sh" | sort -t '_' -k 1,1n)
-        local user_lib
-        for user_lib in "${user_libs[@]}"; do
-            printf '  # shellcheck source=%s\n' "$user_lib" >>"$__radp_ide_hints_file"
-        done
-    fi
+  # 4. User libs
+  if [[ -d "$gr_radp_fw_user_lib_path" ]]; then
+    printf '\n  # User libs\n' >>"$__radp_ide_hints_file"
+    local -a user_libs=()
+    mapfile -t user_libs < <(find "$gr_radp_fw_user_lib_path" -type f -name "*.sh" | sort -t '_' -k 1,1n)
+    local user_lib
+    for user_lib in "${user_libs[@]}"; do
+      printf '  # shellcheck source=%s\n' "$user_lib" >>"$__radp_ide_hints_file"
+    done
+  fi
 
-    cat >>"$__radp_ide_hints_file" <<'EOF'
+  cat >>"$__radp_ide_hints_file" <<'EOF'
   :
 }
 
@@ -133,33 +133,28 @@ EOF
 #   2 - section_name: section comment name
 #######################################
 __radp_ide_append_sources() {
-    local directory="$1"
-    local section_name="$2"
+  local directory="$1"
+  local section_name="$2"
 
-    local -a files=()
-    mapfile -t files < <(find "$directory" -type f -name "*.sh" | sort)
-    [[ ${#files[@]} -eq 0 ]] && return 0
+  local -a files=()
+  mapfile -t files < <(find "$directory" -type f -name "*.sh" | sort)
+  [[ ${#files[@]} -eq 0 ]] && return 0
 
-    # Remove closing lines and append new section
-    # Remove last 4 lines (  :\n}\n\n__ide_hints\n)
-    local tmp_file total_lines keep_lines
-    tmp_file=$(mktemp)
-    total_lines=$(wc -l < "$__radp_ide_hints_file")
-    keep_lines=$((total_lines - 4))
-    head -n "$keep_lines" "$__radp_ide_hints_file" > "$tmp_file"
+  # Remove closing lines and append new section
+  # Remove last 4 lines (  :\n}\n\n__ide_hints\n)
+  local tmp_file total_lines keep_lines
+  tmp_file=$(mktemp)
+  total_lines=$(wc -l <"$__radp_ide_hints_file")
+  keep_lines=$((total_lines - 4))
+  head -n "$keep_lines" "$__radp_ide_hints_file" >"$tmp_file"
 
-    {
-        printf '\n  # %s\n' "$section_name"
-        for file in "${files[@]}"; do
-            printf '  # shellcheck source=%s\n' "$file"
-        done
-        printf '  :\n}\n\n__ide_hints\n'
-    } >> "$tmp_file"
+  {
+    printf '\n  # %s\n' "$section_name"
+    for file in "${files[@]}"; do
+      printf '  # shellcheck source=%s\n' "$file"
+    done
+    printf '  :\n}\n\n__ide_hints\n'
+  } >>"$tmp_file"
 
-    mv "$tmp_file" "$__radp_ide_hints_file"
-
-    # Keep cache copy in sync
-    if [[ -d "$gr_fw_context_cache_path" && -w "$gr_fw_context_cache_path" ]]; then
-        cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/completion.sh"
-    fi
+  mv "$tmp_file" "$__radp_ide_hints_file"
 }
