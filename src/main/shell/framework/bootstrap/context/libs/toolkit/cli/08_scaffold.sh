@@ -444,6 +444,8 @@ $project_name --debug hello World
 |--------|-------------|
 | \`-v\`, \`--verbose\` | Enable verbose output (banner + info logs) |
 | \`--debug\` | Enable debug output (banner + debug logs) |
+| \`-h\`, \`--help\` | Show help |
+| \`--version\` | Show version |
 
 By default, the CLI runs in quiet mode (no banner, only error logs).
 
@@ -504,9 +506,9 @@ Create new command files in \`src/main/shell/commands/\`:
 # @cmd
 # @desc My command description
 # @arg name! Required argument
-# @option -v, --verbose Enable verbose output
+# @option -u, --uppercase Convert output to uppercase
 # @example mycommand foo
-# @example mycommand --verbose bar
+# @example mycommand --uppercase bar
 
 cmd_mycommand() {
     local name="\$1"

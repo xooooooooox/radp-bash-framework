@@ -24,7 +24,7 @@ radp_cli_dispatch() {
             radp_cli_help_app
             return 0
             ;;
-        -v|--version)
+        --version)
             if declare -F radp_app_version &>/dev/null; then
                 radp_app_version
             else

@@ -13,7 +13,7 @@ Commands:
   --print-root  Print framework root directory.
   --print       Print all default paths.
   -h, --help    Show this help.
-  -v, --version Show version number.
+  --version     Show version number.
 
 Examples:
   source "$(radp-bf --print-run)"
@@ -68,7 +68,7 @@ __radp_bf_main() {
     echo "${gr_fw_root_path}"
     return 0
     ;;
-  --version | -v)
+  --version)
     echo "$gr_fw_version"
     return 0
     ;;
