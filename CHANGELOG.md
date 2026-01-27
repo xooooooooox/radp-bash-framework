@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.26 - 2026-01-27
+
+### chore
+- e47a4c1 Optimize install.sh
+
 ## v0.4.25 - 2026-01-27
 
 ### fix
