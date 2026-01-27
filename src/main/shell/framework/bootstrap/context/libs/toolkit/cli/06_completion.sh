@@ -508,6 +508,16 @@ __radp_cli_zsh_gen_args_completion() {
   # 将命令路径转换为函数名后缀 (setup info -> setup_info)
   local func_suffix="${cmd_path// /_}"
 
+  # 计算命令深度，用于移位 words 和 CURRENT
+  # 例如 "setup info" 深度为 2，需要移除 words 中的 "setup" 和 "info"
+  local depth
+  depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
+
+  # 移位 words 和 CURRENT，使 _arguments 从正确位置开始解析
+  echo "${pad}    # Shift words array for nested subcommand (depth=$depth)"
+  echo "${pad}    words=(\"\${words[@]:$depth}\")"
+  echo "${pad}    (( CURRENT -= $depth ))"
+  echo ""
   echo "${pad}    _arguments \\"
   echo "${pad}        '(-h --help)'{-h,--help}'[Show help]' \\"
 
