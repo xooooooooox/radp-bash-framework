@@ -7,6 +7,7 @@ declare -gA __radp_cli_commands=()      # 命令路径映射：cmd_path -> file_
 declare -gA __radp_cli_cmd_meta=()      # 命令元数据缓存
 declare -g __radp_cli_commands_dir=""   # 命令目录路径
 declare -g __radp_cli_app_name=""       # 应用名称
+declare -g __radp_cli_global_options="" # 全局选项（用于补全）
 
 #######################################
 # 设置命令目录路径
@@ -37,6 +38,18 @@ radp_cli_set_commands_dir() {
 #######################################
 radp_cli_set_app_name() {
     __radp_cli_app_name="$1"
+}
+
+#######################################
+# 设置全局选项（用于补全脚本生成）
+# 这些选项会在顶级补全中显示
+# Arguments:
+#   @ - 全局选项列表，如 "-v" "--verbose" "--debug"
+# Example:
+#   radp_cli_set_global_options "-v" "--verbose" "--debug"
+#######################################
+radp_cli_set_global_options() {
+    __radp_cli_global_options="$*"
 }
 
 #######################################

@@ -214,6 +214,7 @@ BANNER
     # 设置应用信息
     radp_cli_set_app_name "__APPNAME__"
     radp_cli_set_commands_dir "$project_root/src/main/shell/commands"
+    radp_cli_set_global_options "-v" "--verbose" "--debug"
 
     # 运行
     if [[ ${#args[@]} -eq 0 ]]; then

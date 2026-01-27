@@ -55,11 +55,12 @@ BASH_COMPLETION_FUNC
   echo "    # Command completions"
   echo "    case \"\$cmd_path\" in"
 
-  # 顶级补全
-  local top_commands
+  # 顶级补全（包含全局选项）
+  local top_commands global_opts
   top_commands=$(radp_cli_list_commands | tr '\n' ' ')
+  global_opts="${__radp_cli_global_options:-}"
   echo "        '')"
-  echo "            COMPREPLY=(\$(compgen -W \"$top_commands --help --version\" -- \"\$cur\"))"
+  echo "            COMPREPLY=(\$(compgen -W \"$top_commands $global_opts --help --version\" -- \"\$cur\"))"
   echo "            ;;"
 
   # 递归生成所有命令路径的补全
@@ -375,19 +376,52 @@ radp_cli_completion_zsh() {
   # 生成所有动态补全的 wrapper 函数
   __radp_cli_zsh_gen_completion_wrappers "$app_func"
 
+  # 生成全局选项的 _arguments 规格
+  local global_opts_spec=""
+  if [[ -n "${__radp_cli_global_options:-}" ]]; then
+    local opt
+    for opt in ${__radp_cli_global_options}; do
+      case "$opt" in
+      -v)
+        global_opts_spec+="        '(-v --verbose)'{-v,--verbose}'[Enable verbose output]' \\"$'\n'
+        ;;
+      --verbose)
+        # 已在 -v 处理
+        ;;
+      --debug)
+        global_opts_spec+="        '--debug[Enable debug output]' \\"$'\n'
+        ;;
+      *)
+        # 其他选项
+        global_opts_spec+="        '$opt' \\"$'\n'
+        ;;
+      esac
+    done
+  fi
+
   cat <<ZSH_COMPLETION_HEADER
 _${app_func}() {
     local context state state_descr line
     typeset -A opt_args
 
     _arguments -C \\
-        '1: :->command' \\
+        '(-h --help)'{-h,--help}'[Show help]' \\
+        '--version[Show version]' \\
+ZSH_COMPLETION_HEADER
+
+  # 输出全局选项
+  if [[ -n "$global_opts_spec" ]]; then
+    printf '%s' "$global_opts_spec"
+  fi
+
+  cat <<'ZSH_COMPLETION_ARGS'
+        '1: :->command' \
         '*:: :->args'
 
-    case "\$state" in
+    case "$state" in
         command)
             local commands=(
-ZSH_COMPLETION_HEADER
+ZSH_COMPLETION_ARGS
 
   # 生成顶级命令列表
   local cmd
