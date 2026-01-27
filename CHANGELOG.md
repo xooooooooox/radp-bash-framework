@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.6.3 - 2026-01-27
+
+### fix
+- 967294e fix IDE code completion not work
+- 6f6cd39 fix IDE code completion not work
+- b6b46c1 fix IDE code completion not work
+- 4826dcd fix radp_os_install_pkgs
+- 34fbcdf fix IDE code completion not work
+
+### chore
+- e5edf8b add post-install message
+- af44d32 update install and uninstall
+
+### docs
+- 56e6672 update installation
+- 4262444 update installation
+
 ## v0.6.2 - 2026-01-27
 
 ### fix
