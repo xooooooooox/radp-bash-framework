@@ -14,7 +14,7 @@ set -e
 #   1 - failed
 #######################################
 __fw_declare_constants_vars() {
-  if [[ ! -f "$gr_fw_bootstrap_path"/bootstrap.sh ]];then
+  if [[ ! -f "$gr_fw_bootstrap_path"/bootstrap.sh ]]; then
     # 确保框架根目录正确
     local msg="框架初始化错误, 框架文件缺失或者框架根目录错误"
     echo -e "Error: $msg" >&2
@@ -87,7 +87,7 @@ EOF
   local name
   while IFS= read -r name; do
     case "$name" in
-    gr_*|gra_*)
+    gr_* | gra_*)
       vars+=("$name")
       ;;
     esac
@@ -138,11 +138,11 @@ declare -gr gr_fw_context_path="$gr_fw_bootstrap_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
 declare -g gr_fw_context_cache_path=""
-# Cache path: use user-writable location to support system-wide installation
-# Priority: XDG_CACHE_HOME > ~/.cache > /tmp
 __fw_resolve_cache_path() {
-  local cache_base="${XDG_CACHE_HOME:-$HOME/.cache}"
-  local cache_path="${cache_base}/radp-bash-framework"
+  local cache_path="$gr_fw_context_path"/cache
+  if [[ ! -w "$gr_fw_context_path" ]]; then
+    cache_path="${XDG_CACHE_HOME:-$HOME/.cache}"/radp-bash-framework
+  fi
 
   # If we can't create the cache directory, fall back to /tmp
   if ! mkdir -p "$cache_path" 2>/dev/null; then

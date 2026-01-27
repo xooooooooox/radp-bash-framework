@@ -32,6 +32,13 @@ radp_ide_init() {
 
     __radp_ide_hints_file="$gr_fw_user_config_path/completion.sh"
     __radp_ide_generate_hints_file
+
+    # Also write a copy into the framework context cache directory so that
+    # toolkit scripts can add a shellcheck source directive pointing to it,
+    # enabling BashSupport Pro code completion during development.
+    if [[ -d "$gr_fw_context_cache_path" && -w "$gr_fw_context_cache_path" ]]; then
+        cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/completion.sh"
+    fi
 }
 
 #######################################
