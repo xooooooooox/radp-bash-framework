@@ -85,9 +85,16 @@ set -e
 __ide_hints() {
 EOF
 
-  # 1. Framework global vars
-  printf '\n  # Framework global vars\n' >>"$__radp_ide_hints_file"
-  printf '  # shellcheck source=%s\n' "$gr_fw_context_vars_path/global_vars.sh" >>"$__radp_ide_hints_file"
+  # 1. Framework global vars (all .sh under vars/)
+  if [[ -d "$gr_fw_context_vars_path" ]]; then
+    printf '\n  # Framework global vars\n' >>"$__radp_ide_hints_file"
+    local -a fw_vars=()
+    mapfile -t fw_vars < <(find "$gr_fw_context_vars_path" -type f -name "*.sh" | sort)
+    local fw_var
+    for fw_var in "${fw_vars[@]}"; do
+      printf '  # shellcheck source=%s\n' "$fw_var" >>"$__radp_ide_hints_file"
+    done
+  fi
   printf '  # shellcheck source=%s\n' "$gr_fw_config_file" >>"$__radp_ide_hints_file"
 
   # 2. Framework libs
