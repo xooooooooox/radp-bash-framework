@@ -89,9 +89,6 @@ EOF
   printf '\n  # Framework global vars\n' >>"$__radp_ide_hints_file"
   printf '  # shellcheck source=%s\n' "$gr_fw_context_vars_path/global_vars.sh" >>"$__radp_ide_hints_file"
   printf '  # shellcheck source=%s\n' "$gr_fw_config_file" >>"$__radp_ide_hints_file"
-  if [[ -f "$gr_fw_final_config_file" ]]; then
-    printf '  # shellcheck source=%s\n' "$gr_fw_final_config_file" >>"$__radp_ide_hints_file"
-  fi
 
   # 2. Framework libs
   if [[ -d "$gr_fw_context_libs_path" ]]; then
