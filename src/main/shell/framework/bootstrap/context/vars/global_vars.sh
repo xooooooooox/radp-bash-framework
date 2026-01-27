@@ -69,11 +69,12 @@ __fw_declare_dynamic_vars() {
 #######################################
 __fw_write_final_config() {
   local cache_dir="$gr_fw_context_cache_path"
-  local final_file="$cache_dir/final_config.sh"
+  gr_fw_final_config_file="$cache_dir/final_config.sh"
+  readonly gr_fw_final_config_file
 
   mkdir -p "$cache_dir" || return 1
 
-  cat >"$final_file" <<'EOF'
+  cat >"$gr_fw_final_config_file" <<'EOF'
 #!/usr/bin/env bash
 set -e
 
@@ -98,7 +99,7 @@ EOF
     if declare -p "$var" >/dev/null 2>&1; then
       declare -p "$var"
     fi
-  done | sort >>"$final_file"
+  done | sort >>"$gr_fw_final_config_file"
 }
 
 #######################################
@@ -138,6 +139,7 @@ declare -gr gr_fw_context_path="$gr_fw_bootstrap_path"/context
 declare -gr gr_fw_context_vars_path="$gr_fw_context_path"/vars
 declare -gr gr_fw_context_libs_path="$gr_fw_context_path"/libs
 declare -g gr_fw_context_cache_path=""
+declare -g gr_fw_final_config_file=""
 __fw_resolve_cache_path() {
   local cache_path="$gr_fw_context_path"/cache
   if [[ ! -w "$gr_fw_context_path" ]]; then
