@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.5.1 - 2026-01-27
+
+### feat
+- e2732ca Add global option in cli help
+
 ## v0.5.0 - 2026-01-27
 
 ### feat
