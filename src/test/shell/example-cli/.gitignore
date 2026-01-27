@@ -1,3 +1,6 @@
+src/main/shell/config/config.sh
+src/main/shell/config/completion.sh
+
 # IDE
 .idea/
 .vscode/

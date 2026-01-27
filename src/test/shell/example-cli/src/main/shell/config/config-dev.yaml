@@ -9,3 +9,6 @@ radp:
   extend:
     example_cli:
       # Development-specific overrides
+      arr:
+        - a
+        - b
