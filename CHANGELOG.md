@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.5.0 - 2026-01-27
+
+### feat
+- 09771bd Consistence cli args
+
 ## v0.4.28 - 2026-01-27
 
 ### feat
