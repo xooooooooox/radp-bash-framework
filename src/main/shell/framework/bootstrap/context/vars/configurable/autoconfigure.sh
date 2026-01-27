@@ -461,7 +461,8 @@ gr_fw_user_config_path="$(
   elif [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
     path="${XDG_CONFIG_HOME%/}/radp_bash"
   else
-    path="$(dirname "${gr_fw_root_path}")/config"
+    # Fallback to user's home config directory (always writable)
+    path="$HOME/.config/radp_bash"
   fi
   if [[ "$path" == "~" || "$path" == "~/"* ]]; then
     path="${path/#\~/$HOME}"
