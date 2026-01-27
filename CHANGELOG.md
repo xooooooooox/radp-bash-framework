@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.6.0 - 2026-01-27
+
+### refactor
+- dc613b5 refactor run.sh to init.sh and refactor radp-bf options
+
 ## v0.5.3 - 2026-01-27
 
 ### feat
