@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v0.5.2 - 2026-01-27
+
+### feat
+- e602c24 add cli example
+- 37ebc73 update cli scaffold .gitignore
+- 2f64d2b Add example-cli
+- 1e08544 update cli scaffold config.yaml
+
+### fix
+- d14fe96 fix cli completions not work for zsh
+
 ## v0.5.1 - 2026-01-27
 
 ### feat
