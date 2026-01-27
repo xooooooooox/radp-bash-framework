@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.6.2 - 2026-01-27
+
+### fix
+- bc83a7a fix auto-generated ide hints file error on install-mode.
+
+### docs
+- ae700c2 update ClAUDE
+
 ## v0.6.1 - 2026-01-27
 
 ### feat
