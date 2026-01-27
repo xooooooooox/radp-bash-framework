@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.24 - 2026-01-27
+
+### fix
+- 9dafe37 fix dynamic completion not work
+
 ## v0.4.23 - 2026-01-26
 
 ### feat
