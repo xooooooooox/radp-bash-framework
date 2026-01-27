@@ -40,18 +40,18 @@ detect_os() {
     # shellcheck disable=SC1091
     source /etc/os-release
     case "${ID:-}" in
-      fedora|centos|rhel|rocky|almalinux|ol)
-        os="rhel"
-        ;;
-      debian|ubuntu|linuxmint|pop)
-        os="debian"
-        ;;
-      opensuse*|sles)
-        os="suse"
-        ;;
-      *)
-        os="linux"
-        ;;
+    fedora | centos | rhel | rocky | almalinux | ol)
+      os="rhel"
+      ;;
+    debian | ubuntu | linuxmint | pop)
+      os="debian"
+      ;;
+    opensuse* | sles)
+      os="suse"
+      ;;
+    *)
+      os="linux"
+      ;;
     esac
   else
     os="unknown"
@@ -73,27 +73,27 @@ detect_package_manager() {
 
   # Linux package managers
   case "${os}" in
-    rhel)
-      if have dnf; then
-        echo "dnf"
-        return 0
-      elif have yum; then
-        echo "yum"
-        return 0
-      fi
-      ;;
-    debian)
-      if have apt-get; then
-        echo "apt"
-        return 0
-      fi
-      ;;
-    suse)
-      if have zypper; then
-        echo "zypper"
-        return 0
-      fi
-      ;;
+  rhel)
+    if have dnf; then
+      echo "dnf"
+      return 0
+    elif have yum; then
+      echo "yum"
+      return 0
+    fi
+    ;;
+  debian)
+    if have apt-get; then
+      echo "apt"
+      return 0
+    fi
+    ;;
+  suse)
+    if have zypper; then
+      echo "zypper"
+      return 0
+    fi
+    ;;
   esac
 
   echo ""
@@ -104,35 +104,35 @@ check_repo_configured() {
   local pkm="$1"
 
   case "${pkm}" in
-    homebrew)
-      # Check if tap is configured
-      if brew tap 2>/dev/null | grep -q "xooooooooox/radp"; then
-        return 0
-      fi
-      return 1
-      ;;
-    dnf|yum)
-      # Check if COPR repo is enabled
-      if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:xooooooooox:radp.repo ]] || \
-         [[ -f /etc/yum.repos.d/radp.repo ]]; then
-        return 0
-      fi
-      return 1
-      ;;
-    apt)
-      # Check if OBS repo is configured
-      if [[ -f /etc/apt/sources.list.d/home:xooooooooox:radp.list ]]; then
-        return 0
-      fi
-      return 1
-      ;;
-    zypper)
-      # Check if OBS repo is configured
-      if zypper repos 2>/dev/null | grep -q "xooooooooox"; then
-        return 0
-      fi
-      return 1
-      ;;
+  homebrew)
+    # Check if tap is configured
+    if brew tap 2>/dev/null | grep -q "xooooooooox/radp"; then
+      return 0
+    fi
+    return 1
+    ;;
+  dnf | yum)
+    # Check if COPR repo is enabled
+    if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:xooooooooox:radp.repo ]] ||
+      [[ -f /etc/yum.repos.d/radp.repo ]]; then
+      return 0
+    fi
+    return 1
+    ;;
+  apt)
+    # Check if OBS repo is configured
+    if [[ -f /etc/apt/sources.list.d/home:xooooooooox:radp.list ]]; then
+      return 0
+    fi
+    return 1
+    ;;
+  zypper)
+    # Check if OBS repo is configured
+    if zypper repos 2>/dev/null | grep -q "xooooooooox"; then
+      return 0
+    fi
+    return 1
+    ;;
   esac
 
   return 1
@@ -145,83 +145,110 @@ setup_repo() {
   log "Setting up repository for ${pkm}..."
 
   case "${pkm}" in
-    homebrew)
-      log "Adding Homebrew tap..."
-      brew tap xooooooooox/radp
-      ;;
-    dnf)
-      log "Enabling COPR repository..."
-      sudo dnf install -y dnf-plugins-core >/dev/null 2>&1 || true
-      sudo dnf copr enable -y xooooooooox/radp
-      ;;
-    yum)
-      log "Enabling COPR repository..."
-      sudo yum install -y yum-plugin-copr >/dev/null 2>&1 || true
-      sudo yum copr enable -y xooooooooox/radp
-      ;;
-    apt)
-      log "Adding OBS repository..."
-      # Detect distro for OBS
-      local distro=""
-      if [[ -f /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        source /etc/os-release
-        case "${ID:-}" in
-          ubuntu)
-            distro="xUbuntu_${VERSION_ID}"
-            ;;
-          debian)
-            distro="Debian_${VERSION_ID}"
-            ;;
-          *)
-            err "Unsupported distribution for apt: ${ID:-unknown}"
-            return 1
-            ;;
-        esac
-      fi
-      if [[ -z "${distro}" ]]; then
-        err "Cannot detect distribution for OBS repository"
+  homebrew)
+    log "Adding Homebrew tap..."
+    brew tap xooooooooox/radp
+    ;;
+  dnf)
+    log "Enabling COPR repository..."
+    sudo dnf install -y dnf-plugins-core >/dev/null 2>&1 || true
+    sudo dnf copr enable -y xooooooooox/radp
+    ;;
+  yum)
+    log "Enabling COPR repository..."
+    sudo yum install -y yum-plugin-copr >/dev/null 2>&1 || true
+    sudo yum copr enable -y xooooooooox/radp
+    ;;
+  apt)
+    log "Adding OBS repository..."
+    # Detect distro for OBS
+    local distro=""
+    if [[ -f /etc/os-release ]]; then
+      # shellcheck disable=SC1091
+      source /etc/os-release
+      case "${ID:-}" in
+      ubuntu)
+        distro="xUbuntu_${VERSION_ID}"
+        ;;
+      debian)
+        distro="Debian_${VERSION_ID}"
+        ;;
+      *)
+        err "Unsupported distribution for apt: ${ID:-unknown}"
         return 1
-      fi
-      echo "deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/ /" | \
-        sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list >/dev/null
-      curl -fsSL "https://download.opensuse.org/repositories/home:xooooooooox:radp/${distro}/Release.key" | \
-        gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg >/dev/null
-      sudo apt-get update >/dev/null
-      ;;
-    zypper)
-      log "Adding OBS repository..."
-      # Detect distro for OBS
-      local distro=""
-      if [[ -f /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        source /etc/os-release
-        case "${ID:-}" in
-          opensuse-tumbleweed)
-            distro="openSUSE_Tumbleweed"
-            ;;
-          opensuse-leap)
-            distro="openSUSE_Leap_${VERSION_ID}"
-            ;;
-          sles)
-            distro="SLE_${VERSION_ID}"
-            ;;
-          *)
-            err "Unsupported distribution for zypper: ${ID:-unknown}"
-            return 1
-            ;;
-        esac
-      fi
-      if [[ -z "${distro}" ]]; then
-        err "Cannot detect distribution for OBS repository"
-        return 1
-      fi
-      sudo zypper addrepo -f "https://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/home:xooooooooox:radp.repo"
-      ;;
-    *)
-      err "Unknown package manager: ${pkm}"
+        ;;
+      esac
+    fi
+    if [[ -z "${distro}" ]]; then
+      err "Cannot detect distribution for OBS repository"
       return 1
-      ;;
+    fi
+    echo "deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/ /" |
+      sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list >/dev/null
+    curl -fsSL "https://download.opensuse.org/repositories/home:xooooooooox:radp/${distro}/Release.key" |
+      gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg >/dev/null
+    sudo apt-get update >/dev/null
+    ;;
+  zypper)
+    log "Adding OBS repository..."
+    # Detect distro for OBS
+    local distro=""
+    if [[ -f /etc/os-release ]]; then
+      # shellcheck disable=SC1091
+      source /etc/os-release
+      case "${ID:-}" in
+      opensuse-tumbleweed)
+        distro="openSUSE_Tumbleweed"
+        ;;
+      opensuse-leap)
+        distro="openSUSE_Leap_${VERSION_ID}"
+        ;;
+      sles)
+        distro="SLE_${VERSION_ID}"
+        ;;
+      *)
+        err "Unsupported distribution for zypper: ${ID:-unknown}"
+        return 1
+        ;;
+      esac
+    fi
+    if [[ -z "${distro}" ]]; then
+      err "Cannot detect distribution for OBS repository"
+      return 1
+    fi
+    sudo zypper addrepo -f "https://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/home:xooooooooox:radp.repo"
+    ;;
+  *)
+    err "Unknown package manager: ${pkm}"
+    return 1
+    ;;
+  esac
+}
+
+# Refresh package manager cache
+refresh_cache() {
+  local pkm="$1"
+
+  log "Refreshing package cache..."
+
+  case "${pkm}" in
+  homebrew)
+    brew update >/dev/null 2>&1 || true
+    ;;
+  dnf)
+    sudo dnf clean all >/dev/null 2>&1 || true
+    sudo dnf makecache >/dev/null 2>&1 || true
+    ;;
+  yum)
+    sudo yum clean all >/dev/null 2>&1 || true
+    sudo yum makecache >/dev/null 2>&1 || true
+    ;;
+  apt)
+    sudo apt-get update >/dev/null 2>&1 || true
+    ;;
+  zypper)
+    sudo zypper refresh >/dev/null 2>&1 || true
+    ;;
   esac
 }
 
@@ -229,28 +256,31 @@ setup_repo() {
 install_via_pkm() {
   local pkm="$1"
 
+  # Refresh cache to ensure we get the latest version
+  refresh_cache "${pkm}"
+
   log "Installing ${REPO_NAME} via ${pkm}..."
 
   case "${pkm}" in
-    homebrew)
-      brew install radp-bash-framework
-      ;;
-    dnf)
-      sudo dnf install -y radp-bash-framework
-      ;;
-    yum)
-      sudo yum install -y radp-bash-framework
-      ;;
-    apt)
-      sudo apt-get install -y radp-bash-framework
-      ;;
-    zypper)
-      sudo zypper install -y radp-bash-framework
-      ;;
-    *)
-      err "Unknown package manager: ${pkm}"
-      return 1
-      ;;
+  homebrew)
+    brew install radp-bash-framework
+    ;;
+  dnf)
+    sudo dnf install -y radp-bash-framework
+    ;;
+  yum)
+    sudo yum install -y radp-bash-framework
+    ;;
+  apt)
+    sudo apt-get install -y radp-bash-framework
+    ;;
+  zypper)
+    sudo zypper install -y radp-bash-framework
+    ;;
+  *)
+    err "Unknown package manager: ${pkm}"
+    return 1
+    ;;
   esac
 }
 
@@ -425,34 +455,34 @@ main() {
 
   # Determine installation method
   case "${mode}" in
-    manual)
-      log "Using manual installation (RADP_BF_INSTALL_MODE=manual)"
+  manual)
+    log "Using manual installation (RADP_BF_INSTALL_MODE=manual)"
+    install_manual
+    return 0
+    ;;
+  homebrew | dnf | yum | apt | zypper)
+    # Force specific package manager
+    pkm="${mode}"
+    if ! have "${pkm}" && [[ "${pkm}" != "homebrew" ]]; then
+      die "Package manager '${pkm}' not found"
+    fi
+    if [[ "${pkm}" == "homebrew" ]] && ! have brew; then
+      die "Homebrew not found"
+    fi
+    ;;
+  auto | "")
+    # Auto-detect package manager
+    pkm="$(detect_package_manager)"
+    if [[ -z "${pkm}" ]]; then
+      log "No supported package manager detected, using manual installation"
       install_manual
       return 0
-      ;;
-    homebrew|dnf|yum|apt|zypper)
-      # Force specific package manager
-      pkm="${mode}"
-      if ! have "${pkm}" && [[ "${pkm}" != "homebrew" ]]; then
-        die "Package manager '${pkm}' not found"
-      fi
-      if [[ "${pkm}" == "homebrew" ]] && ! have brew; then
-        die "Homebrew not found"
-      fi
-      ;;
-    auto|"")
-      # Auto-detect package manager
-      pkm="$(detect_package_manager)"
-      if [[ -z "${pkm}" ]]; then
-        log "No supported package manager detected, using manual installation"
-        install_manual
-        return 0
-      fi
-      log "Detected package manager: ${pkm}"
-      ;;
-    *)
-      die "Unknown install mode: ${mode}. Use: auto, manual, homebrew, dnf, yum, apt, zypper"
-      ;;
+    fi
+    log "Detected package manager: ${pkm}"
+    ;;
+  *)
+    die "Unknown install mode: ${mode}. Use: auto, manual, homebrew, dnf, yum, apt, zypper"
+    ;;
   esac
 
   # Setup repository if needed
