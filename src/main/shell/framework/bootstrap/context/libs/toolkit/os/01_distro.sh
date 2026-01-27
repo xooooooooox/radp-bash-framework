@@ -297,10 +297,10 @@ radp_os_install_pkgs() {
   # update
   if [[ "$update_before_install" == "true" ]]; then
     case "$cur_pm" in
-    yum) $dry_run && radp_log_info "[dry-run] yum makecache/upgrade" || "$gr_sudo" yum makecache -y ;;
-    dnf) $dry_run && radp_log_info "[dry-run] dnf makecache/upgrade" || "$gr_sudo" dnf makecache -y ;;
-    apt | apt-get) $dry_run && radp_log_info "[dry-run] apt-get update" || "$gr_sudo" apt-get update ;;
-    brew) $dry_run && radp_log_info "[dry-run] brew update" || "$gr_sudo" brew update ;;
+    yum) $dry_run && radp_log_info "[dry-run] yum makecache/upgrade" || $gr_sudo yum makecache -y ;;
+    dnf) $dry_run && radp_log_info "[dry-run] dnf makecache/upgrade" || $gr_sudo dnf makecache -y ;;
+    apt | apt-get) $dry_run && radp_log_info "[dry-run] apt-get update" || $gr_sudo apt-get update ;;
+    brew) $dry_run && radp_log_info "[dry-run] brew update" || $gr_sudo brew update ;;
     *)
       radp_log_error "Unsupported pkg manager: $cur_pm"
       return 1
@@ -314,21 +314,21 @@ radp_os_install_pkgs() {
     if [[ "$dry_run" == "true" ]]; then
       radp_log_info "[dry-run] yum install -y ${to_install[*]}"
     else
-      "$gr_sudo" yum install -y "${to_install[@]}"
+      $gr_sudo yum install -y "${to_install[@]}"
     fi
     ;;
   dnf)
     if [[ "$dry_run" == "true" ]]; then
       radp_log_info "[dry-run] dnf install -y ${to_install[*]}"
     else
-      "$gr_sudo" dnf install -y "${to_install[@]}"
+      $gr_sudo dnf install -y "${to_install[@]}"
     fi
     ;;
   apt | apt-get)
     if [[ "$dry_run" == "true" ]]; then
       radp_log_info "[dry-run] apt-get install -y ${to_install[*]}"
     else
-      "$gr_sudo" apt-get install -y "${to_install[@]}"
+      $gr_sudo apt-get install -y "${to_install[@]}"
     fi
     ;;
   brew)
