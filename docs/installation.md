@@ -20,21 +20,24 @@ The script auto-detects available package managers and uses them if possible.
 #### Script Options
 
 ```shell
-RADP_BF_VERSION=v1.0.0 \
-  RADP_BF_INSTALL_MODE=auto \
-  RADP_BF_INSTALL_DIR="$HOME/.local/lib/radp-bash-framework" \
-  RADP_BF_BIN_DIR="$HOME/.local/bin" \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh)"
+bash install.sh --ref main
+bash install.sh --ref v1.0.0-rc1
+bash install.sh --mode manual
+bash install.sh --mode dnf
 ```
 
-| Variable                | Description                                                              | Default                            |
-|-------------------------|--------------------------------------------------------------------------|------------------------------------|
-| `RADP_BF_INSTALL_MODE`  | `auto`, `manual`, or specific: `homebrew`, `dnf`, `yum`, `apt`, `zypper` | `auto`                             |
-| `RADP_BF_VERSION`       | Specific version (e.g., `v1.0.0`)                                        | latest                             |
-| `RADP_BF_REF`           | Branch/tag/commit (manual mode only, takes precedence over VERSION)      | -                                  |
-| `RADP_BF_INSTALL_DIR`   | Installation directory (manual mode only)                                | `~/.local/lib/radp-bash-framework` |
-| `RADP_BF_BIN_DIR`       | Binary symlink directory (manual mode only)                              | `~/.local/bin`                     |
-| `RADP_BF_ALLOW_ANY_DIR` | Allow custom install dir not ending with `radp-bash-framework`           | `0`                                |
+| Option              | Description                                                              | Default                            |
+|---------------------|--------------------------------------------------------------------------|------------------------------------|
+| `--ref <ref>`       | Install from a git ref (branch, tag, SHA). Implies manual install.       | latest release                     |
+| `--mode <mode>`     | `auto`, `manual`, or specific: `homebrew`, `dnf`, `yum`, `apt`, `zypper` | `auto`                             |
+| `--install-dir <d>` | Manual install location                                                  | `~/.local/lib/radp-bash-framework` |
+| `--bin-dir <d>`     | Symlink location                                                         | `~/.local/bin`                     |
+
+Environment variables (`RADP_BF_REF`, `RADP_BF_VERSION`, `RADP_BF_INSTALL_MODE`, `RADP_BF_INSTALL_DIR`,
+`RADP_BF_BIN_DIR`) are also supported as fallbacks.
+
+When `--ref` is used and a package-manager version is already installed, the script automatically removes it first to
+avoid conflicts.
 
 ## Package Manager Install
 
@@ -101,6 +104,36 @@ Or run directly from source:
 
 ```shell
 source /path/to/radp-bash-framework/src/main/shell/framework/init.sh
+```
+
+## Uninstalling
+
+### Uninstall Script (Recommended)
+
+```shell
+bash uninstall.sh
+bash uninstall.sh --yes # Skip confirmation
+```
+
+The script auto-detects both package-manager and manual installations and removes them.
+
+### Homebrew
+
+```shell
+brew uninstall radp-bash-framework
+```
+
+### DNF
+
+```shell
+sudo dnf remove radp-bash-framework
+```
+
+### Manual
+
+```shell
+rm -rf ~/.local/lib/radp-bash-framework
+rm -f ~/.local/bin/radp-bf ~/.local/bin/radp-bash-framework
 ```
 
 ## Load the Framework

@@ -51,6 +51,13 @@ brew install radp-bash-framework
 curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
+从指定分支或标签安装：
+
+```shell
+bash install.sh --ref main
+bash install.sh --ref v1.0.0-rc1
+```
+
 ### RPM (Fedora/RHEL/CentOS)
 
 ```shell
