@@ -320,7 +320,7 @@ __radp_cli_scaffold_config() {
 # Priority: Environment variables (GX_*) > YAML values > defaults
 
 radp:
-  env: default
+  env: dev
 
   # Framework settings override (optional)
   fw:
