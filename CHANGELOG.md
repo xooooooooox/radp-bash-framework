@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.6.1 - 2026-01-27
+
+### feat
+- fd96eb4 update cli scaffold default banner
+
+### test
+- 625a440 update cli scaffold example
+
 ## v0.6.0 - 2026-01-27
 
 ### refactor
