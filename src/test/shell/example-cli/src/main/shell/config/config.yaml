@@ -1,0 +1,28 @@
+# example-cli configuration
+# This file follows radp-bash-framework's configuration structure
+# Priority: Environment variables (GX_*) > YAML values > defaults
+
+radp:
+  env: dev
+
+  # Framework settings override (optional)
+  fw:
+    banner-mode: on
+    log:
+      debug: false
+      level: info
+      console:
+        enabled: true
+      file:
+        enabled: false
+    user:
+      config:
+        automap: true  # Auto-generate config.sh from radp.extend.*
+
+  # Application-specific extensions
+  # Variables defined here will be available as gr_radp_extend_* in shell
+  extend:
+    example_cli:
+      # Add your application config here
+      # example:
+      #   some_setting: value

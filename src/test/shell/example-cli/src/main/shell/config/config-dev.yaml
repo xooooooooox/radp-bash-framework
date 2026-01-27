@@ -1,0 +1,11 @@
+# Development environment overrides for example-cli
+
+radp:
+  fw:
+    log:
+      debug: true
+      level: debug
+
+  extend:
+    example_cli:
+      # Development-specific overrides
