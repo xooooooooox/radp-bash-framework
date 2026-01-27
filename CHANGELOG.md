@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.5.3 - 2026-01-27
+
+### feat
+- dd43b6d update cli scaffold default banner
+- 4c960c2 optimize cli scaffold dynamic user config path
+
+### test
+- de41968 update cli scaffold example
+
 ## v0.5.2 - 2026-01-27
 
 ### feat
