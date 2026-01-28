@@ -590,25 +590,7 @@ install_manual() {
   chmod 0755 "${install_dir}/bin/radp-bf"
   find "${install_dir}/framework" -type f -name "*.sh" -exec chmod 0755 {} \;
 
-  # Write version info for runtime display
-  local commit_short=""
-  # For tarball downloads, try to get commit from GitHub API (for non-tag refs)
-  if [[ "${ref}" != v* ]]; then
-    local commit_json
-    commit_json=$(fetch_text "${FETCH_TOOL}" "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/${ref}" 2>/dev/null || true)
-    if [[ -n "${commit_json}" ]]; then
-      commit_short=$(echo "${commit_json}" | sed -n 's/.*"sha"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | cut -c1-7)
-    fi
-  fi
-
-  cat >"${install_dir}/.version" <<EOF
-install_method=manual
-ref=${ref}
-commit=${commit_short}
-date=$(date +%Y-%m-%d)
-EOF
-
-  # Keep legacy markers for uninstall.sh compatibility
+  # Write install method marker for uninstall.sh
   echo "manual" >"${install_dir}/.install-method"
   echo "${ref}" >"${install_dir}/.install-ref"
 
