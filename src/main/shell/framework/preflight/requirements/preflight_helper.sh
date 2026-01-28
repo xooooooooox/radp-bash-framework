@@ -79,7 +79,7 @@ __fw_requirements_fix_yum_repo_for_centos7() {
     return 0
   fi
 
-  echo "Preflight: fixing CentOS 7 yum repos (vault)..."
+  echo "Preflight: fixing CentOS 7 yum repos (vault)..." >&2
   if [ -n "$__sudo_cmd" ]; then
     __fw_requirements_run_with_sudo "$__sudo_cmd" sed -i -r \
       -e 's|^mirrorlist=|#mirrorlist=|g' \
@@ -122,7 +122,7 @@ __fw_requirements_install_packages() {
   __label=${5:-dependencies}
 
   if command -v apt-get >/dev/null 2>&1; then
-    echo "Preflight: installing $__label (apt)..."
+    echo "Preflight: installing $__label (apt)..." >&2
     __fw_requirements_run_with_sudo "$__sudo_cmd" apt-get update >/dev/null 2>&1 || return 1
     set -- $__apt_pkgs
     DEBIAN_FRONTEND=noninteractive __fw_requirements_run_with_sudo "$__sudo_cmd" apt-get install -y \
@@ -130,14 +130,14 @@ __fw_requirements_install_packages() {
     return 0
   fi
   if command -v dnf >/dev/null 2>&1; then
-    echo "Preflight: installing $__label (dnf)..."
+    echo "Preflight: installing $__label (dnf)..." >&2
     set -- $__dnf_pkgs
     __fw_requirements_run_with_sudo "$__sudo_cmd" dnf install -y \
       "$@" >/dev/null 2>&1 || return 1
     return 0
   fi
   if command -v yum >/dev/null 2>&1; then
-    echo "Preflight: installing $__label (yum)..."
+    echo "Preflight: installing $__label (yum)..." >&2
     __fw_requirements_fix_yum_repo_for_centos7 "$__sudo_cmd" || return 1
     set -- $__yum_pkgs
     __fw_requirements_run_with_sudo "$__sudo_cmd" yum install -y \

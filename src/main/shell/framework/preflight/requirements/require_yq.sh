@@ -39,7 +39,7 @@ __fw_requirements_prepare_yq() {
   #######################################
 
   __target_ver=${__install_ver:-${__req_ver:-4.44.1}}
-  echo "Preflight: installing yq $__target_ver..."
+  echo "Preflight: installing yq $__target_ver..." >&2
   __os=$(uname -s 2>/dev/null | tr 'A-Z' 'a-z')
   if [ "$__os" != "linux" ]; then
     echo "Error: Unsupported OS for yq install: $__os" >&2
@@ -112,7 +112,7 @@ __fw_requirements_prepare_yq() {
   __filename="yq_${__os}_${__arch}"
   __url="https://github.com/mikefarah/yq/releases/download/v${__target_ver}/${__filename}"
   __binpath="$__tmpdir/$__filename"
-  echo "Preflight: downloading yq from $__url..."
+  echo "Preflight: downloading yq from $__url..." >&2
 
   if ! __fw_requirements_download_file "$__url" "$__binpath" "quiet"; then
     echo "Error: Failed to download yq from $__url" >&2
@@ -127,14 +127,14 @@ __fw_requirements_prepare_yq() {
   __target_dir="/usr/local/bin"
   __target_bin="${__target_dir}/yq"
   if [ ! -d "$__target_dir" ]; then
-    echo "Preflight: creating $__target_dir..."
+    echo "Preflight: creating $__target_dir..." >&2
     __fw_requirements_run_with_sudo "$__sudo" mkdir -p "$__target_dir" || {
       echo "Error: Failed to create $__target_dir." >&2
       return 1
     }
   fi
 
-  echo "Preflight: installing yq to $__target_bin..."
+  echo "Preflight: installing yq to $__target_bin..." >&2
   __fw_requirements_run_with_sudo "$__sudo" mv "$__binpath" "$__target_bin" || {
     echo "Error: Failed to install yq to $__target_bin." >&2
     return 1

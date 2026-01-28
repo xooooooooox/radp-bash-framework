@@ -105,7 +105,7 @@ __fw_requirements_prepare_bash() {
 
   # 解析安装目标版本：优先 install 版本，其次 req 版本
   __target_ver=${__install_ver:-${__req_ver:-5.2}}
-  echo "Preflight: installing bash $__target_ver from source..."
+  echo "Preflight: installing bash $__target_ver from source..." >&2
   __major=$(printf '%s' "$__target_ver" | cut -d. -f1)
   __minor=$(printf '%s' "$__target_ver" | cut -d. -f2)
   __patch=$(printf '%s' "$__target_ver" | cut -d. -f3)
@@ -175,7 +175,7 @@ __fw_requirements_prepare_bash() {
   __tarpath="$__tmpdir/$__tarball"
   __url_primary="https://ftp.gnu.org/gnu/bash/$__tarball"
   __url_mirror="https://mirrors.edge.kernel.org/gnu/bash/$__tarball"
-  echo "Preflight: downloading $__tarball..."
+  echo "Preflight: downloading $__tarball..." >&2
   if ! __fw_requirements_download_file "$__url_primary" "$__tarpath" "progress"; then
     if ! __fw_requirements_download_file "$__url_mirror" "$__tarpath" "progress"; then
       echo "Error: Failed to download $__tarball." >&2
@@ -195,7 +195,7 @@ __fw_requirements_prepare_bash() {
   fi
 
   if [ "$__patch" -gt 0 ]; then
-    echo "Preflight: applying bash patches (level $__patch)..."
+    echo "Preflight: applying bash patches (level $__patch)..." >&2
     __patch_prefix="bash${__major}${__minor}"
     __patch_dir="https://ftp.gnu.org/gnu/bash/bash-${__base_ver}-patches"
     __i=1
@@ -225,13 +225,13 @@ __fw_requirements_prepare_bash() {
     [ -z "$__jobs" ] && __jobs=1
   fi
 
-  echo "Preflight: building bash (jobs=$__jobs)..."
+  echo "Preflight: building bash (jobs=$__jobs)..." >&2
   (cd "$__srcdir" && make -j "$__jobs") || {
     echo "Error: Failed to build bash source." >&2
     return 1
   }
 
-  echo "Preflight: installing bash to /usr/local..."
+  echo "Preflight: installing bash to /usr/local..." >&2
   (cd "$__srcdir" && __fw_requirements_run_with_sudo "$__sudo" make install) || {
     echo "Error: Failed to install bash." >&2
     return 1

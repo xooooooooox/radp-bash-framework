@@ -96,8 +96,8 @@ __fw_requirements_check() {
     fi
   done
   if [ -n "${gw_fw_requirements_not_satisfied:-}" ]; then
-    echo "Preflight: checking requirements..."
-    echo "Preflight: missing requirements:${gw_fw_requirements_not_satisfied}"
+    echo "Preflight: checking requirements..." >&2
+    echo "Preflight: missing requirements:${gw_fw_requirements_not_satisfied}" >&2
   fi
   unset __req_name __req_ver __install_ver __temp __req_name_safe __fw_req
   return 0
@@ -119,7 +119,7 @@ __fw_requirements_prepare() {
   if [ -z "${gw_fw_requirements_not_satisfied:-}" ]; then
     return 0
   fi
-  echo "Preflight: preparing requirements..."
+  echo "Preflight: preparing requirements..." >&2
   __fw_req=${__fw_req:-}
   __req_name=${__req_name:-}
   __req_ver=${__req_ver:-}
@@ -177,7 +177,7 @@ __fw_requirements_reexec_bash_if_needed() {
   fi
 
   export GW_FW_REQUIREMENTS_REEXECED=1
-  echo "Preflight: re-exec with $__bash_bin"
+  echo "Preflight: re-exec with $__bash_bin" >&2
   exec "$__bash_bin" "$0" "$@"
 }
 
