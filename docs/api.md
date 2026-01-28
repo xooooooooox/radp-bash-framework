@@ -2,6 +2,33 @@
 
 The framework provides utility functions organized by domain under `src/main/shell/framework/bootstrap/context/libs/`.
 
+## Table of Contents
+
+- [Overview](#overview)
+  - [Function Naming Conventions](#function-naming-conventions)
+  - [Variable Naming Conventions](#variable-naming-conventions)
+  - [Return Code Conventions](#return-code-conventions)
+- [Logging (`radp_log_*`)](#logging-radp_log_)
+- [OS Detection (`radp_os_*`)](#os-detection-radp_os_)
+- [File System (`radp_io_*`)](#file-system-radp_io_)
+- [Network (`radp_net_*`)](#network-radp_net_)
+- [Arrays (`radp_nr_*`)](#arrays-radp_nr_)
+- [CLI Infrastructure (`radp_cli_*`)](#cli-infrastructure-radp_cli_)
+  - [Application Bootstrap](#application-bootstrap)
+  - [Request Detection](#request-detection)
+  - [Command Discovery](#command-discovery)
+  - [Metadata Parsing](#metadata-parsing)
+  - [Argument Parsing](#argument-parsing)
+  - [Help Generation](#help-generation)
+  - [Command Dispatch](#command-dispatch)
+  - [Shell Completion](#shell-completion)
+  - [Dynamic Completion](#dynamic-completion)
+  - [Passthrough Mode](#passthrough-mode)
+  - [Scaffolding](#scaffolding)
+- [IDE Integration (`radp_ide_*`)](#ide-integration-radp_ide_)
+
+---
+
 ## Overview
 
 ### Function Naming Conventions
@@ -25,6 +52,25 @@ The framework provides utility functions organized by domain under `src/main/she
 | `gwxa_*`           | Global arrays                | `gwxa_fw_sourced_scripts`      |
 | `gr_radp_fw_*`     | Framework config values      | `gr_radp_fw_log_level`         |
 | `gr_radp_extend_*` | User extension config        | `gr_radp_extend_myapp_api_url` |
+
+### Return Code Conventions
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success / True (for boolean functions) |
+| `1` | General error / False (for boolean functions) |
+| `2` | Missing or invalid arguments |
+
+### Common Global Variables
+
+| Variable | Description |
+|----------|-------------|
+| `gr_fw_root_path` | Framework installation root directory |
+| `gr_fw_version` | Framework version string |
+| `gr_fw_user_config_path` | User configuration directory |
+| `gr_fw_context_cache_path` | Framework cache directory |
+| `gw_fw_run_initialized` | Framework initialization flag |
+| `gwxa_fw_sourced_scripts` | Array of sourced script paths |
 
 ---
 

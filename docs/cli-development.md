@@ -108,15 +108,20 @@ Use `_`-prefixed files for shared logic (not discovered as commands):
 ```bash
 # commands/db/_common.sh - shared DB utilities
 db_connect() {
-  ... }
+  # ... connection logic
+}
+```
 
-  # commands/db/migrate.sh
-  # @cmd
-  source "${BASH_SOURCE[0]%/*}/_common.sh"
-  cmd_db_migrate() {
-    db_connect
-    # ...
-  }
+```bash
+# commands/db/migrate.sh
+# @cmd
+
+source "${BASH_SOURCE[0]%/*}/_common.sh"
+
+cmd_db_migrate() {
+  db_connect
+  # ...
+}
 ```
 
 ## Configuration
@@ -250,7 +255,8 @@ myapp completion zsh >~/.zfunc/_myapp
 
 ### Dynamic Completion
 
-The `@complete` annotation enables dynamic shell completion for arguments and options. Completion values are generated at runtime by calling a shell function.
+The `@complete` annotation enables dynamic shell completion for arguments and options. Completion values are generated
+at runtime by calling a shell function.
 
 #### Basic Syntax
 
@@ -361,7 +367,7 @@ cmd_copy() {
 }
 
 _complete_local_files() {
-  compgen -f  # Built-in file completion
+  compgen -f # Built-in file completion
 }
 
 _complete_remote_paths() {
@@ -387,12 +393,13 @@ _complete_hosts() {
 # @arg pkg!
 # @complete pkg _complete_packages
 
-cmd_install() { ... }
+cmd_install() {
+  ... }
 
-_complete_packages() {
-  echo "package1"
-  echo "package2"
-}
+  _complete_packages() {
+    echo "package1"
+    echo "package2"
+  }
 ```
 
 **Option 2: In user libraries** (reusable across commands)
@@ -451,11 +458,117 @@ The framework supports code completion in JetBrains IDEs via BashSupport Pro.
 
 See [API Reference - IDE Integration](api.md#ide-integration-radp_ide_) for details.
 
+## Testing Commands
+
+### Unit Testing with BATS
+
+The framework uses [BATS](https://github.com/bats-core/bats-core) (Bash Automated Testing System) for testing.
+
+```bash
+# test/commands/hello.bats
+
+setup() {
+  load '../test_helper'
+  PROJECT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+}
+
+@test "hello command outputs greeting" {
+  run "$PROJECT_ROOT/bin/myapp" hello World
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Hello, World!"* ]]
+}
+
+@test "hello --loud outputs uppercase" {
+  run "$PROJECT_ROOT/bin/myapp" hello World --loud
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"HELLO, WORLD!"* ]]
+}
+
+@test "hello without argument shows error" {
+  run "$PROJECT_ROOT/bin/myapp" hello
+  [ "$status" -ne 0 ]
+}
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+bats test/
+
+# Run specific test file
+bats test/commands/hello.bats
+
+# Verbose output
+bats --verbose-run test/
+```
+
+### Test Directory Structure
+
+```
+myapp/
+├── test/
+│   ├── test_helper.bash      # Common test utilities
+│   ├── commands/
+│   │   ├── hello.bats        # Tests for hello command
+│   │   └── db/
+│   │       └── migrate.bats  # Tests for db migrate
+│   └── libs/
+│       └── utils.bats        # Tests for library functions
+```
+
+## Troubleshooting
+
+### Common Issues
+
+| Issue                   | Cause                    | Solution                                                 |
+|-------------------------|--------------------------|----------------------------------------------------------|
+| Command not found       | Missing `@cmd` marker    | Add `# @cmd` to the command file                         |
+| Option not working      | Wrong variable name      | Use `opt_<long_name>` (e.g., `opt_verbose`)              |
+| Completion not updating | Cached completion script | Regenerate: `myapp completion bash > ...`                |
+| Config not loading      | Wrong path or syntax     | Check YAML syntax and `GX_RADP_FW_USER_CONFIG_PATH`      |
+| Library not loaded      | Path not set             | Set `GX_RADP_FW_USER_LIB_PATH` before sourcing framework |
+
+### Debugging Tips
+
+**Enable debug logging:**
+
+```bash
+GX_RADP_FW_LOG_DEBUG=true myapp hello
+```
+
+**Check command discovery:**
+
+```bash
+# List all discovered commands
+myapp --help
+
+# Check specific command metadata
+myapp <command >--help
+```
+
+**Verify configuration:**
+
+```bash
+# Print all config variables
+env | grep -E "^(gr_radp_|GX_RADP_)"
+```
+
+**Test completion functions:**
+
+```bash
+# Source the command file and test directly
+source src/main/shell/commands/install.sh
+_complete_packages
+```
+
 ## Best Practices
 
-1. **Keep commands focused** - One command per file, single responsibility
-2. **Use meaningful descriptions** - `@desc` shown in help output
-3. **Provide examples** - `@example` helps users understand usage
-4. **Validate input early** - Check required config/args at command start
-5. **Use framework logging** - `radp_log_info`, `radp_log_error` instead of `echo`
-6. **Document configuration** - Comment what each config key does
+1. **Keep commands focused** — One command per file, single responsibility
+2. **Use meaningful descriptions** — `@desc` shown in help output
+3. **Provide examples** — `@example` helps users understand usage
+4. **Validate input early** — Check required config/args at command start
+5. **Use framework logging** — `radp_log_info`, `radp_log_error` instead of `echo`
+6. **Document configuration** — Comment what each config key does
+7. **Handle errors gracefully** — Provide helpful error messages with context
+8. **Write tests** — Use BATS for command and library testing
