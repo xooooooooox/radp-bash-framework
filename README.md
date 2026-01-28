@@ -31,6 +31,7 @@ comprehensive toolkit.
 - **Logging** - Structured logging with levels (debug/info/warn/error)
 - **OS Detection** - Cross-platform utilities for distro, architecture, package manager detection
 - **Path Utilities** - File system helpers, path resolution
+- **IDE Code Completion** - BashSupport Pro integration for framework function and variable completion
 
 ## Requirements
 
@@ -183,9 +184,10 @@ myapp completion zsh >~/.zfunc/_myapp
 ## Documentation
 
 - [Installation Guide](docs/installation.md) - All installation methods and upgrade instructions
+- [CLI Development Guide](docs/cli-development.md) - Complete guide to building CLI applications
 - [Command Annotations](docs/annotations.md) - `@cmd`, `@arg`, `@option`, `@example` reference
 - [Configuration](docs/configuration.md) - YAML config system and environment variables
-- [API Reference](docs/api.md) - Toolkit function reference
+- [API Reference](docs/api.md) - Toolkit functions and IDE integration
 
 ## Toolkit API
 

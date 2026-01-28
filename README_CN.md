@@ -30,6 +30,7 @@
 - **日志系统** - 结构化日志，支持多级别（debug/info/warn/error）
 - **OS 检测** - 跨平台工具，检测发行版、架构、包管理器
 - **路径工具** - 文件系统辅助函数、路径解析
+- **IDE 代码补全** - BashSupport Pro 集成，支持框架函数和变量自动补全
 
 ## 依赖
 
@@ -182,9 +183,10 @@ myapp completion zsh >~/.zfunc/_myapp
 ## 文档
 
 - [安装指南](docs/installation.md) - 所有安装方式和升级说明
+- [CLI 开发指南](docs/cli-development.md) - 构建 CLI 应用完整指南
 - [命令注解](docs/annotations.md) - `@cmd`、`@arg`、`@option`、`@example` 参考
 - [配置系统](docs/configuration.md) - YAML 配置和环境变量
-- [API 参考](docs/api.md) - 工具函数参考
+- [API 参考](docs/api.md) - 工具函数和 IDE 集成
 
 ## 工具函数 API
 

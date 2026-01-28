@@ -110,6 +110,10 @@ commands/
 - Supports arbitrary nesting depth (`vf template list`)
 - Command groups without a `.sh` file show "Missing subcommand" with correct path
 - Help is auto-generated for command groups showing available subcommands
+- Dispatch uses longest-match: `myapp vf template show --verbose` matches `vf template show`
+- `_`-prefixed files can be used as shared helpers (not discovered as commands)
+
+See [docs/annotations.md](docs/annotations.md#subcommands) for the full subcommand authoring guide.
 
 ## Banner Customization
 

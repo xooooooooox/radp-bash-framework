@@ -241,7 +241,10 @@ cmd_db_migrate() {
 
 ## Subcommands
 
-Create directories for command groups:
+Subcommands are created by organizing command files into directories. The directory hierarchy maps directly to
+the command hierarchy.
+
+### Directory Structure
 
 ```
 commands/
@@ -250,12 +253,163 @@ commands/
 │   ├── migrate.sh        # myapp db migrate
 │   ├── seed.sh           # myapp db seed
 │   └── reset.sh          # myapp db reset
-└── config/
-    ├── get.sh            # myapp config get
-    └── set.sh            # myapp config set
+├── config/
+│   ├── get.sh            # myapp config get
+│   └── set.sh            # myapp config set
+└── vf/
+    ├── init.sh           # myapp vf init
+    ├── list.sh           # myapp vf list
+    └── template/
+        ├── list.sh       # myapp vf template list
+        └── show.sh       # myapp vf template show
 ```
 
-Function naming follows the path: `commands/db/migrate.sh` → `cmd_db_migrate()`
+### Function Naming
+
+Function names follow the file path, replacing `/` with `_` and prefixed by `cmd_`:
+
+| File Path                      | Function Name            | Invocation               |
+|--------------------------------|--------------------------|--------------------------|
+| `commands/hello.sh`            | `cmd_hello()`            | `myapp hello`            |
+| `commands/db/migrate.sh`       | `cmd_db_migrate()`       | `myapp db migrate`       |
+| `commands/vf/template/list.sh` | `cmd_vf_template_list()` | `myapp vf template list` |
+
+### Writing a Subcommand
+
+Each subcommand file is a standalone `.sh` file with `# @cmd` marker and a `cmd_*()` function:
+
+```bash
+# src/main/shell/commands/db/migrate.sh
+
+# @cmd
+# @desc Run database migrations
+# @arg version        Target version (optional, defaults to latest)
+# @option -n, --dry-run       Show what would be done without executing
+# @option -v, --verbose       Show detailed output
+# @option --env <name>        Target environment [default: development]
+# @example db migrate
+# @example db migrate 20240101
+# @example db migrate --dry-run --verbose
+
+cmd_db_migrate() {
+  local version="${1:-latest}"
+  local dry_run="${opt_dry_run:-false}"
+  local verbose="${opt_verbose:-false}"
+  local env="${opt_env:-development}"
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "[DRY RUN] Would migrate to version: $version (env=$env)"
+    return 0
+  fi
+
+  [[ "$verbose" == "true" ]] && echo "Environment: $env"
+  echo "Migrating to version: $version..."
+}
+```
+
+### Command Groups
+
+A directory under `commands/` automatically becomes a **command group** (parent command). Command groups do not
+need their own `.sh` file — the framework auto-generates group help from their subcommands.
+
+```shell
+$ myapp db
+Error: Missing subcommand for: db
+
+db - Available subcommands:
+
+Usage:
+myapp db <command >[options]
+
+Commands:
+migrate Run database migrations
+seed Seed database with test data
+reset Reset database to initial state
+```
+
+Requesting help explicitly also works:
+
+```shell
+$ myapp db --help
+```
+
+### Nesting Depth
+
+Subcommands can be nested to arbitrary depth. Each level is a subdirectory:
+
+```
+commands/vf/template/show.sh  →  myapp vf template show
+```
+
+The framework uses **longest-match** dispatch: given `myapp vf template show --verbose`, it matches
+`vf template show` as the command and passes `--verbose` as the command argument.
+
+### Discovery Rules
+
+- Files **must** contain `# @cmd` to be discovered — files without this marker are ignored
+- Files starting with `_` are ignored (reserved for internal helpers, e.g., `_utils.sh`)
+- Discovery is recursive and automatic via `radp_cli_discover()`
+
+### Internal Helper Files
+
+Use `_`-prefixed files for shared logic within a command group. These files are not discovered as commands
+but can be sourced by sibling commands:
+
+```
+commands/db/
+├── _common.sh       # Shared DB utilities (not a command)
+├── migrate.sh       # Sources _common.sh if needed
+└── seed.sh
+```
+
+```bash
+# commands/db/migrate.sh
+# @cmd
+# @desc Run database migrations
+
+# shellcheck source=./_common.sh
+source "${BASH_SOURCE[0]%/*}/_common.sh"
+
+cmd_db_migrate() {
+  db_connect # function from _common.sh
+  # ...
+}
+```
+
+### Dispatch Flow
+
+```
+myapp db migrate --dry-run 20240101
+  │
+  ├─ Parse args: ["db", "migrate", "--dry-run", "20240101"]
+  │
+  ├─ Longest match: "db" → group, "db migrate" → command (match!)
+  │
+  ├─ Remaining args: ["--dry-run", "20240101"]
+  │
+  ├─ Parse options/args from metadata:
+  │     opt_dry_run="true"
+  │     positional_args=("20240101")
+  │
+  ├─ Source: commands/db/migrate.sh
+  │
+  └─ Execute: cmd_db_migrate "20240101"
+```
+
+### Help Generation
+
+Help is auto-generated at every level:
+
+```shell
+# Top-level help (all commands)
+$ myapp --help
+
+# Command group help (subcommands of db)
+$ myapp db --help
+
+# Specific command help (options, args, examples)
+$ myapp db migrate --help
+```
 
 ## Project Structure
 
