@@ -125,8 +125,8 @@ radp_app_banner() {
  / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
 /_/ |_/_/  |_/_____/_/       \____/_____/___/
 BANNER
-  printf ' :: ${project_name} ::                       (%s)\\n' "\$gr_${project_var}_version"
-  printf ' :: radp-bash-framework ::               (%s)\\n' "\$gr_fw_version"
+  printf ' :: ${project_name} ::                       (%s)\\n' "\$(radp_get_install_version "\$gr_${project_var}_version")"
+  printf ' :: radp-bash-framework ::               (%s)\\n' "\$(radp_get_fw_install_version)"
 }
 
 # 应用声明式配置
@@ -825,6 +825,25 @@ install_manual() {
   chmod 0755 "${install_dir}/bin/__PROJECT_NAME__"
   find "${install_dir}/src" -type f -name "*.sh" -exec chmod 0755 {} \;
 
+  # Write install method marker for uninstall
+  echo "manual" >"${install_dir}/.install-method"
+  echo "${ref}" >"${install_dir}/.install-ref"
+
+  # Write actual installed version for banner display
+  local installed_version
+  if [[ "${ref}" =~ ^v[0-9]+\.[0-9]+ ]]; then
+    # ref is a version tag, use it directly
+    installed_version="${ref}"
+  else
+    # ref is branch/SHA, append to base version from source
+    local base_version
+    base_version=$(grep -oE 'gr___PROJECT_VAR___version=v[0-9]+\.[0-9]+\.[0-9]+' \
+      "${install_dir}/src/main/shell/vars/constants.sh" 2>/dev/null \
+      | cut -d= -f2 || echo "v0.0.0")
+    installed_version="${base_version}+${ref}"
+  fi
+  echo "${installed_version}" >"${install_dir}/.install-version"
+
   mkdir -p "${bin_dir}"
   local target="${install_dir}/bin/__PROJECT_NAME__"
   local link_path="${bin_dir}/__PROJECT_NAME__"
@@ -904,6 +923,7 @@ INSTALL_SCRIPT
   # 替换占位符
   sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/install.sh"
   sed -i.bak "s/__PROJECT_UPPER__/${project_upper}/g" "$target_dir/install.sh"
+  sed -i.bak "s/__PROJECT_VAR__/${project_var}/g" "$target_dir/install.sh"
   rm -f "$target_dir/install.sh.bak"
   chmod +x "$target_dir/install.sh"
 }

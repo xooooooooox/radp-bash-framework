@@ -594,6 +594,21 @@ install_manual() {
   echo "manual" >"${install_dir}/.install-method"
   echo "${ref}" >"${install_dir}/.install-ref"
 
+  # Write actual installed version for banner display
+  local installed_version
+  if [[ "${ref}" =~ ^v[0-9]+\.[0-9]+ ]]; then
+    # ref is a version tag, use it directly
+    installed_version="${ref}"
+  else
+    # ref is branch/SHA, append to base version from source
+    local base_version
+    base_version=$(grep -oE 'gr_fw_version=v[0-9]+\.[0-9]+\.[0-9]+' \
+      "${install_dir}/framework/bootstrap/context/vars/constants/constants.sh" 2>/dev/null \
+      | cut -d= -f2 || echo "v0.0.0")
+    installed_version="${base_version}+${ref}"
+  fi
+  echo "${installed_version}" >"${install_dir}/.install-version"
+
   mkdir -p "${bin_dir}"
   local target="${install_dir}/bin/radp-bf"
   local link_path
