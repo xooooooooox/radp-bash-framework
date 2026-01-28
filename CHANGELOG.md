@@ -1,39 +1,42 @@
 # CHANGELOG
 
+## Unreleased
+
+### feat
+- Add `radp_get_install_version()` helper function for accurate version display
+- Add `radp_get_fw_install_version()` helper function for framework version
+- Generate `.install-version` file during manual installation
+- Update scaffold template to use version helper functions in banner
+
+This allows applications installed via `--ref main` or `--ref <branch>` to display
+accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source version.
+
 ## v0.6.5 - 2026-01-28
 
 ### fix
-- 526ef84 fix preflight
-
-### chore
-- c79af2a fix installer
-
-### docs
-- 2e60e5e Update docs
-- 365fdb8 Update docs
+- fix preflight
+- fix installer
 
 ## v0.6.4 - 2026-01-27
 
 ### fix
-- 8af3098 fix IDE code completion not work
-- b885fb5 fix IDE code completion not work
+
+- fix IDE code completion not work
 
 ## v0.6.3 - 2026-01-27
 
 ### fix
-- 967294e fix IDE code completion not work
-- 6f6cd39 fix IDE code completion not work
-- b6b46c1 fix IDE code completion not work
-- 4826dcd fix radp_os_install_pkgs
-- 34fbcdf fix IDE code completion not work
+
+- fix radp_os_install_pkgs
+- fix IDE code completion not work
 
 ### chore
-- e5edf8b add post-install message
-- af44d32 update install and uninstall
+- add post-install message
+- update install and uninstall
 
 ### docs
-- 56e6672 update installation
-- 4262444 update installation
+
+- update installation
 
 ## v0.6.2 - 2026-01-27
 
