@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v0.6.5 - 2026-01-28
+
+### fix
+- 526ef84 fix preflight
+
+### chore
+- c79af2a fix installer
+
+### docs
+- 2e60e5e Update docs
+- 365fdb8 Update docs
+
 ## v0.6.4 - 2026-01-27
 
 ### fix
