@@ -96,9 +96,10 @@ radp_cli_parse_args() {
     # 构建 getopt 规格
     radp_cli_build_getopt_spec "$options_spec"
 
-    # 使用 getopt 解析
+    # 使用 getopt 解析 (使用 GNU getopt，由 preflight 检测并设置路径)
+    local getopt_cmd="${gr_gnu_getopt_path:-getopt}"
     local parsed
-    if ! parsed=$(getopt -o "$__radp_cli_getopt_short" -l "$__radp_cli_getopt_long" -n "${__radp_cli_app_name:-cli}" -- "$@" 2>&1); then
+    if ! parsed=$("$getopt_cmd" -o "$__radp_cli_getopt_short" -l "$__radp_cli_getopt_long" -n "${__radp_cli_app_name:-cli}" -- "$@" 2>&1); then
         radp_log_error "$parsed"
         return 1
     fi

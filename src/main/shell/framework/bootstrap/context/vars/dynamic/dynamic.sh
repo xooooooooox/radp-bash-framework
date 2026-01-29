@@ -84,6 +84,10 @@ __main() {
   gr_sudo=$([ "${EUID:-$(id -u)}" -ne 0 ] && printf 'sudo' || printf '')
   readonly gr_sudo
 
+  # GNU getopt path (set by preflight, fallback to 'getopt')
+  gr_gnu_getopt_path="${gr_gnu_getopt_path:-getopt}"
+  readonly gr_gnu_getopt_path
+
   # distro
   IFS=':' read -r gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pm < <(__fw_os_get_distro_info)
   readonly gr_distro_arch gr_distro_os gr_distro_id gr_distro_name gr_distro_version gr_distro_pm
@@ -91,6 +95,7 @@ __main() {
 
 #----------------------------------------------------------------------------------------------------------------------#
 declare -g gr_sudo
+declare -g gr_gnu_getopt_path
 declare -g gr_distro_arch
 declare -g gr_distro_os
 declare -g gr_distro_id
