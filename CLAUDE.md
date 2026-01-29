@@ -36,7 +36,9 @@ radp-bf --version       # Print version
 ```
 init.sh (idempotent via gw_fw_run_initialized)
   ↓
-preflight/ (environment & dependency checks)
+preflight/ (two-stage dependency checking)
+  ├─ stage1/ (POSIX shell) → bash check/install
+  └─ stage2/ (Bash) → gnu-getopt, yq check/install
   ↓
 bootstrap/bootstrap.sh (context builder)
   ↓
@@ -46,6 +48,10 @@ context/context.sh (injects globals, libs, config)
   ├─ vars/global_vars.sh (all variable declarations)
   └─ config autoconfiguration (YAML → shell vars)
 ```
+
+### Preflight Two-Stage Design
+- **Stage 1** (POSIX shell): Checks/installs bash 4.3+. Re-execs with new bash if installed.
+- **Stage 2** (Bash): Checks/installs other dependencies using bash features for cleaner code.
 
 ### Key Directories
 - `src/main/shell/framework/` — Framework source

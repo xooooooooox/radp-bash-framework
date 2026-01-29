@@ -35,6 +35,9 @@
 ## 依赖
 
 - Bash 4.3+
+- GNU getopt（用于 CLI 参数解析，缺失时自动安装）
+  - Linux：包含在 `util-linux` 中
+  - macOS：`brew install gnu-getopt`
 - [yq](https://github.com/mikefarah/yq)（用于 YAML 解析，缺失时自动安装）
 
 ## 安装

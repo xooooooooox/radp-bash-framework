@@ -36,6 +36,9 @@ comprehensive toolkit.
 ## Requirements
 
 - Bash 4.3+
+- GNU getopt (for CLI argument parsing, auto-installed if missing)
+  - Linux: included in `util-linux`
+  - macOS: `brew install gnu-getopt`
 - [yq](https://github.com/mikefarah/yq) (for YAML parsing, auto-installed if missing)
 
 ## Installation

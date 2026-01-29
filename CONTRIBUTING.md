@@ -32,10 +32,37 @@ bats --verbose-run src/test/shell/toolkit_core.bats
 
 See [src/test/shell/README.md](src/test/shell/README.md) for writing new tests.
 
+## Preflight Architecture
+
+The framework uses a two-stage preflight system to check and install dependencies:
+
+```
+preflight/
+├── preflight.sh              # Entry point, orchestrates stages
+├── stage1/                   # POSIX shell (bash check only)
+│   ├── stage1.sh             # Stage 1 main
+│   └── bash.sh               # Bash version check/install
+└── stage2/                   # Bash (other dependencies)
+    ├── stage2.sh             # Stage 2 main
+    ├── lib.sh                # Common utilities
+    ├── gnu_getopt.sh         # GNU getopt check/install
+    └── yq.sh                 # yq check/install
+```
+
+**Why two stages?**
+
+- **Stage 1** runs in POSIX shell to bootstrap bash itself (can't use bash features before bash is confirmed)
+- **Stage 2** runs in bash after stage 1 completes, allowing cleaner code with `local`, `[[ ]]`, arrays, etc.
+
+**Adding a new dependency:**
+
+1. Create `stage2/<name>.sh` with `__check_<name>()` and `__install_<name>()` functions
+2. Add entry to `__REQUIREMENTS` array in `stage2/stage2.sh`
+
 ## Code Style
 
-- Entry scripts (`init.sh`, `preflight/*.sh`) use POSIX-compatible syntax
-- Bootstrap and beyond use Bash features (`[[ ]]`, arrays, `mapfile`)
+- `init.sh` and `preflight/stage1/` use POSIX-compatible syntax
+- `preflight/stage2/` and `bootstrap/` use Bash features (`[[ ]]`, arrays, `local`)
 - Quote variables unless intentional word splitting
 - Use `radp_log_*` functions instead of ad-hoc `echo` for output
 

@@ -15,9 +15,13 @@
 - Generate `.install-version` file during manual installation
 - Update scaffold template to use version helper functions in banner
 - Update cli scaffold default banner
+- Add GNU getopt preflight check to ensure CLI works on macOS (BSD getopt incompatible)
+  - Auto-detect and use GNU getopt path
+  - Auto-install via Homebrew on macOS if missing
 
 ### fix
 
+- Fix CLI argument parsing fails on macOS due to BSD getopt
 - Fix passthrough mode intercepting `--help` instead of passing to underlying command
 - Fix preflight
 - Fix installer
@@ -27,6 +31,9 @@
 
 ### refactor
 
+- Refactor preflight to two-stage architecture for better maintainability
+  - Stage 1 (POSIX shell): bash check/install only
+  - Stage 2 (Bash): other dependencies with cleaner bash syntax
 - Refactor version mechanism
 - Refactor run.sh to init.sh and refactor radp-bf options
 
