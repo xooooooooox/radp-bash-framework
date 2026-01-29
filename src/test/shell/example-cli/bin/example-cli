@@ -44,4 +44,6 @@ export RADP_APP_GLOBAL_OPTIONS="-v --verbose --debug"
 
 # 启动：框架负责全部初始化和 dispatch
 # shellcheck source=/dev/null
-source "$(radp-bf path launcher)" "$@"
+# source "$(radp-bf path launcher)" "$@"
+# 说明: 这里为了便于调试, 使用工程内的入口, 而不是安装入口
+source "$RADP_APP_ROOT"/../../../main/shell/framework/launcher.sh "$@"
