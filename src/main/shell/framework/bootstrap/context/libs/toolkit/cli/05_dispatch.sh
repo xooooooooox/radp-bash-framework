@@ -132,11 +132,8 @@ __radp_cli_execute_cmd() {
     fi
 
     if [[ "$passthrough" == "true" ]]; then
-        # 透传模式：只检查 --help，其他参数直接传递
-        if [[ "${cmd_args[0]:-}" == "-h" || "${cmd_args[0]:-}" == "--help" ]]; then
-            radp_cli_help_command "$cmd_path"
-            return 0
-        fi
+        # 透传模式：所有参数直接传递给命令函数（包括 --help）
+        # 用户可通过 `<app> help <cmd>` 查看命令自身的帮助
 
         # 加载命令文件
         # shellcheck source=/dev/null

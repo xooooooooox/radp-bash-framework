@@ -2,6 +2,9 @@
 
 ## v0.6.6 - 2026-01-28
 
+### fix
+- Fix passthrough mode intercepting `--help` instead of passing to underlying command
+
 ### refactor
 - 518c999 refactor version mechanism
 - 32e7fcc refactor version mechanism
