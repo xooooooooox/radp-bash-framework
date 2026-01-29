@@ -6,10 +6,8 @@
 
 set -e
 
-__stage1_dir="$(cd "$(dirname "$0")" && pwd)"
-
-# Source bash module
-. "$__stage1_dir"/bash.sh
+# Source bash module (gr_fw_preflight_path is set by init.sh)
+. "$gr_fw_preflight_path"/stage1/bash.sh
 
 # Required bash version
 __BASH_REQUIRED_VERSION="${RADP_BASH_VERSION:-4.3}"

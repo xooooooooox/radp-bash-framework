@@ -8,9 +8,6 @@
 
 set -e
 
-# Resolve preflight directory
-__fw_preflight_dir="${__fw_preflight_dir:-$(cd "$(dirname "$0")" && pwd)}"
-
 #######################################
 # Run stage 1: Bash check (POSIX shell)
 # Returns:
@@ -19,7 +16,7 @@ __fw_preflight_dir="${__fw_preflight_dir:-$(cd "$(dirname "$0")" && pwd)}"
 #######################################
 __fw_preflight_stage1() {
   # shellcheck source=./stage1/stage1.sh
-  . "$__fw_preflight_dir"/stage1/stage1.sh
+  . "$gr_fw_preflight_path"/stage1/stage1.sh
 }
 
 #######################################
@@ -34,7 +31,7 @@ __fw_preflight_stage2() {
 
   # Run stage 2 with bash
   # shellcheck source=./stage2/stage2.sh
-  "$__bash_bin" "$__fw_preflight_dir"/stage2/stage2.sh "$@"
+  "$__bash_bin" "$gr_fw_preflight_path"/stage2/stage2.sh "$@"
 }
 
 #######################################
