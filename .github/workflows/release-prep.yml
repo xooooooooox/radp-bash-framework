@@ -114,7 +114,6 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import datetime as dt
           import os
           import re
           import subprocess
@@ -200,10 +199,9 @@ jobs:
               desc = subject_ascii
             if commit_type not in entries_by_type:
               commit_type = other_key
-            entries_by_type[commit_type].append(f"{sha} {desc}")
+            entries_by_type[commit_type].append(desc)
 
-          today = dt.datetime.utcnow().strftime("%Y-%m-%d")
-          default_header = f"## {version} - {today}"
+          default_header = f"## {version}"
           include_types = [t for t in standard_types if entries_by_type[t]]
           if entries_by_type[other_key]:
             include_types.append(other_key)
@@ -219,6 +217,7 @@ jobs:
               return section
             for commit_type in include_types:
               section.append(f"### {commit_type}")
+              section.append("")
               for entry in entries_by_type.get(commit_type, []):
                 section.append(f"- {entry}")
               section.append("")
