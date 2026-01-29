@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.6.8
+## v0.6.9
 
 ### feat
 
@@ -18,6 +18,7 @@
 - Add GNU getopt preflight check to ensure CLI works on macOS (BSD getopt incompatible)
   - Auto-detect and use GNU getopt path
   - Auto-install via Homebrew on macOS if missing
+- Add post-uninstall note about user config directory
 
 ### fix
 
@@ -28,6 +29,7 @@
 - Fix IDE code completion not work
 - Fix radp_os_install_pkgs
 - Fix auto-generated ide hints file error on install-mode
+- Fix preflight no such file or directory error
 
 ### refactor
 
