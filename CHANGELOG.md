@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.6.11
+
+### feat
+
+- Add `--config` global option to display application configuration
+  - Shows paths, framework settings, and application extensions
+  - Supports `--config --json` for JSON output
+  - Available for all CLI applications built on radp-bash-framework
+
 ## v0.6.10
 
 ### refactor

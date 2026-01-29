@@ -30,6 +30,43 @@ radp-bf path            # Print all paths
 radp-bf --version       # Print version
 ```
 
+### Global Options (for apps using launcher.sh)
+
+All CLI applications built on radp-bash-framework support these global options:
+
+```bash
+myapp --config          # Show configuration (paths, framework, extensions)
+myapp --config --json   # Show configuration in JSON format
+myapp -v, --verbose     # Enable verbose output (banner + info logs)
+myapp --debug           # Enable debug output (banner + debug logs)
+```
+
+**Example output of `--config`:**
+```
+homelabctl Configuration
+========================
+
+[Paths]
+  User config dir        ~/.config/homelabctl
+  Config file            ~/.config/homelabctl/config.yaml (not found)
+  User lib dir           <not set>
+  Framework root         /usr/local/opt/radp-bash-framework/libexec
+
+[Framework]
+  Version                v1.0.0
+  Banner mode            off
+  Log level              error
+  Log debug              false
+
+[Application: homelabctl]
+  version                v0.1.6
+
+[Application: homelabctl.gitlab]
+  type                   gitlab-ce
+  default_version        latest
+  ...
+```
+
 ## Architecture
 
 ### Execution Flow

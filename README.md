@@ -28,6 +28,7 @@ comprehensive toolkit.
 - **Auto-discovery** - Commands are discovered from directory structure, supports nested subcommands
 - **Shell Completion** - Generate Bash/Zsh completion scripts automatically
 - **YAML Configuration** - Layered config system with environment variable overrides
+- **Built-in Global Options** - `--config`, `--verbose`, `--debug` available for all CLI apps
 - **Logging** - Structured logging with levels (debug/info/warn/error)
 - **OS Detection** - Cross-platform utilities for distro, architecture, package manager detection
 - **Path Utilities** - File system helpers, path resolution

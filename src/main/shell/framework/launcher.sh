@@ -24,6 +24,8 @@ __radp_app_parse_global_options() {
   __radp_app_filtered_args=()
   local verbose=false
   local debug=false
+  local show_config=false
+  local config_json=false
   local found_command=false
 
   # 构建全局选项集合用于快速查找
@@ -62,6 +64,19 @@ __radp_app_parse_global_options() {
         shift
       fi
       ;;
+    --config)
+      show_config=true
+      shift
+      ;;
+    --json)
+      # Only valid after --config
+      if [[ "$show_config" == "true" ]]; then
+        config_json=true
+      else
+        __radp_app_filtered_args+=("$1")
+      fi
+      shift
+      ;;
     --)
       shift
       __radp_app_filtered_args+=("$@")
@@ -80,6 +95,12 @@ __radp_app_parse_global_options() {
       ;;
     esac
   done
+
+  # 设置 --config 模式
+  if [[ "$show_config" == "true" ]]; then
+    export __RADP_APP_SHOW_CONFIG=true
+    [[ "$config_json" == "true" ]] && export __RADP_APP_CONFIG_JSON=true
+  fi
 
   # 设置输出模式环境变量
   if [[ "$debug" == "true" ]]; then
@@ -147,6 +168,12 @@ fi
 # --------------------------------------------------------------------------- #
 # 7. Dispatch
 # --------------------------------------------------------------------------- #
+# Handle --config option
+if [[ "${__RADP_APP_SHOW_CONFIG:-}" == "true" ]]; then
+  radp_app_show_config
+  exit 0
+fi
+
 if [[ ${#__radp_app_filtered_args[@]} -eq 0 ]]; then
   radp_app_run --help
 else
