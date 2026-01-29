@@ -23,6 +23,6 @@ radp:
   # Variables defined here will be available as gr_radp_extend_* in shell
   extend:
     example_cli:
-      # Add your application config here
-      # example:
-      #   some_setting: value
+      # Version - single source of truth for release management
+      # Available as $gr_radp_extend_example_cli_version in shell
+      version: v0.0.1

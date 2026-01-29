@@ -23,11 +23,10 @@ myapp/
 │   │   ├── version.sh             # myapp version
 │   │   └── completion.sh          # myapp completion
 │   ├── config/
-│   │   ├── config.yaml            # Base configuration
-│   │   └── config-dev.yaml        # Environment overrides
-│   ├── libs/                      # Project-specific libraries
-│   └── vars/
-│       └── constants.sh           # Version constants
+│   │   ├── config.yaml            # Base configuration (includes version)
+│   │   ├── config-dev.yaml        # Environment overrides
+│   │   └── _ide.sh                # IDE code completion support
+│   └── libs/                      # Project-specific libraries
 ├── packaging/                     # Distribution packaging
 └── install.sh                     # Installer script
 ```

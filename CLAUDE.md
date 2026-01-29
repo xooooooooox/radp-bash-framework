@@ -176,7 +176,7 @@ radp_app_banner() {
  / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
 /_/ |_/_/  |_/_____/_/       \____/_____/___/   
 EOF
-  printf ' :: MyApp ::                (%s)\n' "$gr_myapp_version"
+  printf ' :: MyApp ::                (%s)\n' "$gr_radp_extend_myapp_version"
   printf ' :: radp-bash-framework ::  (%s)\n' "$gr_fw_version"
 }
 

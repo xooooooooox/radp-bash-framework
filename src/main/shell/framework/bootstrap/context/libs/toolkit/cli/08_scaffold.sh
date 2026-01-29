@@ -33,7 +33,7 @@ radp_cli_scaffold_new() {
   radp_log_info "Creating new CLI project: $project_name"
 
   # 创建目录结构
-  mkdir -p "$target_dir"/{bin,src/main/shell/{commands,config,libs,vars}}
+  mkdir -p "$target_dir"/{bin,src/main/shell/{commands,config,libs}}
   mkdir -p "$target_dir"/packaging/{copr,homebrew,obs/debian/source}
   mkdir -p "$target_dir"/.github/workflows
 
@@ -43,11 +43,8 @@ radp_cli_scaffold_new() {
   # 生成示例命令
   __radp_cli_scaffold_commands "$project_name" "$target_dir"
 
-  # 生成配置文件
+  # 生成配置文件（包含版本配置）
   __radp_cli_scaffold_config "$project_name" "$target_dir"
-
-  # 生成版本常量
-  __radp_cli_scaffold_constants "$project_name" "$target_dir"
 
   # 生成 README
   __radp_cli_scaffold_readme "$project_name" "$target_dir"
@@ -112,9 +109,6 @@ if ! command -v radp-bf &>/dev/null; then
   exit 1
 fi
 
-# shellcheck source=/dev/null
-source "\$RADP_APP_ROOT/src/main/shell/vars/constants.sh"
-
 # 自定义 banner（可选，在 framework 之前定义）
 # shellcheck disable=SC2154
 radp_app_banner() {
@@ -125,7 +119,7 @@ radp_app_banner() {
  / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
 /_/ |_/_/  |_/_____/_/       \____/_____/___/
 BANNER
-  printf ' :: ${project_name} ::                       (%s)\\n' "\$(radp_get_install_version "\$gr_${project_var}_version")"
+  printf ' :: ${project_name} ::                       (%s)\\n' "\$(radp_get_install_version "\$gr_radp_extend_${project_var}_version")"
   printf ' :: radp-bash-framework ::               (%s)\\n' "\$(radp_get_fw_install_version)"
 }
 
@@ -157,8 +151,8 @@ __radp_cli_scaffold_commands() {
 # @desc Show version information
 
 cmd_version() {
-    # Version is loaded from src/main/shell/vars/constants.sh
-    echo "${project_name} \${gr_${project_var}_version:-v0.1.0}"
+    # Version is loaded from config/config.yaml (radp.extend.${project_var}.version)
+    echo "${project_name} \$(radp_get_install_version "\${gr_radp_extend_${project_var}_version:-v0.1.0}")"
 }
 VERSION_CMD
 
@@ -245,9 +239,9 @@ radp:
   # Variables defined here will be available as gr_radp_extend_* in shell
   extend:
     ${project_var}:
-      # Add your application config here
-      # example:
-      #   some_setting: value
+      # Version - single source of truth for release management
+      # Available as \$gr_radp_extend_${project_var}_version in shell
+      version: v0.0.1
 YAML_CONFIG
 
   # 生成环境特定配置示例
@@ -264,6 +258,21 @@ radp:
     ${project_var}:
       # Development-specific overrides
 YAML_DEV
+
+  # 生成 IDE code completion 支持文件
+  cat >"$target_dir/src/main/shell/config/_ide.sh" <<'IDE_HINTS'
+#!/usr/bin/env bash
+# IDE code completion support for BashSupport Pro
+# This file is not executed at runtime, only used for IDE navigation
+#
+# References the auto-generated completion.sh which provides navigation to:
+#   - Framework library functions (radp_*)
+#   - Framework global variables (gr_fw_*, gr_radp_fw_*)
+#   - User global variables (gr_radp_extend_*)
+#   - User library functions
+# Note: completion.sh is auto-generated and should be in .gitignore
+# shellcheck source=./completion.sh
+IDE_HINTS
 }
 
 #######################################
@@ -540,23 +549,6 @@ temp/
 *.tmp
 *.bak
 GITIGNORE
-}
-
-#######################################
-# 生成版本常量文件
-#######################################
-__radp_cli_scaffold_constants() {
-  local project_name="$1"
-  local target_dir="$2"
-  local project_var="${project_name//-/_}"
-
-  cat >"$target_dir/src/main/shell/vars/constants.sh" <<CONSTANTS
-#!/usr/bin/env bash
-# shellcheck source=../config/completion.sh
-
-# ${project_name} version - single source of truth for release management
-declare -gr gr_${project_var}_version=v0.1.0
-CONSTANTS
 }
 
 #######################################
@@ -837,9 +829,9 @@ install_manual() {
   else
     # ref is branch/SHA, append to base version from source
     local base_version
-    base_version=$(grep -oE 'gr___PROJECT_VAR___version=v[0-9]+\.[0-9]+\.[0-9]+' \
-      "${install_dir}/src/main/shell/vars/constants.sh" 2>/dev/null \
-      | cut -d= -f2 || echo "v0.0.0")
+    base_version=$(grep -oE 'version:[[:space:]]*v[0-9]+\.[0-9]+\.[0-9]+' \
+      "${install_dir}/src/main/shell/config/config.yaml" 2>/dev/null \
+      | head -1 | sed 's/.*version:[[:space:]]*//' || echo "v0.0.0")
     installed_version="${base_version}+${ref}"
   fi
   echo "${installed_version}" >"${install_dir}/.install-version"
@@ -1208,7 +1200,7 @@ jobs:
           version="\${{ steps.version.outputs.version }}"
           version_no_prefix="\${version#v}"
           git checkout -b "workflow/\${version}"
-          sed -i "s/^declare -gr gr_${project_var}_version=.*/declare -gr gr_${project_var}_version=\${version}/" src/main/shell/vars/constants.sh
+          yq -i ".radp.extend.${project_var}.version = \"\${version}\"" src/main/shell/config/config.yaml
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
           git config user.name "github-actions[bot]"
@@ -1257,7 +1249,7 @@ jobs:
       - name: Read and tag
         run: |
           set -euo pipefail
-          version=\$(sed -n 's/^declare -gr gr_${project_var}_version=//p' src/main/shell/vars/constants.sh | head -n 1)
+          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
           [[ -z "\$version" ]] && exit 1
           git rev-parse "\$version" >/dev/null 2>&1 && { echo "Tag exists"; exit 0; }
           git tag "\$version"
@@ -1295,7 +1287,7 @@ jobs:
       - name: Update specs
         run: |
           set -euo pipefail
-          version=\$(sed -n 's/^declare -gr gr_${project_var}_version=//p' src/main/shell/vars/constants.sh | head -n 1)
+          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
           version_no_prefix="\${version#v}"
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
@@ -1343,7 +1335,7 @@ jobs:
           for v in COPR_LOGIN COPR_TOKEN COPR_USERNAME COPR_PROJECT; do
             [[ -z "\${!v:-}" ]] && { echo "Missing \$v" >&2; exit 1; }
           done
-          version=\$(sed -n 's/^declare -gr gr_${project_var}_version=//p' src/main/shell/vars/constants.sh | head -n 1)
+          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
           git fetch --tags --force
           git rev-parse "\$version" >/dev/null 2>&1 || { echo "Tag not found"; exit 0; }
           tag_sha=\$(git rev-parse "\$version^{commit}")
@@ -1399,7 +1391,7 @@ jobs:
             [[ -z "\${!v:-}" ]] && { echo "Missing \$v" >&2; exit 1; }
           done
           : "\${OBS_API_URL:=https://api.opensuse.org}"
-          version=\$(sed -n 's/^declare -gr gr_${project_var}_version=//p' src/main/shell/vars/constants.sh | head -n 1)
+          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
           version_no_prefix="\${version#v}"
           git rev-parse "\$version" >/dev/null 2>&1 || { echo "Tag not found"; exit 0; }
           sudo apt-get update && sudo apt-get install -y osc dpkg-dev debhelper
@@ -1459,7 +1451,7 @@ jobs:
       - name: Update formula
         run: |
           set -euo pipefail
-          version=\$(sed -n 's/^declare -gr gr_${project_var}_version=//p' src/main/shell/vars/constants.sh | head -n 1)
+          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
           version_no_prefix="\${version#v}"
           tarball_url="https://github.com/\${GITHUB_REPOSITORY}/archive/refs/tags/\${version}.tar.gz"
           sha256=\$(curl -sL "\$tarball_url" | sha256sum | awk '{print \$1}')

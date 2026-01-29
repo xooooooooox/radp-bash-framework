@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.6.10
+
+### refactor
+
+- Scaffold: Move version from `vars/constants.sh` to `config/config.yaml` (`radp.extend.xxx.version`)
+- Scaffold: Remove `vars` directory, add `config/_ide.sh` for IDE code completion support
+- Scaffold: Update workflows to use `yq` for YAML version management
+
 ## v0.6.9
 
 ### feat
