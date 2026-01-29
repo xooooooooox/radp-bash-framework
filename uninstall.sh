@@ -249,6 +249,10 @@ main() {
 
   log ""
   log "${REPO_NAME} has been uninstalled"
+  log ""
+  log "Note: User configuration files may remain at:"
+  log "  ~/.config/radp-bash-framework/"
+  log "Remove manually if no longer needed."
 }
 
 main "$@"
