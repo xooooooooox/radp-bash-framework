@@ -7,6 +7,7 @@
 set -e
 
 # Source bash module (gr_fw_preflight_path is set by init.sh)
+# shellcheck source=./bash.sh
 . "$gr_fw_preflight_path"/stage1/bash.sh
 
 # Required bash version
@@ -14,10 +15,12 @@ __BASH_REQUIRED_VERSION="${RADP_BASH_VERSION:-4.3}"
 __BASH_INSTALL_VERSION="${RADP_BASH_INSTALL_VERSION:-5.2.21}"
 
 #######################################
-# Main stage 1 entry point
+# Stage 1 main entry point
 # Globals:
 #   gw_fw_requirements_bash_reexec - Set if bash was installed and re-exec needed
 #   gw_fw_requirements_bash_bin - Set to the bash binary path
+# Arguments:
+#   @ - command line arguments
 # Returns:
 #   0 - Success
 #   1 - Failed
@@ -53,4 +56,5 @@ __stage1_main() {
   return 1
 }
 
+#----------------------------------------------------------------------------------------------------------------------#
 __stage1_main "$@"

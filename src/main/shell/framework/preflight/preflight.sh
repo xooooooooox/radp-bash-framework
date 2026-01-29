@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck source=../init.sh
 # Preflight entry point - orchestrates two-stage dependency checking
 #
 # Stage 1 (POSIX shell): Check/install bash only
@@ -10,6 +11,10 @@ set -e
 
 #######################################
 # Run stage 1: Bash check (POSIX shell)
+# Globals:
+#   gr_fw_preflight_path - preflight directory path (set by init.sh)
+# Arguments:
+#   @ - command line arguments
 # Returns:
 #   0 - Success
 #   1 - Failed
@@ -21,6 +26,11 @@ __fw_preflight_stage1() {
 
 #######################################
 # Run stage 2: Other dependencies (Bash)
+# Globals:
+#   gr_fw_preflight_path - preflight directory path (set by init.sh)
+#   gw_fw_requirements_bash_bin - bash binary path (set by stage1)
+# Arguments:
+#   @ - command line arguments
 # Returns:
 #   0 - Success
 #   1 - Failed
@@ -35,9 +45,18 @@ __fw_preflight_stage2() {
 }
 
 #######################################
-# Main entry point
+# Preflight main entry point
+# Globals:
+#   gr_fw_preflight_path - preflight directory path (set by init.sh)
+#   gw_fw_requirements_bash_reexec - bash path for re-exec (set by stage1)
+#   gw_fw_requirements_bash_bin - bash binary path (set by stage1)
+# Arguments:
+#   @ - command line arguments
+# Returns:
+#   0 - Success
+#   1 - Failed
 #######################################
-__main() {
+__fw_preflight_main() {
   # Stage 1: Ensure bash is available
   __fw_preflight_stage1 "$@" || return 1
 
@@ -54,8 +73,8 @@ __main() {
   __fw_preflight_stage2 "$@" || return 1
 }
 
-# Initialize globals
+#----------------------------------------------------------------------------------------------------------------------#
 gw_fw_requirements_bash_reexec=${gw_fw_requirements_bash_reexec:-}
 gw_fw_requirements_bash_bin=${gw_fw_requirements_bash_bin:-}
 
-__main "$@"
+__fw_preflight_main "$@"
