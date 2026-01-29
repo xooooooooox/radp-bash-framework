@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.6.7 - 2026-01-29
+
+### fix
+- c3976f7 Fix passthrough mode intercepting `--help` instead of passing to underlying command
+
 ## v0.6.6 - 2026-01-28
 
 ### fix
