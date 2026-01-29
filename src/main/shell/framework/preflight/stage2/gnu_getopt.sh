@@ -88,21 +88,21 @@ __check_gnu_getopt() {
 #######################################
 __install_gnu_getopt() {
   local os
-  os=$(detect_os)
+  os=$(__stage2_detect_os)
 
   case "$os" in
     darwin)
       # macOS: install via Homebrew
       if ! command -v brew >/dev/null 2>&1; then
-        log_error "GNU getopt requires Homebrew on macOS"
-        log_error "Install Homebrew: https://brew.sh"
-        log_error "Then run: brew install gnu-getopt"
+        __stage2_log_error "GNU getopt requires Homebrew on macOS"
+        __stage2_log_error "Install Homebrew: https://brew.sh"
+        __stage2_log_error "Then run: brew install gnu-getopt"
         return 1
       fi
 
-      log_info "Installing gnu-getopt via Homebrew..."
+      __stage2_log_info "Installing gnu-getopt via Homebrew..."
       if ! brew install gnu-getopt >/dev/null 2>&1; then
-        log_error "Failed to install gnu-getopt"
+        __stage2_log_error "Failed to install gnu-getopt"
         return 1
       fi
       ;;
@@ -110,22 +110,22 @@ __install_gnu_getopt() {
     linux)
       # Linux: install util-linux
       local pm
-      pm=$(detect_pm)
+      pm=$(__stage2_detect_pm)
 
       case "$pm" in
-        apt)  install_packages util-linux ;;
-        dnf)  install_packages util-linux ;;
-        yum)  install_packages util-linux ;;
-        apk)  install_packages util-linux ;;
+        apt)  __stage2_install_packages util-linux ;;
+        dnf)  __stage2_install_packages util-linux ;;
+        yum)  __stage2_install_packages util-linux ;;
+        apk)  __stage2_install_packages util-linux ;;
         *)
-          log_error "Cannot install GNU getopt: unsupported package manager"
+          __stage2_log_error "Cannot install GNU getopt: unsupported package manager"
           return 1
           ;;
       esac
       ;;
 
     *)
-      log_error "Cannot install GNU getopt: unsupported OS ($os)"
+      __stage2_log_error "Cannot install GNU getopt: unsupported OS ($os)"
       return 1
       ;;
   esac
@@ -134,12 +134,12 @@ __install_gnu_getopt() {
   local path
   path=$(__find_gnu_getopt)
   if [[ -z "$path" ]]; then
-    log_error "GNU getopt installed but not found"
+    __stage2_log_error "GNU getopt installed but not found"
     return 1
   fi
 
   gr_gnu_getopt_path="$path"
   export gr_gnu_getopt_path
-  log_info "GNU getopt: $gr_gnu_getopt_path"
+  __stage2_log_info "GNU getopt: $gr_gnu_getopt_path"
   return 0
 }

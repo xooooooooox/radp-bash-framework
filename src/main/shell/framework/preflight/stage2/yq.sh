@@ -26,8 +26,8 @@ __install_yq() {
   local version="${RADP_YQ_VERSION:-$__YQ_DEFAULT_VERSION}"
   local os arch
 
-  os=$(detect_os)
-  arch=$(detect_arch)
+  os=$(__stage2_detect_os)
+  arch=$(__stage2_detect_arch)
 
   # yq naming convention
   local yq_os yq_arch
@@ -35,7 +35,7 @@ __install_yq() {
     darwin) yq_os="darwin" ;;
     linux)  yq_os="linux" ;;
     *)
-      log_error "Unsupported OS for yq: $os"
+      __stage2_log_error "Unsupported OS for yq: $os"
       return 1
       ;;
   esac
@@ -46,7 +46,7 @@ __install_yq() {
     arm)   yq_arch="arm" ;;
     386)   yq_arch="386" ;;
     *)
-      log_error "Unsupported architecture for yq: $arch"
+      __stage2_log_error "Unsupported architecture for yq: $arch"
       return 1
       ;;
   esac
@@ -54,16 +54,16 @@ __install_yq() {
   local filename="yq_${yq_os}_${yq_arch}"
   local url="https://github.com/mikefarah/yq/releases/download/v${version}/${filename}"
 
-  log_info "Downloading yq v$version..."
+  __stage2_log_info "Downloading yq v$version..."
 
   # Create temp directory
   local tmpdir
-  tmpdir=$(make_temp_dir "yq_install") || return 1
+  tmpdir=$(__stage2_make_temp_dir "yq_install") || return 1
   trap 'rm -rf "$tmpdir"' RETURN
 
   local binpath="$tmpdir/$filename"
-  if ! download "$url" "$binpath" "quiet"; then
-    log_error "Failed to download yq from $url"
+  if ! __stage2_download "$url" "$binpath" "quiet"; then
+    __stage2_log_error "Failed to download yq from $url"
     return 1
   fi
 
@@ -74,22 +74,22 @@ __install_yq() {
   local target_bin="$target_dir/yq"
 
   local sudo_cmd
-  sudo_cmd=$(get_sudo) || return 1
+  sudo_cmd=$(__stage2_get_sudo) || return 1
 
   if [[ ! -d "$target_dir" ]]; then
-    log_info "Creating $target_dir..."
-    run_sudo "$sudo_cmd" mkdir -p "$target_dir" || return 1
+    __stage2_log_info "Creating $target_dir..."
+    __stage2_run_sudo "$sudo_cmd" mkdir -p "$target_dir" || return 1
   fi
 
-  log_info "Installing yq to $target_bin..."
-  run_sudo "$sudo_cmd" mv "$binpath" "$target_bin" || return 1
+  __stage2_log_info "Installing yq to $target_bin..."
+  __stage2_run_sudo "$sudo_cmd" mv "$binpath" "$target_bin" || return 1
 
   # Verify
   if ! command -v yq >/dev/null 2>&1; then
-    log_error "yq installed but not in PATH"
+    __stage2_log_error "yq installed but not in PATH"
     return 1
   fi
 
-  log_info "yq installed successfully"
+  __stage2_log_info "yq installed successfully"
   return 0
 }

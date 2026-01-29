@@ -4,17 +4,35 @@
 # Provides utility functions for requirement modules.
 
 #######################################
-# Logging functions
+# Log info message
+# Arguments:
+#   @ - message
+# Outputs:
+#   Message to stderr
 #######################################
-log_info() {
+__stage2_log_info() {
   echo "Preflight: $*" >&2
 }
 
-log_error() {
+#######################################
+# Log error message
+# Arguments:
+#   @ - message
+# Outputs:
+#   Message to stderr
+#######################################
+__stage2_log_error() {
   echo "Error: $*" >&2
 }
 
-log_debug() {
+#######################################
+# Log debug message
+# Arguments:
+#   @ - message
+# Outputs:
+#   Message to stderr (only if RADP_DEBUG=true)
+#######################################
+__stage2_log_debug() {
   [[ "${RADP_DEBUG:-}" == "true" ]] && echo "Debug: $*" >&2
   return 0
 }
@@ -27,7 +45,7 @@ log_debug() {
 #   0 - success
 #   1 - needs sudo but not available
 #######################################
-get_sudo() {
+__stage2_get_sudo() {
   if [[ $EUID -eq 0 ]]; then
     echo ""
     return 0
@@ -38,7 +56,7 @@ get_sudo() {
     return 0
   fi
 
-  log_error "Root or sudo required"
+  __stage2_log_error "Root or sudo required"
   return 1
 }
 
@@ -48,7 +66,7 @@ get_sudo() {
 #   1 - sudo command (or empty)
 #   @ - command and arguments
 #######################################
-run_sudo() {
+__stage2_run_sudo() {
   local sudo_cmd="$1"
   shift
 
@@ -69,7 +87,7 @@ run_sudo() {
 #   0 - success
 #   1 - failed
 #######################################
-download() {
+__stage2_download() {
   local url="$1"
   local out="$2"
   local mode="${3:-quiet}"
@@ -92,7 +110,7 @@ download() {
     fi
   fi
 
-  log_error "No download tool available (curl/wget)"
+  __stage2_log_error "No download tool available (curl/wget)"
   return 1
 }
 
@@ -106,13 +124,13 @@ download() {
 #   0 - success
 #   1 - failed
 #######################################
-make_temp_dir() {
+__stage2_make_temp_dir() {
   local prefix="${1:-radp}"
   local tmpdir
 
   tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t "$prefix")
   if [[ ! -d "$tmpdir" ]]; then
-    log_error "Failed to create temp directory"
+    __stage2_log_error "Failed to create temp directory"
     return 1
   fi
 
@@ -124,7 +142,7 @@ make_temp_dir() {
 # Outputs:
 #   "darwin", "linux", or "unknown"
 #######################################
-detect_os() {
+__stage2_detect_os() {
   case "$(uname -s)" in
     Darwin) echo "darwin" ;;
     Linux)  echo "linux" ;;
@@ -137,7 +155,7 @@ detect_os() {
 # Outputs:
 #   "amd64", "arm64", "arm", "386", or original
 #######################################
-detect_arch() {
+__stage2_detect_arch() {
   local arch
   arch=$(uname -m)
 
@@ -155,8 +173,8 @@ detect_arch() {
 # Outputs:
 #   "apt", "dnf", "yum", "apk", "brew", or "unknown"
 #######################################
-detect_pm() {
-  if [[ "$(detect_os)" == "darwin" ]]; then
+__stage2_detect_pm() {
+  if [[ "$(__stage2_detect_os)" == "darwin" ]]; then
     echo "brew"
     return
   fi
@@ -182,37 +200,37 @@ detect_pm() {
 #   0 - success
 #   1 - failed
 #######################################
-install_packages() {
+__stage2_install_packages() {
   local pm
-  pm=$(detect_pm)
+  pm=$(__stage2_detect_pm)
 
   local sudo_cmd
-  sudo_cmd=$(get_sudo) || return 1
+  sudo_cmd=$(__stage2_get_sudo) || return 1
 
   case "$pm" in
     apt)
-      log_info "Installing packages via apt..."
-      run_sudo "$sudo_cmd" apt-get update -qq >/dev/null 2>&1
-      DEBIAN_FRONTEND=noninteractive run_sudo "$sudo_cmd" apt-get install -y -qq "$@" >/dev/null 2>&1
+      __stage2_log_info "Installing packages via apt..."
+      __stage2_run_sudo "$sudo_cmd" apt-get update -qq >/dev/null 2>&1
+      DEBIAN_FRONTEND=noninteractive __stage2_run_sudo "$sudo_cmd" apt-get install -y -qq "$@" >/dev/null 2>&1
       ;;
     dnf)
-      log_info "Installing packages via dnf..."
-      run_sudo "$sudo_cmd" dnf install -y -q "$@" >/dev/null 2>&1
+      __stage2_log_info "Installing packages via dnf..."
+      __stage2_run_sudo "$sudo_cmd" dnf install -y -q "$@" >/dev/null 2>&1
       ;;
     yum)
-      log_info "Installing packages via yum..."
-      run_sudo "$sudo_cmd" yum install -y -q "$@" >/dev/null 2>&1
+      __stage2_log_info "Installing packages via yum..."
+      __stage2_run_sudo "$sudo_cmd" yum install -y -q "$@" >/dev/null 2>&1
       ;;
     apk)
-      log_info "Installing packages via apk..."
-      run_sudo "$sudo_cmd" apk add --quiet "$@" >/dev/null 2>&1
+      __stage2_log_info "Installing packages via apk..."
+      __stage2_run_sudo "$sudo_cmd" apk add --quiet "$@" >/dev/null 2>&1
       ;;
     brew)
-      log_info "Installing packages via brew..."
+      __stage2_log_info "Installing packages via brew..."
       brew install "$@" >/dev/null 2>&1
       ;;
     *)
-      log_error "Unsupported package manager"
+      __stage2_log_error "Unsupported package manager"
       return 1
       ;;
   esac

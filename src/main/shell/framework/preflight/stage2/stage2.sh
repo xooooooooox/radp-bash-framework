@@ -6,9 +6,12 @@
 
 set -euo pipefail
 
-readonly __STAGE2_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Stage 2 uses BASH_SOURCE[0] because it's executed (not sourced)
+__STAGE2_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly __STAGE2_DIR
 
 # Source library
+# shellcheck source=./lib.sh
 source "$__STAGE2_DIR/lib.sh"
 
 # Define requirements: name:check_func:install_func
@@ -18,7 +21,9 @@ declare -a __REQUIREMENTS=(
 )
 
 # Source requirement modules
+# shellcheck source=./gnu_getopt.sh
 source "$__STAGE2_DIR/gnu_getopt.sh"
+# shellcheck source=./yq.sh
 source "$__STAGE2_DIR/yq.sh"
 
 #######################################
@@ -29,7 +34,7 @@ source "$__STAGE2_DIR/yq.sh"
 #   0 - satisfied
 #   1 - not satisfied
 #######################################
-__check_requirement() {
+__stage2_check_requirement() {
   local spec="$1"
   local name="${spec%%:*}"
   local rest="${spec#*:}"
@@ -52,7 +57,7 @@ __check_requirement() {
 #   0 - success
 #   1 - failed
 #######################################
-__install_requirement() {
+__stage2_install_requirement() {
   local spec="$1"
   local name="${spec%%:*}"
   local rest="${spec#*:}"
@@ -64,20 +69,25 @@ __install_requirement() {
     return $?
   fi
 
-  log_error "No installer for $name"
+  __stage2_log_error "No installer for $name"
   return 1
 }
 
 #######################################
-# Main stage 2 entry point
+# Stage 2 main entry point
+# Globals:
+#   __REQUIREMENTS - array of requirement specs
+# Returns:
+#   0 - success
+#   1 - failed
 #######################################
-main() {
+__stage2_main() {
   local missing=()
 
   # Check all requirements
   for spec in "${__REQUIREMENTS[@]}"; do
     local name="${spec%%:*}"
-    if ! __check_requirement "$spec"; then
+    if ! __stage2_check_requirement "$spec"; then
       missing+=("$spec")
     fi
   done
@@ -92,14 +102,14 @@ main() {
   for spec in "${missing[@]}"; do
     names+=("${spec%%:*}")
   done
-  log_info "Missing dependencies: ${names[*]}"
+  __stage2_log_info "Missing dependencies: ${names[*]}"
 
   # Install missing
   for spec in "${missing[@]}"; do
     local name="${spec%%:*}"
-    log_info "Installing $name..."
-    if ! __install_requirement "$spec"; then
-      log_error "Failed to install $name"
+    __stage2_log_info "Installing $name..."
+    if ! __stage2_install_requirement "$spec"; then
+      __stage2_log_error "Failed to install $name"
       return 1
     fi
   done
@@ -107,14 +117,15 @@ main() {
   # Verify all installed
   for spec in "${missing[@]}"; do
     local name="${spec%%:*}"
-    if ! __check_requirement "$spec"; then
-      log_error "$name installation verification failed"
+    if ! __stage2_check_requirement "$spec"; then
+      __stage2_log_error "$name installation verification failed"
       return 1
     fi
   done
 
-  log_info "All dependencies satisfied"
+  __stage2_log_info "All dependencies satisfied"
   return 0
 }
 
-main "$@"
+#----------------------------------------------------------------------------------------------------------------------#
+__stage2_main "$@"
