@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v0.6.9
+
+### feat
+
+- Add post-uninstall note about user config directory
+
+### fix
+
+- fix preflight no such file or directory error
+- fix preflight no such file or directory error
+- fix preflight no such file or directory error
+
 ## v0.6.8
 
 ### feat
