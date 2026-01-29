@@ -97,6 +97,7 @@ __radp_cli_help_global_options() {
   fi
 
   # 内置选项
+  echo "  --config                Show configuration"
   echo "  -h, --help              Show help"
   echo "  --version               Show version"
   echo
