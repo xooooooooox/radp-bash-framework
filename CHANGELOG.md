@@ -4,18 +4,6 @@
 
 ### feat
 
-- Add post-uninstall note about user config directory
-
-### fix
-
-- fix preflight no such file or directory error
-- fix preflight no such file or directory error
-- fix preflight no such file or directory error
-
-## v0.6.8
-
-### feat
-
 - Add dry-run mode support in exec toolkit (`04_dry_run.sh`)
   - `radp_set_dry_run()` - Enable/disable dry-run mode
   - `radp_is_dry_run()` - Check if dry-run mode is enabled
@@ -30,6 +18,7 @@
 - Add GNU getopt preflight check to ensure CLI works on macOS (BSD getopt incompatible)
   - Auto-detect and use GNU getopt path
   - Auto-install via Homebrew on macOS if missing
+- Add post-uninstall note about user config directory
 
 ### fix
 
@@ -40,6 +29,7 @@
 - Fix IDE code completion not work
 - Fix radp_os_install_pkgs
 - Fix auto-generated ide hints file error on install-mode
+- Fix preflight no such file or directory error
 
 ### refactor
 
