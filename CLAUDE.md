@@ -81,11 +81,46 @@ context/context.sh (injects globals, libs, config)
 
 The toolkit is organized into 6 domains under `libs/toolkit/`:
 - **core** — Variables, arrays, maps, strings, version comparison
-- **exec** — Command execution with logging, retry strategies
+- **exec** — Command execution with logging, retry strategies, dry-run mode
 - **io** — File operations, interactive prompts, text banners
 - **net** — Connectivity checks, interface queries, SSH operations
 - **os** — Distro detection, security (SELinux/firewall), user management
 - **cli** — Argument parsing, help generation, command dispatch
+
+### Dry-Run Mode Support
+
+The exec toolkit provides dry-run support for safe command execution preview:
+
+```bash
+# Enable dry-run mode (typically from CLI flag)
+radp_set_dry_run "${opt_dry_run:-}"
+
+# Execute command or log in dry-run mode
+radp_exec "Install nginx package" apt-get install -y nginx
+radp_exec "Set timezone to $tz" timedatectl set-timezone "$tz"
+
+# Execute with sudo (uses $gr_sudo)
+radp_exec_sudo "Enable chronyd service" systemctl enable chronyd
+
+# For complex operations that can't be wrapped
+if radp_dry_run_skip "Configure complex settings"; then
+  return 0
+fi
+# ... actual implementation ...
+```
+
+**Available functions:**
+
+| Function | Description |
+|----------|-------------|
+| `radp_set_dry_run [true\|false]` | Enable/disable dry-run mode |
+| `radp_is_dry_run` | Check if dry-run mode is enabled (returns 0/1) |
+| `radp_exec <desc> <cmd...>` | Execute command or log `[dry-run] <desc>` |
+| `radp_exec_sudo <desc> <cmd...>` | Like `radp_exec` but prepends `$gr_sudo` |
+| `radp_dry_run_skip <desc>` | Log and return 0 if dry-run, else return 1 |
+
+**Global variable:**
+- `gw_dry_run` — Writable global tracking dry-run state
 
 ## CLI Command Discovery
 

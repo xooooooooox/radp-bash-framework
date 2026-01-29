@@ -193,12 +193,13 @@ myapp completion zsh >~/.zfunc/_myapp
 
 The framework provides utility functions organized by domain:
 
-| Domain       | Functions                                            | Description           |
-|--------------|------------------------------------------------------|-----------------------|
-| `radp_log_*` | `debug`, `info`, `warn`, `error`                     | Structured logging    |
-| `radp_os_*`  | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | OS detection          |
-| `radp_io_*`  | `get_path_abs`                                       | File system utilities |
-| `radp_cli_*` | `discover`, `dispatch`, `help`                       | CLI infrastructure    |
+| Domain        | Functions                                            | Description           |
+|---------------|------------------------------------------------------|-----------------------|
+| `radp_log_*`  | `debug`, `info`, `warn`, `error`                     | Structured logging    |
+| `radp_os_*`   | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | OS detection          |
+| `radp_io_*`   | `get_path_abs`                                       | File system utilities |
+| `radp_exec_*` | `exec`, `exec_sudo`, `set_dry_run`, `is_dry_run`     | Dry-run mode support  |
+| `radp_cli_*`  | `discover`, `dispatch`, `help`                       | CLI infrastructure    |
 
 See [API Reference](docs/api.md) for complete documentation.
 

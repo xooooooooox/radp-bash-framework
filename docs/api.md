@@ -5,26 +5,27 @@ The framework provides utility functions organized by domain under `src/main/she
 ## Table of Contents
 
 - [Overview](#overview)
-  - [Function Naming Conventions](#function-naming-conventions)
-  - [Variable Naming Conventions](#variable-naming-conventions)
-  - [Return Code Conventions](#return-code-conventions)
+    - [Function Naming Conventions](#function-naming-conventions)
+    - [Variable Naming Conventions](#variable-naming-conventions)
+    - [Return Code Conventions](#return-code-conventions)
 - [Logging (`radp_log_*`)](#logging-radp_log_)
 - [OS Detection (`radp_os_*`)](#os-detection-radp_os_)
 - [File System (`radp_io_*`)](#file-system-radp_io_)
 - [Network (`radp_net_*`)](#network-radp_net_)
 - [Arrays (`radp_nr_*`)](#arrays-radp_nr_)
+- [Dry-Run Mode (`radp_exec_*`)](#dry-run-mode-radp_exec_)
 - [CLI Infrastructure (`radp_cli_*`)](#cli-infrastructure-radp_cli_)
-  - [Application Bootstrap](#application-bootstrap)
-  - [Request Detection](#request-detection)
-  - [Command Discovery](#command-discovery)
-  - [Metadata Parsing](#metadata-parsing)
-  - [Argument Parsing](#argument-parsing)
-  - [Help Generation](#help-generation)
-  - [Command Dispatch](#command-dispatch)
-  - [Shell Completion](#shell-completion)
-  - [Dynamic Completion](#dynamic-completion)
-  - [Passthrough Mode](#passthrough-mode)
-  - [Scaffolding](#scaffolding)
+    - [Application Bootstrap](#application-bootstrap)
+    - [Request Detection](#request-detection)
+    - [Command Discovery](#command-discovery)
+    - [Metadata Parsing](#metadata-parsing)
+    - [Argument Parsing](#argument-parsing)
+    - [Help Generation](#help-generation)
+    - [Command Dispatch](#command-dispatch)
+    - [Shell Completion](#shell-completion)
+    - [Dynamic Completion](#dynamic-completion)
+    - [Passthrough Mode](#passthrough-mode)
+    - [Scaffolding](#scaffolding)
 - [IDE Integration (`radp_ide_*`)](#ide-integration-radp_ide_)
 
 ---
@@ -55,22 +56,22 @@ The framework provides utility functions organized by domain under `src/main/she
 
 ### Return Code Conventions
 
-| Code | Meaning |
-|------|---------|
-| `0` | Success / True (for boolean functions) |
-| `1` | General error / False (for boolean functions) |
-| `2` | Missing or invalid arguments |
+| Code | Meaning                                       |
+|------|-----------------------------------------------|
+| `0`  | Success / True (for boolean functions)        |
+| `1`  | General error / False (for boolean functions) |
+| `2`  | Missing or invalid arguments                  |
 
 ### Common Global Variables
 
-| Variable | Description |
-|----------|-------------|
-| `gr_fw_root_path` | Framework installation root directory |
-| `gr_fw_version` | Framework version string |
-| `gr_fw_user_config_path` | User configuration directory |
-| `gr_fw_context_cache_path` | Framework cache directory |
-| `gw_fw_run_initialized` | Framework initialization flag |
-| `gwxa_fw_sourced_scripts` | Array of sourced script paths |
+| Variable                   | Description                           |
+|----------------------------|---------------------------------------|
+| `gr_fw_root_path`          | Framework installation root directory |
+| `gr_fw_version`            | Framework version string              |
+| `gr_fw_user_config_path`   | User configuration directory          |
+| `gr_fw_context_cache_path` | Framework cache directory             |
+| `gw_fw_run_initialized`    | Framework initialization flag         |
+| `gwxa_fw_sourced_scripts`  | Array of sourced script paths         |
 
 ---
 
@@ -396,6 +397,175 @@ local -a result=()
 
 radp_nr_arr_merge_unique result src1 src2 src3
 # result = ("a" "b" "c" "d" "e")
+```
+
+---
+
+## Dry-Run Mode (`radp_exec_*`)
+
+**Location:** `libs/toolkit/exec/04_dry_run.sh`
+
+The dry-run mode support provides wrapper functions for command execution that respect a global dry-run flag. When
+dry-run mode is enabled, commands are logged instead of executed.
+
+### Global Variable
+
+| Variable     | Description                                              |
+|--------------|----------------------------------------------------------|
+| `gw_dry_run` | Global writable flag for dry-run mode (`"true"` or `""`) |
+
+### Functions
+
+#### radp_set_dry_run
+
+Enable or disable dry-run mode.
+
+```bash
+radp_set_dry_run ([enabled])
+```
+
+**Parameters:**
+
+- `enabled` — `"true"`, `"1"`, or empty to enable; any other value to disable (default: `"true"`)
+
+**Example:**
+
+```bash
+# Enable from CLI flag
+radp_set_dry_run "${opt_dry_run:-}"
+
+# Explicitly enable
+radp_set_dry_run true
+
+# Explicitly disable
+radp_set_dry_run false
+```
+
+#### radp_is_dry_run
+
+Check if dry-run mode is enabled.
+
+```bash
+radp_is_dry_run()
+```
+
+**Returns:** `0` if dry-run mode is enabled, `1` otherwise
+
+**Example:**
+
+```bash
+if radp_is_dry_run; then
+  echo "Would perform operation..."
+else
+  perform_operation
+fi
+```
+
+#### radp_exec
+
+Execute command or log in dry-run mode.
+
+```bash
+radp_exec (description command [args...])
+```
+
+**Parameters:**
+
+- `description` — Human-readable description of the operation
+- `command` — Command to execute
+- `args` — Command arguments
+
+**Returns:** `0` in dry-run mode, otherwise the command's exit code
+
+**Example:**
+
+```bash
+radp_exec "Create config directory" mkdir -p /etc/myapp
+radp_exec "Install package" apt-get install -y nginx
+radp_exec "Start service" systemctl start nginx
+```
+
+#### radp_exec_sudo
+
+Execute command with sudo or log in dry-run mode.
+
+```bash
+radp_exec_sudo (description command [args...])
+```
+
+**Parameters:**
+
+- `description` — Human-readable description of the operation
+- `command` — Command to execute (will be prefixed with `${gr_sudo:-}`)
+- `args` — Command arguments
+
+**Returns:** `0` in dry-run mode, otherwise the command's exit code
+
+**Note:** Uses `${gr_sudo:-}` which is set by the framework based on whether the current user is root.
+
+**Example:**
+
+```bash
+radp_exec_sudo "Update package cache" apt-get update -qq
+radp_exec_sudo "Install nginx" apt-get install -y nginx
+radp_exec_sudo "Enable service" systemctl enable nginx
+```
+
+#### radp_dry_run_skip
+
+Check and log for complex operations that can't use `radp_exec`.
+
+```bash
+radp_dry_run_skip (description)
+```
+
+**Parameters:**
+
+- `description` — Human-readable description of the operation being skipped
+
+**Returns:** `0` if dry-run mode is enabled (operation should be skipped), `1` otherwise (proceed with operation)
+
+**Example:**
+
+```bash
+if radp_dry_run_skip "Configure yadm repository"; then
+  radp_log_info "[dry-run]   - Repository: $repo_url"
+  radp_log_info "[dry-run]   - Would run bootstrap after clone"
+  return 0
+fi
+
+# Complex operations that can't be wrapped in radp_exec
+yadm clone "$repo_url"
+yadm bootstrap
+```
+
+### Usage Pattern
+
+Typical usage in a CLI command with `--dry-run` flag:
+
+```bash
+# @cmd
+# @desc Configure system settings
+# @flag --dry-run Show what would be done without making changes
+
+cmd_configure() {
+  # Enable dry-run from flag
+  radp_set_dry_run "${opt_dry_run:-}"
+
+  # Simple commands - use radp_exec or radp_exec_sudo
+  radp_exec_sudo "Install required packages" apt-get install -y curl wget
+
+  # Complex operations - use radp_dry_run_skip
+  if radp_dry_run_skip "Apply configuration changes"; then
+    radp_log_info "[dry-run]   - Would modify /etc/myapp/config"
+    radp_log_info "[dry-run]   - Would restart service"
+    return 0
+  fi
+
+  # Actual complex logic here
+  configure_application
+  restart_services
+}
 ```
 
 ---

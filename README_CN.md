@@ -192,12 +192,13 @@ myapp completion zsh >~/.zfunc/_myapp
 
 框架按领域提供工具函数：
 
-| 领域           | 函数                                                   | 说明       |
-|--------------|------------------------------------------------------|----------|
-| `radp_log_*` | `debug`, `info`, `warn`, `error`                     | 结构化日志    |
-| `radp_os_*`  | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | 操作系统检测   |
-| `radp_io_*`  | `get_path_abs`                                       | 文件系统工具   |
-| `radp_cli_*` | `discover`, `dispatch`, `help`                       | CLI 基础设施 |
+| 领域            | 函数                                                   | 说明       |
+|---------------|------------------------------------------------------|----------|
+| `radp_log_*`  | `debug`, `info`, `warn`, `error`                     | 结构化日志    |
+| `radp_os_*`   | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | 操作系统检测   |
+| `radp_io_*`   | `get_path_abs`                                       | 文件系统工具   |
+| `radp_exec_*` | `exec`, `exec_sudo`, `set_dry_run`, `is_dry_run`     | 干运行模式支持  |
+| `radp_cli_*`  | `discover`, `dispatch`, `help`                       | CLI 基础设施 |
 
 完整文档请参阅 [API 参考](docs/api.md)。
 

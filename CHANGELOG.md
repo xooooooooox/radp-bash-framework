@@ -1,24 +1,14 @@
 # CHANGELOG
 
-## v0.6.7 - 2026-01-29
-
-### fix
-- c3976f7 Fix passthrough mode intercepting `--help` instead of passing to underlying command
-
-## v0.6.6 - 2026-01-28
-
-### fix
-- Fix passthrough mode intercepting `--help` instead of passing to underlying command
-
-### refactor
-- 518c999 refactor version mechanism
-- 32e7fcc refactor version mechanism
-- 8621afb refactor version mechanism
-- 0acf92f refactor version mechanism
-
-## Unreleased
+## v0.6.8
 
 ### feat
+- Add dry-run mode support in exec toolkit (`04_dry_run.sh`)
+    - `radp_set_dry_run()` - Enable/disable dry-run mode
+    - `radp_is_dry_run()` - Check if dry-run mode is enabled
+    - `radp_exec()` - Execute command or log in dry-run mode
+    - `radp_exec_sudo()` - Execute with sudo or log in dry-run mode
+    - `radp_dry_run_skip()` - Check and log for complex operations
 - Add `radp_get_install_version()` helper function for accurate version display
 - Add `radp_get_fw_install_version()` helper function for framework version
 - Generate `.install-version` file during manual installation
@@ -27,19 +17,35 @@
 This allows applications installed via `--ref main` or `--ref <branch>` to display
 accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source version.
 
-## v0.6.5 - 2026-01-28
+
+## v0.6.7
 
 ### fix
+- Fix passthrough mode intercepting `--help` instead of passing to underlying command
+
+## v0.6.6
+
+### fix
+- Fix passthrough mode intercepting `--help` instead of passing to underlying command
+
+### refactor
+
+- refactor version mechanism
+
+## v0.6.5
+
+### fix
+
 - fix preflight
 - fix installer
 
-## v0.6.4 - 2026-01-27
+## v0.6.4
 
 ### fix
 
 - fix IDE code completion not work
 
-## v0.6.3 - 2026-01-27
+## v0.6.3
 
 ### fix
 
@@ -54,98 +60,107 @@ accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source vers
 
 - update installation
 
-## v0.6.2 - 2026-01-27
+## v0.6.2
 
 ### fix
-- bc83a7a fix auto-generated ide hints file error on install-mode.
 
-### docs
-- ae700c2 update ClAUDE
+- fix auto-generated ide hints file error on install-mode.
 
-## v0.6.1 - 2026-01-27
+## v0.6.1
 
 ### feat
-- fd96eb4 update cli scaffold default banner
+
+- update cli scaffold default banner
 
 ### test
-- 625a440 update cli scaffold example
 
-## v0.6.0 - 2026-01-27
+- update cli scaffold example
+
+## v0.6.0
 
 ### refactor
-- dc613b5 refactor run.sh to init.sh and refactor radp-bf options
 
-## v0.5.3 - 2026-01-27
+- refactor run.sh to init.sh and refactor radp-bf options
+
+## v0.5.3
 
 ### feat
-- dd43b6d update cli scaffold default banner
-- 4c960c2 optimize cli scaffold dynamic user config path
+
+- update cli scaffold default banner
+- optimize cli scaffold dynamic user config path
 
 ### test
-- de41968 update cli scaffold example
 
-## v0.5.2 - 2026-01-27
+- update cli scaffold example
+
+## v0.5.2
 
 ### feat
-- e602c24 add cli example
-- 37ebc73 update cli scaffold .gitignore
-- 2f64d2b Add example-cli
-- 1e08544 update cli scaffold config.yaml
+
+- add cli example
+- update cli scaffold .gitignore
+- Add example-cli
+- update cli scaffold config.yaml
 
 ### fix
 - d14fe96 fix cli completions not work for zsh
 
-## v0.5.1 - 2026-01-27
+## v0.5.1
 
 ### feat
 - e2732ca Add global option in cli help
 
-## v0.5.0 - 2026-01-27
+## v0.5.0
 
 ### feat
 - 09771bd Consistence cli args
 
-## v0.4.28 - 2026-01-27
+## v0.4.28
 
 ### feat
-- 8b87f19 Support global option
 
-## v0.4.27 - 2026-01-27
+- Support global option
+
+## v0.4.27
 
 ### feat
-- 748b0ee Support customize banner
-- 4abd0d2 Support customize banner
 
-## v0.4.26 - 2026-01-27
+- Support customize banner
+
+## v0.4.26
 
 ### chore
-- e47a4c1 Optimize install.sh
 
-## v0.4.25 - 2026-01-27
+- Optimize install.sh
 
-### fix
-- 50a3b44 fix default user config dir
-
-## v0.4.24 - 2026-01-27
+## v0.4.25
 
 ### fix
-- 9dafe37 fix dynamic completion not work
 
-## v0.4.23 - 2026-01-26
+- fix default user config dir
+
+## v0.4.24
+
+### fix
+
+- fix dynamic completion not work
+
+## v0.4.23
 
 ### feat
-- 1bff70b refactor zsh completion to use wrapper functions for dynamic args/options
 
-## v0.4.22 - 2026-01-26
+- refactor zsh completion to use wrapper functions for dynamic args/options
+
+## v0.4.22
 
 ### fix
 - 013f7b1 remove trailing backslash from last _arguments parameter in zsh completion
 
-## v0.4.21 - 2026-01-26
+## v0.4.21
 
 - TODO: no commits found; add summary manually.
 
-## v0.4.20 - 2026-01-26
+## v0.4.20
 
 ### fix
 - 9f99a2f enhance completion logic with passthrough mode support
@@ -153,22 +168,23 @@ accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source vers
 ### docs
 - 969fd0a document passthrough mode with examples
 
-## v0.4.19 - 2026-01-26
+## v0.4.19
 
 ### feat
-- f218fea add passthrough mode support and `@meta` annotations
 
-## v0.4.18 - 2026-01-26
+- add passthrough mode support and `@meta` annotations
+
+## v0.4.18
 
 ### fix
 - c3f991e prevent potential errors in argument index increment
 
-## v0.4.17 - 2026-01-26
+## v0.4.17
 
 ### fix
 - 882c1d1 prevent loading external libraries if user lib path is unset
 
-## v0.4.16 - 2026-01-26
+## v0.4.16
 
 ### chore
 - b87c920 update project dictionary to include "homelabctl"
@@ -181,95 +197,108 @@ accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source vers
 - 4b50415 simplify user library path handling and improve scaffold initialization
 - 25ec2f6 reorganize IDE completion hints handling and improve modularity
 
-## v0.4.14 - 2026-01-26
+## v0.4.14
 
 ### feat
 - 58bf50e enhance IDE completion hints generation and command integration
 
-## v0.4.13 - 2026-01-26
+## v0.4.13
 
 ### feat
 - 1a449d1 add file transfer and GitHub API utility modules
 
-## v0.4.12 - 2026-01-26
+## v0.4.12
 
 ### docs
-- 777a047 provide complete configuration reference with examples
-- 2e65b27 expand CONTRIBUTING.md and annotations documentation
-- 8eea22b add detailed documentation for annotations, API, configuration, and installation
-- 1495432 add CONTRIBUTING.md and restructure README files
-- 2c219ea add utility libraries and naming conventions sections
+
+- provide complete configuration reference with examples
+- expand CONTRIBUTING.md and annotations documentation
+- add detailed documentation for annotations, API, configuration, and installation
+- add CONTRIBUTING.md and restructure README files
+- add utility libraries and naming conventions sections
 
 ### test
-- c863485 add comprehensive test suite and helper utilities
 
-## v0.4.11 - 2026-01-26
+- add comprehensive test suite and helper utilities
+
+## v0.4.11
 
 ### fix
-- ddeca22 fix cli toolkit for subcmd group and shell completion not work well.
 
-## v0.4.10 - 2026-01-25
+- fix cli toolkit for subcmd group and shell completion not work well.
+
+## v0.4.10
 
 ### feat
-- d62c42d improve subcommand matching and error handling
+
+- improve subcommand matching and error handling
 
 ### docs
-- 5fcc35b add CLI command discovery and nested command group documentation
+- add CLI command discovery and nested command group documentation
 
-## v0.4.9 - 2026-01-25
-
-### feat
-- d8b5d20 dynamically resolve cache path for system-wide installations
-- f531294 Update cli generated scaffold
-
-## v0.4.8 - 2026-01-25
+## v0.4.9
 
 ### feat
-- 3cde3d6 add package manager detection and installation support
+
+- dynamically resolve cache path for system-wide installations
+- Update cli generated scaffold
+
+## v0.4.8
+
+### feat
+
+- add package manager detection and installation support
 
 ### docs
-- ff9466a improve installation guide and variable descriptions
-- a075d86 add framework description to README and README_CN
+
+- improve installation guide and variable descriptions
+- add framework description to README and README_CN
 
 ## v0.4.7 - 2026-01-25
 
 ### chore
-- 5677093 add shebang to scaffolded command scripts
 
-## v0.4.6 - 2026-01-25
+- add shebang to scaffolded command scripts
+
+## v0.4.6
 
 ### refactor
-- eaa0e46 improve argument handling and add empty input safeguards
 
-## v0.4.5 - 2026-01-25
+- improve argument handling and add empty input safeguards
+
+## v0.4.5
 
 ### feat
-- ae9773c add global option parsing for verbose and debug modes
 
-## v0.4.4 - 2026-01-25
+- add global option parsing for verbose and debug modes
+
+## v0.4.4
 
 ### feat
-- 78a484d add Homebrew support and improve scaffolding structure
-- a35f6b1 add Homebrew formula for radp-bash-framework
+- add Homebrew support and improve scaffolding structure
+- add Homebrew formula for radp-bash-framework
 
-## v0.4.3 - 2026-01-24
-
-### refactor
-- 86b7df1 update completion script paths for bash and zsh
-- 2cba3c0 improve scaffolding and completion script handling
-
-## v0.4.2 - 2026-01-24
+## v0.4.3
 
 ### refactor
+
+- update completion script paths for bash and zsh
+- improve scaffolding and completion script handling
+
+## v0.4.2
+
+### refactor
+
 - 867e58a enhance CLI scaffolding
 
-## v0.4.1 - 2026-01-24
+## v0.4.1
 
 ### refactor
-- 5303563 consolidate and rewrite CLI framework modules
-- e4d0b16 consolidate and rewrite CLI framework modules
 
-## v0.4.0 - 2026-01-17
+- consolidate and rewrite CLI framework modules
+- consolidate and rewrite CLI framework modules
+
+## v0.4.0
 
 ### feat
 
@@ -286,13 +315,13 @@ accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source vers
 - Optimize func __fw_source_scripts
 - Create toolkit skeleton
 
-## v0.3.6 - 2026-01-18
+## v0.3.6
 
 ### feat
 
 - Optimize completion
 
-## v0.3.5 - 2026-01-17
+## v0.3.5
 
 ### feat
 - Support user completion
@@ -303,31 +332,31 @@ accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source vers
   - Add func `radp_os_install_pkgs` and `radp_os_is_pkg_installed`
   - Add func `radp_nr_arr_merge_unique`
 
-## v0.3.4 - 2026-01-12
+## v0.3.4
 
 ### fix
 
 - fix preflight_helper.sh no such file or directory
 
-## v0.3.3 - 2026-01-12
+## v0.3.3
 
 ### fix
 
 - fix prefilght not work well.
 
-## v0.3.2 - 2026-01-09
+## v0.3.2
 
 ### fix
 
 - fix failed to create user completion hint file
 
-## v0.3.1 - 2026-01-09
+## v0.3.1
 
 ### fix
 
 - fix user custom config and lib completion not work
 
-## v0.3.0 - 2026-01-08
+## v0.3.0
 
 ### feat
 
@@ -337,7 +366,7 @@ accurate version info (e.g., `v0.6.5+main`) instead of the hardcoded source vers
   - Support disable/enable console log and logfile
   - Refactor log config var name, `radp.fw.log.file` to `radp.fw.log.file.name`
 
-## v0.2.4 - 2026-01-08
+## v0.2.4
 
 ### chore
 - Support multi install/upgrade method.
