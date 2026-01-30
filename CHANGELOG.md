@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.6.13
+## v0.6.14
 
 ### feat
 
@@ -28,6 +28,7 @@
   - Supports `--dry-run`, `--force`, `--diff` options
   - Upgradable components: entry, ide, gitignore
   - Tracks scaffold version in `.radp-cli/` metadata
+- Add `radp-bf completion` command to generate completion for Bash/Zsh.
 
 ### fix
 
