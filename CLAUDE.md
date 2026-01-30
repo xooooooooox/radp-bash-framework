@@ -44,10 +44,11 @@ radp-bf upgrade --force            # Overwrite user-modified files
 All CLI applications built on radp-bash-framework support these global options:
 
 ```bash
-myapp --config          # Show configuration (paths, framework, extensions)
-myapp --config --json   # Show configuration in JSON format
+myapp -q, --quiet       # Quiet mode (disable banner and console log)
 myapp -v, --verbose     # Enable verbose output (banner + info logs)
 myapp --debug           # Enable debug output (banner + debug logs)
+myapp --config          # Show configuration (paths, framework, extensions)
+myapp --config --json   # Show configuration in JSON format
 ```
 
 **Example output of `--config`:**

@@ -28,6 +28,7 @@ declare -ga __radp_app_filtered_args=()
 
 __radp_app_parse_global_options() {
   __radp_app_filtered_args=()
+  local quiet=false
   local verbose=false
   local debug=false
   local show_config=false
@@ -43,6 +44,10 @@ __radp_app_parse_global_options() {
     fi
 
     case "$1" in
+    -q | --quiet)
+      quiet=true
+      shift
+      ;;
     -v | --verbose)
       verbose=true
       shift
@@ -90,8 +95,11 @@ __radp_app_parse_global_options() {
   fi
 
   # 设置输出模式环境变量
-  # 当显式指定 -v/--debug 时
-  if [[ "$debug" == "true" ]]; then
+  if [[ "$quiet" == "true" ]]; then
+    # Quiet 模式: banner off, console log disabled
+    export GX_RADP_FW_BANNER_MODE=off
+    export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
+  elif [[ "$debug" == "true" ]]; then
     # Debug 模式: banner on, log level debug, debug enabled
     export GX_RADP_FW_BANNER_MODE=on
     export GX_RADP_FW_LOG_LEVEL=debug
@@ -151,7 +159,7 @@ radp_cli_set_commands_dir "$__radp_app_commands_dir"
 unset __radp_app_commands_dir
 
 # 设置默认全局选项（用于帮助和补全）
-radp_cli_set_global_options "-v" "--verbose" "--debug" "--config"
+radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--config"
 
 # --------------------------------------------------------------------------- #
 # 7. Dispatch
