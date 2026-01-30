@@ -97,6 +97,7 @@ fi
 
 # 解析项目根目录并加载框架
 export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
+# shellcheck source=/dev/null
 source "$(radp-bf path launcher)" "$@"
 ENTRY_SCRIPT
 
