@@ -4,16 +4,6 @@
 
 ### feat
 
-- update scaffold install
-
-### fix
-
-- fix radp-bf completion
-
-## v0.6.25
-
-### feat
-
 - Add `workflows` component to `radp-bf upgrade` command
   - Upgrades GitHub Actions workflows to latest templates
   - Supports 8 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package, build-obs-package, update-homebrew-tap, attach-release-packages, cleanup-branches
