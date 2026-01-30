@@ -25,11 +25,48 @@ myapp/
 │   ├── config/
 │   │   ├── config.yaml            # Base configuration (includes version)
 │   │   ├── config-dev.yaml        # Environment overrides
-│   │   └── _ide.sh                # IDE code completion support
+│   │   └── _ide.sh                # IDE support & dev mode marker
 │   └── libs/                      # Project-specific libraries
+├── .radp-cli/                     # Scaffold metadata (for upgrade)
+│   ├── version                    # Framework version when created
+│   └── name                       # Project name
 ├── packaging/                     # Distribution packaging
 └── install.sh                     # Installer script
 ```
+
+### Upgrading Projects
+
+When the framework updates, you can upgrade your project's scaffold files:
+
+```bash
+# Preview changes without applying
+radp-bf upgrade --dry-run
+
+# Upgrade current directory
+radp-bf upgrade
+
+# Upgrade specific project
+radp-bf upgrade ./myapp
+
+# Show file differences
+radp-bf upgrade --diff
+
+# Force overwrite modified files
+radp-bf upgrade --force
+
+# Upgrade specific components only
+radp-bf upgrade entry ide
+```
+
+**Upgradable components:**
+
+| Component   | Files                              | Description              |
+|-------------|------------------------------------|--------------------------|
+| `entry`     | `bin/<name>`                       | Entry script             |
+| `ide`       | `src/main/shell/config/_ide.sh`    | IDE support file         |
+| `gitignore` | `.gitignore`                       | Git ignore patterns      |
+
+The upgrade command detects user modifications and skips those files unless `--force` is specified.
 
 ## Defining Commands
 

@@ -10,10 +10,17 @@ Usage:
 
 Commands:
   new <name> [dir]      Create a new CLI project based on radp-bash-framework
+  upgrade [dir] [opts]  Upgrade an existing CLI project to latest scaffold
   path <name>           Print framework path (init|launcher|root)
   resolve-root <path>   Resolve project root from script path (for entry scripts)
   version               Show version
   help                  Show this help
+
+Upgrade options:
+  --dry-run             Show changes without applying
+  --force               Overwrite user-modified files
+  --diff                Show file differences
+  Components: entry, ide, gitignore, all (default: all)
 
 Path names:
   init       Path to init.sh (framework initializer)
@@ -23,6 +30,9 @@ Path names:
 Examples:
   radp-bf new my-cli
   radp-bf new my-cli ~/projects
+  radp-bf upgrade                     # Upgrade current directory
+  radp-bf upgrade ./my-cli --dry-run  # Preview changes
+  radp-bf upgrade --diff entry        # Show entry script diff
   source "$(radp-bf path init)" "$@"
   export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
   source "$(radp-bf path launcher)" "$@"
@@ -144,6 +154,11 @@ __radp_bf_main() {
       return 1
     fi
     radp_cli_scaffold_new "$@"
+    return $?
+    ;;
+  upgrade)
+    shift
+    radp_cli_upgrade "$@"
     return $?
     ;;
   *)

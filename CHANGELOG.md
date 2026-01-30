@@ -24,6 +24,10 @@
 - Add `_ide.sh` as development mode marker for automatic config path detection
   - Development mode (source): uses `$RADP_APP_ROOT/src/main/shell/config`
   - Installed mode: uses `~/.config/$RADP_APP_NAME`
+- Add `radp-bf upgrade` command to upgrade existing CLI projects
+  - Supports `--dry-run`, `--force`, `--diff` options
+  - Upgradable components: entry, ide, gitignore
+  - Tracks scaffold version in `.radp-cli/` metadata
 
 ### fix
 

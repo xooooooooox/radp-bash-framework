@@ -426,8 +426,9 @@ myapp/
 │   ├── config/                    # YAML configuration
 │   │   ├── config.yaml            # Base configuration (includes version)
 │   │   ├── config-dev.yaml        # Environment overrides
-│   │   └── _ide.sh                # IDE code completion support
+│   │   └── _ide.sh                # IDE support & dev mode marker
 │   └── libs/                      # Project-specific libraries
+├── .radp-cli/                     # Scaffold metadata (for upgrade)
 ├── packaging/                     # Distribution packaging
 └── install.sh                     # Installer script
 ```

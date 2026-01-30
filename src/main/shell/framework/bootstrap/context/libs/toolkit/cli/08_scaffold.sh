@@ -64,6 +64,9 @@ radp_cli_scaffold_new() {
   # 生成 GitHub workflows
   __radp_cli_scaffold_workflows "$project_name" "$target_dir"
 
+  # 初始化项目元数据（用于 upgrade 命令）
+  radp_cli_init_metadata "$target_dir" "$project_name" "$(radp_get_fw_install_version)"
+
   radp_log_info "Project created successfully: $target_dir"
   radp_log_info ""
   radp_log_info "Next steps:"
@@ -487,8 +490,10 @@ __radp_cli_scaffold_gitignore() {
   local target_dir="$1"
 
   cat >"$target_dir/.gitignore" <<'GITIGNORE'
+# Auto-generated files
 src/main/shell/config/config.sh
 src/main/shell/config/_idecomp.sh
+.radp-cli/checksums/
 
 # IDE
 .idea/

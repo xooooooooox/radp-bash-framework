@@ -23,6 +23,7 @@
 ## 特性
 
 - **CLI 脚手架** - 使用 `radp-bf new myapp` 生成完整的 CLI 项目
+- **CLI 脚手架升级** - 使用 `radp-bf upgrade` 升级现有 CLI 项目到最新脚手架
 - **注解驱动命令** - 使用注释元数据定义命令（`@cmd`、`@arg`、`@option`）
 - **自动发现** - 从目录结构自动发现命令，支持嵌套子命令
 - **Shell 补全** - 自动生成 Bash/Zsh 补全脚本
@@ -32,6 +33,7 @@
 - **OS 检测** - 跨平台工具，检测发行版、架构、包管理器
 - **路径工具** - 文件系统辅助函数、路径解析
 - **IDE 代码补全** - BashSupport Pro 集成，支持框架函数和变量自动补全
+- **开发/安装模式** - 基于 `_ide.sh` 标记自动检测配置路径
 
 ## 依赖
 
@@ -102,8 +104,20 @@ myapp/
 │   │   ├── hello.sh          # myapp hello
 │   │   └── version.sh        # myapp version
 │   └── config/
-│       └── config.yaml       # 配置文件
+│       ├── config.yaml       # 配置文件
+│       └── _ide.sh           # IDE 支持 & 开发模式标记
+├── .radp-cli/                # 脚手架元数据（用于升级）
 └── install.sh                # 安装脚本
+```
+
+### 升级现有项目
+
+当框架更新时，升级项目的脚手架文件：
+
+```shell
+radp-bf upgrade                     # 升级当前目录
+radp-bf upgrade ./myapp --dry-run   # 预览变更
+radp-bf upgrade --force             # 覆盖已修改的文件
 ```
 
 ### 定义命令

@@ -201,3 +201,20 @@ sudo rpm -Uvh ./obs-radp-bash-framework- <version >- <release >.noarch.rpm
 # DEB
 sudo dpkg -i ./obs-radp-bash-framework_ <version >- <release >_all.deb
 ```
+
+## Upgrade CLI Projects
+
+After upgrading the framework, you can also upgrade your CLI projects' scaffold files:
+
+```shell
+# Preview changes
+radp-bf upgrade --dry-run
+
+# Apply changes
+radp-bf upgrade
+
+# Upgrade specific project
+radp-bf upgrade ./myproject
+```
+
+See [CLI Development Guide](cli-development.md#upgrading-projects) for details.

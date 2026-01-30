@@ -24,6 +24,7 @@ comprehensive toolkit.
 ## Features
 
 - **CLI Scaffolding** - Generate complete CLI projects with `radp-bf new myapp`
+- **CLI Scaffolding Upgrade** - Upgrade existing CLI projects to latest scaffold with `radp-bf upgrade`
 - **Annotation-based Commands** - Define commands using comment metadata (`@cmd`, `@arg`, `@option`)
 - **Auto-discovery** - Commands are discovered from directory structure, supports nested subcommands
 - **Shell Completion** - Generate Bash/Zsh completion scripts automatically
@@ -33,6 +34,7 @@ comprehensive toolkit.
 - **OS Detection** - Cross-platform utilities for distro, architecture, package manager detection
 - **Path Utilities** - File system helpers, path resolution
 - **IDE Code Completion** - BashSupport Pro integration for framework function and variable completion
+- **Dev/Install Mode** - Automatic config path detection based on `_ide.sh` marker
 
 ## Requirements
 
@@ -103,8 +105,20 @@ myapp/
 │   │   ├── hello.sh          # myapp hello
 │   │   └── version.sh        # myapp version
 │   └── config/
-│       └── config.yaml       # Configuration
+│       ├── config.yaml       # Configuration
+│       └── _ide.sh           # IDE support & dev mode marker
+├── .radp-cli/                # Scaffold metadata (for upgrade)
 └── install.sh                # Installer script
+```
+
+### Upgrade Existing Projects
+
+When the framework updates, upgrade your project's scaffold files:
+
+```shell
+radp-bf upgrade                     # Upgrade current directory
+radp-bf upgrade ./myapp --dry-run   # Preview changes
+radp-bf upgrade --force             # Overwrite modified files
 ```
 
 ### Define Commands

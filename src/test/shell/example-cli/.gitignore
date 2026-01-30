@@ -1,5 +1,7 @@
+# Auto-generated files
 src/main/shell/config/config.sh
 src/main/shell/config/_idecomp.sh
+.radp-cli/checksums/
 
 # IDE
 .idea/
