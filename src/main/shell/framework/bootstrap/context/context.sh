@@ -80,23 +80,7 @@ __fw_context_setup() {
 }
 
 __fw_context_finished() {
-  # print banner with variable substitution
-  if [[ "$gr_radp_fw_banner_mode" == "off" ]]; then
-    return 0
-  fi
-
-  local banner
-  if declare -F radp_app_banner >/dev/null 2>&1; then
-    # Priority 1: Application-defined banner hook
-    banner="$(radp_app_banner)"
-  elif [[ -f "$gr_fw_user_config_path/banner.txt" ]]; then
-    # Priority 2: User config path banner file
-    banner="$(eval "printf '%s' \"$(cat "$gr_fw_user_config_path/banner.txt")\"")"
-  else
-    # Priority 3: Framework default banner
-    banner="$(eval "printf '%s' \"$(cat "$gr_fw_banner_file")\"")"
-  fi
-  radp_log_raw "$banner"
+  radp_banner_print
   radp_log_info "${gra_command_line[*]}"
 }
 

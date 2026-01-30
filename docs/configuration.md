@@ -225,63 +225,55 @@ Later sources override earlier ones.
 
 ### Banner Customization
 
-Applications can customize the startup banner using one of two methods (in priority order):
+Applications can customize the startup banner ASCII art. The framework automatically appends version information.
 
-#### Method 1: Banner Hook Function (Recommended)
+#### Method 1: Banner Art Hook Function (Recommended)
 
-Define `radp_app_banner()` function **before** sourcing the framework:
+Define `radp_app_banner_art()` function **before** sourcing the framework (ASCII art only):
 
 ```bash
 #!/usr/bin/env bash
 
-# Define custom banner hook BEFORE sourcing framework
-radp_app_banner() {
+# Define custom banner art BEFORE sourcing framework
+radp_app_banner_art() {
   cat << 'EOF'
-    ____  ___    ____  ____     ________    ____
-   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
-  / /_/ / /| | / / / / /_/ /  / /   / /    / /  
- / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
-/_/ |_/_/  |_/_____/_/       \____/_____/___/   
+    __  ___      ___
+   /  |/  /_  __/   |  ____  ____
+  / /|_/ / / / / /| | / __ \/ __ \
+ / /  / / /_/ / ___ |/ /_/ / /_/ /
+/_/  /_/\__, /_/  |_/ .___/ .___/
+       /____/      /_/   /_/
 EOF
-  printf ' :: MyApp ::                     (%s)\n' "$gr_radp_extend_myapp_version"
-  printf ' :: radp-bash-framework ::       (%s)\n' "$gr_fw_version"
 }
 
-# Source framework - banner will be printed using radp_app_banner()
-source "$(radp-bf path init)"
+# Source framework
+source "$(radp-bf path launcher)" "$@"
 ```
 
-This method is ideal when:
-- You need dynamic content (e.g., detecting installed components)
-- You want to show multiple version numbers
-- You need conditional banner content
+The framework automatically appends version info:
+```
+ :: my_app :: (v1.0.0)
+ :: radp-bash-framework :: (v0.6.11)
+```
 
 #### Method 2: Banner File
 
-Place a `banner.txt` file in your user config path (`$GX_RADP_FW_USER_CONFIG_PATH`):
+Place a `banner.txt` file in your user config path (`~/.config/myapp/banner.txt`):
 
-```bash
-# Set user config path before sourcing
-export GX_RADP_FW_USER_CONFIG_PATH="$HOME/.config/myapp"
-
-# Create banner file
-cat > "$HOME/.config/myapp/banner.txt" << 'EOF'
-    ____  ___    ____  ____     ________    ____
-   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
-  / /_/ / /| | / / / / /_/ /  / /   / /    / /  
- / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
-/_/ |_/_/  |_/_____/_/       \____/_____/___/   
- :: MyApp ::                     ($gr_radp_extend_myapp_version)
-EOF
-
-source "$(radp-bf path init)"
+```
+    __  ___      ___
+   /  |/  /_  __/   |  ____  ____
+  / /|_/ / / / / /| | / __ \/ __ \
+ / /  / / /_/ / ___ |/ /_/ / /_/ /
+/_/  /_/\__, /_/  |_/ .___/ .___/
+       /____/      /_/   /_/
 ```
 
-The banner file supports variable substitution (e.g., `$gr_fw_version`).
+The file should contain ASCII art only. Version info is appended automatically.
 
-#### Banner Priority
+#### Banner Priority (ASCII Art)
 
-1. **`radp_app_banner()` function** - If defined before framework loads
+1. **`radp_app_banner_art()` function** - If defined before framework loads
 2. **`$gr_fw_user_config_path/banner.txt`** - User config path banner file
 3. **Framework default banner** - Built-in RADP BASH banner
 

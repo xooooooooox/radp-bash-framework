@@ -5,15 +5,21 @@
 #
 # 必需环境变量（入口脚本设置）：
 #   RADP_APP_ROOT  - 项目根目录
-#   RADP_APP_NAME  - 应用名称
 #
 # 可选环境变量（入口脚本可设置）：
-#   RADP_APP_GLOBAL_OPTIONS - 全局选项列表（空格分隔）
-#   RADP_APP_COMMANDS_DIR   - 命令目录（默认 $RADP_APP_ROOT/src/main/shell/commands）
+#   RADP_APP_NAME         - 应用名称（默认从 RADP_APP_ROOT 目录名派生）
+#   RADP_APP_COMMANDS_DIR - 命令目录（默认 $RADP_APP_ROOT/src/main/shell/commands）
 
 # 验证必需的环境变量
 : "${RADP_APP_ROOT:?RADP_APP_ROOT must be set before sourcing launcher.sh}"
-: "${RADP_APP_NAME:?RADP_APP_NAME must be set before sourcing launcher.sh}"
+
+# 自动派生应用名称（如未设置）
+if [[ -z "${RADP_APP_NAME:-}" ]]; then
+  RADP_APP_NAME="$(basename "$RADP_APP_ROOT")"
+  # 将 - 替换为 _，符合变量命名规范
+  RADP_APP_NAME="${RADP_APP_NAME//-/_}"
+  export RADP_APP_NAME
+fi
 
 # --------------------------------------------------------------------------- #
 # 1. 解析全局选项（-v/--verbose, --debug 等）
@@ -28,15 +34,6 @@ __radp_app_parse_global_options() {
   local config_json=false
   local found_command=false
 
-  # 构建全局选项集合用于快速查找
-  local -A global_opts=()
-  if [[ -n "${RADP_APP_GLOBAL_OPTIONS:-}" ]]; then
-    local opt
-    for opt in $RADP_APP_GLOBAL_OPTIONS; do
-      global_opts["$opt"]=1
-    done
-  fi
-
   while [[ $# -gt 0 ]]; do
     # 一旦遇到非选项参数（子命令），后续所有参数都传递给子命令
     if [[ "$found_command" == "true" ]]; then
@@ -47,22 +44,12 @@ __radp_app_parse_global_options() {
 
     case "$1" in
     -v | --verbose)
-      if [[ -n "${global_opts[-v]:-}${global_opts[--verbose]:-}" ]]; then
-        verbose=true
-        shift
-      else
-        __radp_app_filtered_args+=("$1")
-        shift
-      fi
+      verbose=true
+      shift
       ;;
     --debug)
-      if [[ -n "${global_opts[--debug]:-}" ]]; then
-        debug=true
-        shift
-      else
-        __radp_app_filtered_args+=("$1")
-        shift
-      fi
+      debug=true
+      shift
       ;;
     --config)
       show_config=true
@@ -103,6 +90,7 @@ __radp_app_parse_global_options() {
   fi
 
   # 设置输出模式环境变量
+  # 当显式指定 -v/--debug 时
   if [[ "$debug" == "true" ]]; then
     # Debug 模式: banner on, log level debug, debug enabled
     export GX_RADP_FW_BANNER_MODE=on
@@ -112,10 +100,6 @@ __radp_app_parse_global_options() {
     # Verbose 模式: banner on, log level info
     export GX_RADP_FW_BANNER_MODE=on
     export GX_RADP_FW_LOG_LEVEL=info
-  else
-    # 默认模式: banner off, log level error (只显示错误)
-    export GX_RADP_FW_BANNER_MODE=off
-    export GX_RADP_FW_LOG_LEVEL=error
   fi
 }
 
@@ -156,10 +140,8 @@ __radp_app_commands_dir="${RADP_APP_COMMANDS_DIR:-$RADP_APP_ROOT/src/main/shell/
 radp_cli_set_commands_dir "$__radp_app_commands_dir"
 unset __radp_app_commands_dir
 
-if [[ -n "${RADP_APP_GLOBAL_OPTIONS:-}" ]]; then
-  # shellcheck disable=SC2086
-  radp_cli_set_global_options $RADP_APP_GLOBAL_OPTIONS
-fi
+# 设置默认全局选项（用于帮助和补全）
+radp_cli_set_global_options "-v" "--verbose" "--debug" "--config"
 
 # --------------------------------------------------------------------------- #
 # 7. Dispatch

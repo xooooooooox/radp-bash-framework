@@ -82,54 +82,36 @@ __radp_cli_scaffold_bin() {
   local target_dir="$2"
   local project_var="${project_name//-/_}"
 
-  cat >"$target_dir/bin/$project_name" <<ENTRY_SCRIPT
+  cat >"$target_dir/bin/$project_name" <<'ENTRY_SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
 # 解析脚本真实路径（支持 symlink，如 Homebrew 安装）
 __resolve_project_root() {
-  local src="\${BASH_SOURCE[0]}"
+  local src="${BASH_SOURCE[0]}"
   local dir
-  while [[ -L "\$src" ]]; do
-    dir="\$(cd -P "\$(dirname "\$src")" && pwd)"
-    src="\$(readlink "\$src")"
-    [[ "\$src" != /* ]] && src="\$dir/\$src"
+  while [[ -L "$src" ]]; do
+    dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
   done
   local bin_dir
-  bin_dir="\$(cd -P "\$(dirname "\$src")" && pwd)"
-  dirname "\$bin_dir"
+  bin_dir="$(cd -P "$(dirname "$src")" && pwd)"
+  dirname "$bin_dir"
 }
 
-export RADP_APP_ROOT="\$(__resolve_project_root)"
+export RADP_APP_ROOT="$(__resolve_project_root)"
 
-# 加载 radp-bash-framework
+# 检查 radp-bash-framework
 if ! command -v radp-bf &>/dev/null; then
   echo "Error: radp-bash-framework not found. Please install it first." >&2
   echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
   exit 1
 fi
 
-# 自定义 banner（可选，在 framework 之前定义）
-# shellcheck disable=SC2154
-radp_app_banner() {
-  cat << 'BANNER'
-    ____  ___    ____  ____     ________    ____
-   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
-  / /_/ / /| | / / / / /_/ /  / /   / /    / /
- / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
-/_/ |_/_/  |_/_____/_/       \____/_____/___/
-BANNER
-  printf ' :: ${project_name} ::                       (%s)\\n' "\$(radp_get_install_version "\$gr_radp_extend_${project_var}_version")"
-  printf ' :: radp-bash-framework ::               (%s)\\n' "\$(radp_get_fw_install_version)"
-}
-
-# 应用声明式配置
-export RADP_APP_NAME="${project_name}"
-export RADP_APP_GLOBAL_OPTIONS="-v --verbose --debug"
-
-# 启动：框架负责全部初始化和 dispatch
+# 启动（RADP_APP_NAME 由框架自动从目录名派生）
 # shellcheck source=/dev/null
-source "\$(radp-bf path launcher)" "\$@"
+source "$(radp-bf path launcher)" "$@"
 ENTRY_SCRIPT
 
   # 设置执行权限

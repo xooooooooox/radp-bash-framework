@@ -195,32 +195,36 @@ See [docs/annotations.md](docs/annotations.md#subcommands) for the full subcomma
 
 ## Banner Customization
 
-Applications can customize the startup banner (shown when `banner-mode: on`):
+Applications can customize the startup banner ASCII art (shown when `banner-mode: on`).
+The framework automatically appends version information.
 
-### Priority Order
-1. `radp_app_banner()` function - defined before sourcing framework
+### Priority Order (ASCII Art)
+1. `radp_app_banner_art()` function - defined before sourcing framework
 2. `$gr_fw_user_config_path/banner.txt` - user config path banner file
 3. Framework default banner - `config/banner.txt`
 
 ### Hook Function Example
 ```bash
-# Define BEFORE sourcing framework
-radp_app_banner() {
+# Define BEFORE sourcing framework (ASCII art only)
+radp_app_banner_art() {
   cat << 'EOF'
-    ____  ___    ____  ____     ________    ____
-   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
-  / /_/ / /| | / / / / /_/ /  / /   / /    / /  
- / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /   
-/_/ |_/_/  |_/_____/_/       \____/_____/___/   
+    __  ___      ___
+   /  |/  /_  __/   |  ____  ____
+  / /|_/ / / / / /| | / __ \/ __ \
+ / /  / / /_/ / ___ |/ /_/ / /_/ /
+/_/  /_/\__, /_/  |_/ .___/ .___/
+       /____/      /_/   /_/
 EOF
-  printf ' :: MyApp ::                (%s)\n' "$gr_radp_extend_myapp_version"
-  printf ' :: radp-bash-framework ::  (%s)\n' "$gr_fw_version"
 }
 
-source "$(radp-bf path init)"
+source "$(radp-bf path launcher)" "$@"
 ```
 
-The hook function has access to all framework variables (`$gr_fw_version`, etc.) since it's called after context initialization.
+The framework will automatically append:
+```
+ :: my_app :: (v1.0.0)
+ :: radp-bash-framework :: (v0.6.11)
+```
 
 ## Code Style
 

@@ -1,7 +1,9 @@
 radp:
   env: default
   fw:
+    # 是否开启 banner, on or off
     banner-mode: on
+    # 日志配置
     log:
       debug: false
       level: info
