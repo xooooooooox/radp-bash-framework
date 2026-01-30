@@ -258,6 +258,20 @@ jobs:
           print(f"Updated version to {version} (last tag: {last_tag or 'none'})")
           PY
 
+      - name: Regenerate completion files
+        run: |
+          set -euo pipefail
+          completions_dir="src/main/shell/completions"
+          mkdir -p "${completions_dir}"
+
+          # Generate bash completion
+          ./src/main/shell/bin/radp-bf completion bash > "${completions_dir}/radp-bf"
+
+          # Generate zsh completion
+          ./src/main/shell/bin/radp-bf completion zsh > "${completions_dir}/_radp-bf"
+
+          echo "Regenerated completion files in ${completions_dir}"
+
       - name: Commit changes
         id: commit
         run: |
@@ -274,6 +288,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add \
             src/main/shell/framework/bootstrap/context/vars/constants/constants.sh \
+            src/main/shell/completions/ \
             packaging/copr/radp-bash-framework.spec \
             packaging/obs/radp-bash-framework.spec \
             CHANGELOG.md
@@ -299,6 +314,7 @@ jobs:
 
           - Update gr_fw_version
           - Sync spec versions
+          - Regenerate completion files
           - Add changelog entry (please review and edit)
 
           When this PR is merged, create-version-tag will run automatically to validate and tag the release.
