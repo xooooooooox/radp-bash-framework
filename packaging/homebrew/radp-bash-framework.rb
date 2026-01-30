@@ -28,9 +28,9 @@ class RadpBashFramework < Formula
       exec "#{libexec}/bin/radp-bf" "$@"
     EOS
 
-    # Install shell completions
-    bash_completion.install "src/main/shell/completions/radp-bf"
-    zsh_completion.install "src/main/shell/completions/_radp-bf"
+    # Install shell completions (from root completions/ directory)
+    bash_completion.install "completions/radp-bf"
+    zsh_completion.install "completions/_radp-bf"
   end
 
   def caveats

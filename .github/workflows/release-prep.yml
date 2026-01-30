@@ -261,7 +261,7 @@ jobs:
       - name: Regenerate completion files
         run: |
           set -euo pipefail
-          completions_dir="src/main/shell/completions"
+          completions_dir="completions"
           mkdir -p "${completions_dir}"
 
           # Generate bash completion
@@ -288,7 +288,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add \
             src/main/shell/framework/bootstrap/context/vars/constants/constants.sh \
-            src/main/shell/completions/ \
+            completions/ \
             packaging/copr/radp-bash-framework.spec \
             packaging/obs/radp-bash-framework.spec \
             CHANGELOG.md

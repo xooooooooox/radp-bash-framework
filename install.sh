@@ -586,7 +586,7 @@ install_manual() {
   mkdir -p "${install_dir}"
   cp -R "${src_root}/src/main/shell/bin" "${install_dir}/"
   cp -R "${src_root}/src/main/shell/framework" "${install_dir}/"
-  cp -R "${src_root}/src/main/shell/completions" "${install_dir}/"
+  cp -R "${src_root}/completions" "${install_dir}/"
 
   chmod 0755 "${install_dir}/bin/radp-bf"
   find "${install_dir}/framework" -type f -name "*.sh" -exec chmod 0755 {} \;

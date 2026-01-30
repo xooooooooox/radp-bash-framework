@@ -47,11 +47,11 @@ mkdir -p %{buildroot}%{_bindir}
 ln -s %{_libdir}/radp-bash-framework/bin/radp-bf %{buildroot}%{_bindir}/radp-bf
 ln -s %{_libdir}/radp-bash-framework/bin/radp-bf %{buildroot}%{_bindir}/radp-bash-framework
 
-# install shell completions
+# install shell completions (from root completions/ directory)
 mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 mkdir -p %{buildroot}%{_datadir}/zsh/site-functions
-cp -a src/main/shell/completions/radp-bf %{buildroot}%{_datadir}/bash-completion/completions/radp-bf
-cp -a src/main/shell/completions/_radp-bf %{buildroot}%{_datadir}/zsh/site-functions/_radp-bf
+cp -a completions/radp-bf %{buildroot}%{_datadir}/bash-completion/completions/radp-bf
+cp -a completions/_radp-bf %{buildroot}%{_datadir}/zsh/site-functions/_radp-bf
 
 %files
 %license LICENSE
