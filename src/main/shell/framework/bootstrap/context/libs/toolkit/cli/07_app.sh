@@ -161,7 +161,7 @@ __radp_app_show_config_text() {
   printf "  %-22s %s\n" "User config dir" "${gr_fw_user_config_path:-<not set>}"
   printf "  %-22s %s (%s)\n" "Config file" "${gr_fw_user_yaml_config_file:-<not set>}" "$config_exists"
   # Display user lib dirs (multiple paths supported)
-  if ! [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
+  if [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
     printf "  %-22s %s\n" "User lib dirs" "<not set>"
   elif [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 1 ]]; then
     printf "  %-22s %s\n" "User lib dirs" "${gra_radp_fw_user_lib_paths[0]}"

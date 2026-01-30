@@ -25,8 +25,8 @@ declare -g __radp_ide_hints_file=""
 #######################################
 radp_ide_init() {
   # Only generate if user config directory exists and is writable.
-  # In install mode (e.g. RPM under /usr/lib64), the directory is read-only
-  # and IDE hints are not useful on headless systems anyway.
+  # For read-only installations (e.g. RPM under /usr/lib64), skip generation
+  # as IDE hints are not useful on headless systems anyway.
   [[ ! -d "$gr_fw_user_config_path" ]] && return 0
   [[ ! -w "$gr_fw_user_config_path" ]] && return 0
 
