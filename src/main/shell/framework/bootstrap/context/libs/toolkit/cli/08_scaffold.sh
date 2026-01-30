@@ -77,14 +77,15 @@ radp_cli_scaffold_new() {
 }
 
 #######################################
-# 生成入口脚本（thin entry script）
-# 所有 boilerplate 逻辑由 framework/launcher.sh 处理
+# 生成入口脚本内容
+# Arguments:
+#   1 - project_name: 项目名称
+# Outputs:
+#   入口脚本内容（写入 stdout）
 #######################################
-__radp_cli_scaffold_bin() {
+radp_cli_entry_content() {
   local project_name="$1"
-  local target_dir="$2"
-
-  cat >"$target_dir/bin/$project_name" <<'ENTRY_SCRIPT'
+  cat <<ENTRY_SCRIPT
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -95,13 +96,23 @@ if ! command -v radp-bf &>/dev/null; then
   exit 1
 fi
 
-# 解析项目根目录并加载框架
-export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
+# 设置应用名称和根目录
+export RADP_APP_NAME="$project_name"
+export RADP_APP_ROOT="\$(radp-bf resolve-root "\${BASH_SOURCE[0]}")"
 # shellcheck source=/dev/null
-source "$(radp-bf path launcher)" "$@"
+source "\$(radp-bf path launcher)" "\$@"
 ENTRY_SCRIPT
+}
 
-  # 设置执行权限
+#######################################
+# 生成入口脚本（thin entry script）
+# 所有 boilerplate 逻辑由 framework/launcher.sh 处理
+#######################################
+__radp_cli_scaffold_bin() {
+  local project_name="$1"
+  local target_dir="$2"
+
+  radp_cli_entry_content "$project_name" >"$target_dir/bin/$project_name"
   chmod +x "$target_dir/bin/$project_name"
 }
 

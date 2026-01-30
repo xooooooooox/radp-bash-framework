@@ -278,25 +278,9 @@ __radp_upgrade_entry() {
     return 1
   fi
 
-  # 生成新的入口脚本内容
+  # 生成新的入口脚本内容（复用 scaffold 中的模板）
   local new_content
-  new_content=$(cat <<'ENTRY_SCRIPT'
-#!/usr/bin/env bash
-set -euo pipefail
-
-# 检查框架是否已安装
-if ! command -v radp-bf &>/dev/null; then
-  echo "Error: radp-bash-framework not found. Please install it first." >&2
-  echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
-  exit 1
-fi
-
-# 解析项目根目录并加载框架
-export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
-# shellcheck source=/dev/null
-source "$(radp-bf path launcher)" "$@"
-ENTRY_SCRIPT
-)
+  new_content=$(radp_cli_entry_content "$project_name")
 
   local current_content
   current_content=$(cat "$entry_file")
