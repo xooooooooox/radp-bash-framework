@@ -69,7 +69,17 @@ __radp_bf_path() {
     printf "%-17s %s\n" "Root path:" "$gr_fw_root_path"
     printf "%-17s %s\n" "Config path:" "$gr_fw_config_path"
     printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
-    printf "%-17s %s\n" "User lib path:" "$gr_radp_fw_user_lib_path"
+    if [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
+      printf "%-17s %s\n" "User lib paths:" "<not set>"
+    elif [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 1 ]]; then
+      printf "%-17s %s\n" "User lib paths:" "${gra_radp_fw_user_lib_paths[0]}"
+    else
+      printf "%-17s\n" "User lib paths:"
+      local lib_path
+      for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+        printf "                  - %s\n" "$lib_path"
+      done
+    fi
     ;;
   *)
     echo "radp-bf path: unknown name '${1}'" >&2
@@ -89,7 +99,7 @@ __radp_bf_main() {
     return 0
     ;;
   --version)
-    echo "$gr_fw_version"
+    radp_get_fw_install_version
     return 0
     ;;
   path)

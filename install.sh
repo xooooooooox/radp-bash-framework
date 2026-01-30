@@ -602,9 +602,10 @@ install_manual() {
   else
     # ref is branch/SHA, append to base version from source
     local base_version
-    base_version=$(grep -oE 'gr_fw_version=v[0-9]+\.[0-9]+\.[0-9]+' \
+    base_version=$(sed -n 's/^declare -gr gr_fw_version=//p' \
       "${install_dir}/framework/bootstrap/context/vars/constants/constants.sh" 2>/dev/null \
-      | cut -d= -f2 || echo "v0.0.0")
+      | head -n 1)
+    [[ -z "$base_version" ]] && base_version="v0.0.0"
     installed_version="${base_version}+${ref}"
   fi
   echo "${installed_version}" >"${install_dir}/.install-version"
