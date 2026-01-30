@@ -42,11 +42,18 @@ class RadpBashFramework < Formula
 
       To use the framework in your scripts:
         source "$(radp-bf path init)"
+
+      Shell completion:
+        # Bash
+        radp-bf completion bash > $(brew --prefix)/etc/bash_completion.d/radp-bf
+
+        # Zsh
+        radp-bf completion zsh > $(brew --prefix)/share/zsh/site-functions/_radp-bf
     EOS
   end
 
   test do
-    system "#{bin}/radp-bf", "--version"
-    system "#{bin}/radp-bf", "--print-root"
+    system "#{bin}/radp-bf", "version"
+    system "#{bin}/radp-bf", "path", "root"
   end
 end
