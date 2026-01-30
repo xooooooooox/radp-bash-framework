@@ -62,11 +62,12 @@ radp-bf upgrade entry ide
 
 **Upgradable components:**
 
-| Component   | Files                              | Description              |
-|-------------|------------------------------------|--------------------------|
-| `entry`     | `bin/<name>`                       | Entry script             |
-| `ide`       | `src/main/shell/config/_ide.sh`    | IDE support file         |
-| `gitignore` | `.gitignore`                       | Git ignore patterns      |
+| Component   | Files                                  | Description                                    |
+|-------------|----------------------------------------|------------------------------------------------|
+| `entry`     | `bin/<name>`                           | Entry script                                   |
+| `ide`       | `src/main/shell/config/_ide.sh`        | IDE support file                               |
+| `gitignore` | `.gitignore`                           | Git ignore patterns                            |
+| `version`   | `src/main/shell/commands/version.sh`   | Migrate version from config.yaml to version.sh |
 
 The upgrade command detects user modifications and skips those files unless `--force` is specified.
 

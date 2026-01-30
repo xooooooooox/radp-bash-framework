@@ -222,9 +222,26 @@ radp-bf --debug upgrade .
 ```
 
 The upgrade command:
+
 - Tracks scaffold version in `.radp-cli/version`
 - Detects user modifications via checksums in `.radp-cli/checksums/`
 - Skips modified files unless `--force` is specified
+
+**Upgradable components:**
+
+| Component   | Files                                | Description                                    |
+|-------------|--------------------------------------|------------------------------------------------|
+| `entry`     | `bin/<name>`                         | Entry script                                   |
+| `ide`       | `src/main/shell/config/_ide.sh`      | IDE support file                               |
+| `gitignore` | `.gitignore`                         | Git ignore patterns                            |
+| `version`   | `src/main/shell/commands/version.sh` | Migrate version from config.yaml to version.sh |
+
+Upgrade specific components:
+
+```shell
+radp-bf upgrade entry ide # Upgrade only entry and ide
+radp-bf upgrade version # Migrate version storage only
+```
 
 See [CLI Development Guide](cli-development.md#upgrading-projects) for details.
 
@@ -232,17 +249,17 @@ See [CLI Development Guide](cli-development.md#upgrading-projects) for details.
 
 The `radp-bf` CLI supports global options that work with any command:
 
-| Option          | Description                          |
-|-----------------|--------------------------------------|
-| `-v, --verbose` | Enable verbose output (info logs)    |
-| `--debug`       | Enable debug output (debug logs)     |
-| `-h, --help`    | Show help                            |
+| Option          | Description                       |
+|-----------------|-----------------------------------|
+| `-v, --verbose` | Enable verbose output (info logs) |
+| `--debug`       | Enable debug output (debug logs)  |
+| `-h, --help`    | Show help                         |
 
 Example:
 
 ```shell
-radp-bf -v new myapp           # Create project with verbose output
-radp-bf --debug upgrade .      # Upgrade with debug logging
+radp-bf -v new myapp # Create project with verbose output
+radp-bf --debug upgrade . # Upgrade with debug logging
 ```
 
 ## radp-bf Shell Completion
@@ -257,11 +274,11 @@ If you need to manually regenerate or install completions:
 
 ```shell
 # Bash
-radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
+radp-bf completion bash >~/.local/share/bash-completion/completions/radp-bf
 
 # Zsh
 mkdir -p ~/.zfunc
-radp-bf completion zsh > ~/.zfunc/_radp-bf
+radp-bf completion zsh >~/.zfunc/_radp-bf
 
 # For zsh, ensure fpath is configured in ~/.zshrc:
 #   fpath=(~/.zfunc $fpath)
