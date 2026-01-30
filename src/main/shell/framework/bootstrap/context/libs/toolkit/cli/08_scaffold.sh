@@ -231,9 +231,6 @@ radp:
         enabled: true
       file:
         enabled: false
-    user:
-      config:
-        automap: true  # Auto-generate config.sh from radp.extend.*
 
   # Application-specific extensions
   # Variables defined here will be available as gr_radp_extend_* in shell

@@ -16,11 +16,23 @@ __fw_include_lib_internal() {
 }
 
 __fw_include_lib_external() {
-  # Skip if user lib path is not configured
-  [[ -z "$gr_radp_fw_user_lib_path" ]] && return 0
+  # Skip if user lib paths array is empty
+  [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]] && return 0
 
   local scripts_before=${#gwxa_fw_sourced_scripts[@]}
-  __fw_source_scripts "$gr_radp_fw_user_lib_path"
+
+  # Iterate over all user lib paths
+  local lib_path
+  for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+    [[ -z "$lib_path" ]] && continue
+    [[ ! -d "$lib_path" ]] && {
+      if [[ "${gr_radp_fw_log_debug:-false}" == "true" ]]; then
+        radp_log_debug "User lib path not found, skipping: '$lib_path'"
+      fi
+      continue
+    }
+    __fw_source_scripts "$lib_path"
+  done
 
   # Log debug info about sourced external scripts if debug mode is enabled
   if [[ "${gr_radp_fw_log_debug:-false}" == "true" ]]; then
@@ -32,7 +44,9 @@ __fw_include_lib_external() {
         radp_log_debug "  - ${gwxa_fw_sourced_scripts[$i]}"
       done
     else
-      radp_log_debug "No external user lib scripts found in '$gr_radp_fw_user_lib_path'"
+      local paths_str
+      printf -v paths_str "'%s' " "${gra_radp_fw_user_lib_paths[@]}"
+      radp_log_debug "No external user lib scripts found in: $paths_str"
     fi
   fi
 }

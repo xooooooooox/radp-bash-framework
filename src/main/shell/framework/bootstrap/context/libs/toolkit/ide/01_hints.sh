@@ -19,7 +19,7 @@ declare -g __radp_ide_hints_file=""
 #   gr_fw_config_file - framework config file
 #   gr_fw_context_libs_path - framework libs directory
 #   gr_fw_user_config_file - user config file (contains gr_radp_extend_* vars)
-#   gr_radp_fw_user_lib_path - user libs directory
+#   gra_radp_fw_user_lib_paths - user libs directories array
 # Returns:
 #   0 - success
 #######################################
@@ -114,16 +114,19 @@ EOF
     printf '  # shellcheck source=%s\n' "$gr_fw_user_config_file" >>"$__radp_ide_hints_file"
   fi
 
-  # 4. User libs
-  if [[ -d "$gr_radp_fw_user_lib_path" ]]; then
-    printf '\n  # User libs\n' >>"$__radp_ide_hints_file"
+  # 4. User libs (iterate over all paths in the array)
+  printf '\n  # User libs\n' >>"$__radp_ide_hints_file"
+  local lib_path
+  for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+    [[ -z "$lib_path" ]] && continue
+    [[ ! -d "$lib_path" ]] && continue
     local -a user_libs=()
-    mapfile -t user_libs < <(find "$gr_radp_fw_user_lib_path" -type f -name "*.sh" | sort -t '_' -k 1,1n)
+    mapfile -t user_libs < <(find "$lib_path" -type f -name "*.sh" | sort -t '_' -k 1,1n)
     local user_lib
     for user_lib in "${user_libs[@]}"; do
       printf '  # shellcheck source=%s\n' "$user_lib" >>"$__radp_ide_hints_file"
     done
-  fi
+  done
 
   cat >>"$__radp_ide_hints_file" <<'EOF'
   :

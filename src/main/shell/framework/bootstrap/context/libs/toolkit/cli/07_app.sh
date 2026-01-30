@@ -160,7 +160,18 @@ __radp_app_show_config_text() {
   [[ -f "${gr_fw_user_yaml_config_file:-}" ]] && config_exists="exists"
   printf "  %-22s %s\n" "User config dir" "${gr_fw_user_config_path:-<not set>}"
   printf "  %-22s %s (%s)\n" "Config file" "${gr_fw_user_yaml_config_file:-<not set>}" "$config_exists"
-  printf "  %-22s %s\n" "User lib dir" "${gr_radp_fw_user_lib_path:-<not set>}"
+  # Display user lib dirs (multiple paths supported)
+  if ! [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
+    printf "  %-22s %s\n" "User lib dirs" "<not set>"
+  elif [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 1 ]]; then
+    printf "  %-22s %s\n" "User lib dirs" "${gra_radp_fw_user_lib_paths[0]}"
+  else
+    printf "  %-22s\n" "User lib dirs"
+    local lib_path
+    for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+      printf "    - %s\n" "$lib_path"
+    done
+  fi
   printf "  %-22s %s\n" "Framework root" "${gr_fw_root_path:-<not set>}"
   echo ""
 
@@ -245,6 +256,18 @@ __radp_app_show_config_json() {
   local config_exists="false"
   [[ -f "${gr_fw_user_yaml_config_file:-}" ]] && config_exists="true"
 
+  # Build user_lib_dirs JSON array
+  local user_lib_dirs_json="[]"
+  if [[ ${#gra_radp_fw_user_lib_paths[@]} -gt 0 ]]; then
+    local -a json_paths=()
+    local lib_path
+    for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+      json_paths+=("\"$lib_path\"")
+    done
+    local IFS=','
+    user_lib_dirs_json="[${json_paths[*]}]"
+  fi
+
   # Build JSON output
   cat <<EOF
 {
@@ -253,7 +276,7 @@ __radp_app_show_config_json() {
     "user_config_dir": "${gr_fw_user_config_path:-}",
     "config_file": "${gr_fw_user_yaml_config_file:-}",
     "config_file_exists": $config_exists,
-    "user_lib_dir": "${gr_radp_fw_user_lib_path:-}",
+    "user_lib_dirs": $user_lib_dirs_json,
     "framework_root": "${gr_fw_root_path:-}"
   },
   "framework": {

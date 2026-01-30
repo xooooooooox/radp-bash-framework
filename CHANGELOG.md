@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+### refactor
+
+- Support multi user lib paths.
+
 ## v0.6.11
 
 ### feat

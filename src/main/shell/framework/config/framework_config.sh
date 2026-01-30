@@ -32,7 +32,29 @@ declare -gr gr_radp_fw_log_color_error="${GX_RADP_FW_LOG_COLOR_ERROR:-${YAML_RAD
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
 #--------------------------------------------- user config ------------------------------------------------------------#
 declare -gr gr_radp_fw_user_config_automap="${GX_RADP_FW_USER_CONFIG_AUTOMAP:-${YAML_RADP_FW_USER_CONFIG_AUTOMAP:-false}}"
-declare -g gr_radp_fw_user_lib_path
-gr_radp_fw_user_lib_path="${GX_RADP_FW_USER_LIB_PATH:-${YAML_RADP_FW_USER_LIB_PATH:-}}"
-[[ -n "$gr_radp_fw_user_lib_path" ]] && gr_radp_fw_user_lib_path="$(__fw_normalize_path "$gr_radp_fw_user_lib_path")"
-readonly gr_radp_fw_user_lib_path
+
+# 用户库路径数组
+# 优先级: GX_RADP_FW_USER_LIB_PATHS (环境变量，冒号分隔)
+#       > YAMLA_RADP_FW_USER_LIB_PATHS (YAML 合并结果，逗号分隔)
+#       > 默认值（空数组）
+# 跳过已初始化的情况（防止重复 source 时报错）
+if ! declare -p gra_radp_fw_user_lib_paths &>/dev/null; then
+  declare -ga gra_radp_fw_user_lib_paths=()
+  if [[ -n "${GX_RADP_FW_USER_LIB_PATHS:-}" ]]; then
+    # 环境变量优先级最高，使用冒号分隔
+    IFS=':' read -ra gra_radp_fw_user_lib_paths <<< "$GX_RADP_FW_USER_LIB_PATHS"
+  elif [[ -n "${YAMLA_RADP_FW_USER_LIB_PATHS:-}" ]]; then
+    # YAML 合并结果，使用逗号分隔
+    IFS=',' read -ra gra_radp_fw_user_lib_paths <<< "$YAMLA_RADP_FW_USER_LIB_PATHS"
+  fi
+  # 对每个路径进行规范化处理
+  declare -a __tmp_normalized_paths=()
+  declare __tmp_path
+  for __tmp_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+    [[ -z "$__tmp_path" ]] && continue
+    __tmp_normalized_paths+=("$(__fw_normalize_path "$__tmp_path")")
+  done
+  gra_radp_fw_user_lib_paths=("${__tmp_normalized_paths[@]}")
+  unset __tmp_normalized_paths __tmp_path
+  readonly gra_radp_fw_user_lib_paths
+fi
