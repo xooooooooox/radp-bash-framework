@@ -6,7 +6,7 @@ declare -g __radp_ide_hints_file=""
 
 #######################################
 # Initialize IDE hints file
-# Generates completion.sh with framework and user sources
+# Generates _idecomp.sh with framework and user sources
 # This enables BashSupport Pro to provide code completion
 # for framework functions, variables, user variables, and user libs
 #
@@ -30,14 +30,14 @@ radp_ide_init() {
   [[ ! -d "$gr_fw_user_config_path" ]] && return 0
   [[ ! -w "$gr_fw_user_config_path" ]] && return 0
 
-  __radp_ide_hints_file="$gr_fw_user_config_path/completion.sh"
+  __radp_ide_hints_file="$gr_fw_user_config_path/_idecomp.sh"
   __radp_ide_generate_hints_file
 
   # Also write a copy into the framework context cache directory so that
   # toolkit scripts can add a shellcheck source directive pointing to it,
   # enabling BashSupport Pro code completion during development.
   if [[ -d "$gr_fw_context_cache_path" && -w "$gr_fw_context_cache_path" ]]; then
-    cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/completion.sh"
+    cp "$__radp_ide_hints_file" "$gr_fw_context_cache_path/_idecomp.sh"
   fi
 }
 
@@ -61,7 +61,7 @@ radp_ide_add_commands_dir() {
 #######################################
 # Internal: Generate the base hints file
 # Outputs:
-#   Writes completion.sh to user config directory
+#   Writes _idecomp.sh to user config directory
 #######################################
 __radp_ide_generate_hints_file() {
   cat >"$__radp_ide_hints_file" <<'EOF'

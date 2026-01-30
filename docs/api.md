@@ -1257,13 +1257,13 @@ IDEs).
 
 ### How It Works
 
-The framework generates a `completion.sh` file containing `# shellcheck source=...` directives. BashSupport Pro uses
+The framework generates a `_idecomp.sh` file containing `# shellcheck source=...` directives. BashSupport Pro uses
 ShellCheck's source directives to resolve symbols and provide code completion.
 
 **Generated file locations:**
 
-- `$gr_fw_user_config_path/completion.sh` — User config directory
-- `$gr_fw_context_cache_path/completion.sh` — Framework cache (for development)
+- `$gr_fw_user_config_path/_idecomp.sh` — User config directory
+- `$gr_fw_context_cache_path/_idecomp.sh` — Framework cache (for development)
 
 ### Setup
 
@@ -1300,8 +1300,8 @@ Called automatically by `radp_cli_set_commands_dir()`.
 
 | Issue             | Solution                                                 |
 |-------------------|----------------------------------------------------------|
-| No completion     | Ensure `completion.sh` exists in user config path        |
-| Stale completion  | Delete `completion.sh` and run CLI again                 |
+| No completion     | Ensure `_idecomp.sh` exists in user config path          |
+| Stale completion  | Delete `_idecomp.sh` and run CLI again                   |
 | Read-only install | IDE hints are skipped for system installs (`/usr/lib64`) |
 
-> **Note:** The `completion.sh` file uses absolute paths and should be added to `.gitignore`.
+> **Note:** The `_idecomp.sh` file uses absolute paths and should be added to `.gitignore`.

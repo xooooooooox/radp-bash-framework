@@ -16,7 +16,7 @@ set -e
 #   0 - Success
 #######################################
 __fw_context_setup_code_completion() {
-  # shellcheck source=./cache/completion.sh
+  # shellcheck source=./cache/_idecomp.sh
   radp_ide_init
 }
 

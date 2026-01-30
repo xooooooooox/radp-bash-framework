@@ -240,6 +240,6 @@ The framework will automatically append:
 
 For BashSupport Pro navigation:
 - IDE code completion is handled by `libs/toolkit/ide/01_hints.sh`
-- `radp_ide_init()` generates `completion.sh` with framework and user sources
+- `radp_ide_init()` generates `_idecomp.sh` with framework and user sources
 - `radp_ide_add_commands_dir()` appends user commands to the hints file
 - Working directory should be repository root for stable relative paths
