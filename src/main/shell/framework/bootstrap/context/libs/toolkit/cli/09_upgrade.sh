@@ -159,9 +159,15 @@ __radp_upgrade_detect_project() {
     return 1
   fi
 
-  # 查找入口脚本
-  local entry_script
-  entry_script=$(find "$target_dir/bin" -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+  # 查找入口脚本（兼容 macOS BSD，不依赖 GNU find -executable）
+  local entry_script=""
+  local file
+  for file in "$target_dir/bin"/*; do
+    if [[ -f "$file" && -x "$file" ]]; then
+      entry_script="$file"
+      break
+    fi
+  done
   if [[ -z "$entry_script" ]]; then
     radp_log_error "Not a valid CLI project: no executable found in bin/"
     return 1
@@ -189,8 +195,14 @@ __radp_upgrade_get_project_name() {
   fi
 
   # 从入口脚本名称推断
-  local entry_script
-  entry_script=$(find "$target_dir/bin" -maxdepth 1 -type f -executable 2>/dev/null | head -1)
+  local entry_script=""
+  local file
+  for file in "$target_dir/bin"/*; do
+    if [[ -f "$file" && -x "$file" ]]; then
+      entry_script="$file"
+      break
+    fi
+  done
   if [[ -n "$entry_script" ]]; then
     basename "$entry_script"
     return 0
