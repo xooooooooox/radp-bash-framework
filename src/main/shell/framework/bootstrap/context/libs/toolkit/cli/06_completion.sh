@@ -543,19 +543,16 @@ __radp_cli_zsh_gen_args_completion() {
   local func_suffix="${cmd_path// /_}"
 
   # 计算命令深度，用于移位 words 和 CURRENT
-  # 例如 "setup info" 深度为 2，需要移除 words 中的 "setup" 和 "info"
   local depth
   depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
 
   # 移位 words 和 CURRENT，使 _arguments 从正确位置开始解析
-  # 保留 words[1] 作为命令名（_arguments 要求 words[1] 为命令名，参数从 words[2] 开始）
-  if [[ $depth -gt 1 ]]; then
-    echo "${pad}    # Shift words array for nested subcommand (depth=$depth)"
-    echo "${pad}    words=(\"\${words[1]}\" \"\${words[@]:$((depth + 1))}\")"
-    echo "${pad}    (( CURRENT -= $((depth - 1)) ))"
-  fi
+  # 在 '*::arg:->args' 之后，words 包含子命令路径和参数，需要移除子命令路径部分
+  echo "${pad}    # Shift words to remove subcommand path (depth=$depth)"
+  echo "${pad}    words=( \"\${words[@]:$depth}\" )"
+  echo "${pad}    (( CURRENT -= $depth ))"
   echo ""
-  echo "${pad}    _arguments \\"
+  echo "${pad}    _arguments -s \\"
   echo "${pad}        '(-h --help)'{-h,--help}'[Show help]' \\"
 
   if ! radp_cli_cmd_exists "$cmd_path"; then

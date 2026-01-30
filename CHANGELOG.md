@@ -39,7 +39,9 @@
 - Fix IDE code completion not work
 - Fix radp_os_install_pkgs
 - Fix auto-generated ide hints file error on install-mode
-- Fix zsh completion not working for `radp-bf upgrade` subcommand arguments
+- Fix zsh completion not working for subcommand arguments
+  - Fix `radp-bf upgrade <tab>` not showing options/components
+  - Fix generated zsh completion for CLI apps
 
 ### refactor
 
