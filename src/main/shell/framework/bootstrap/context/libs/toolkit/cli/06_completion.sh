@@ -581,9 +581,9 @@ __radp_cli_zsh_gen_args_completion() {
 
     local opt_spec=""
     if [[ -n "${opt_info[short]}" && -n "${opt_info[long]}" ]]; then
-      opt_spec="'(-${opt_info[short]} --${opt_info[long]})'{-${opt_info[short]},--${opt_info[long]}}"
+      opt_spec="'(-${opt_info[short]} --${opt_info[long]})'{-${opt_info[short]},--${opt_info[long]}}'"
     elif [[ -n "${opt_info[long]}" ]]; then
-      opt_spec="'--${opt_info[long]}"
+      opt_spec="'--${opt_info[long]}'"
     fi
 
     if [[ -n "$opt_spec" ]]; then
