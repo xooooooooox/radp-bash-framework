@@ -6,7 +6,12 @@ __radp_bf_usage() {
 radp-bf - radp-bash-framework CLI
 
 Usage:
-  radp-bf <command> [args...]
+  radp-bf [options] <command> [args...]
+
+Global options:
+  -v, --verbose         Enable verbose output (info logs)
+  --debug               Enable debug output (debug logs)
+  -h, --help            Show this help
 
 Commands:
   new <name> [dir]      Create a new CLI project based on radp-bash-framework
@@ -32,7 +37,8 @@ Examples:
   radp-bf new my-cli ~/projects
   radp-bf upgrade                     # Upgrade current directory
   radp-bf upgrade ./my-cli --dry-run  # Preview changes
-  radp-bf upgrade --diff entry        # Show entry script diff
+  radp-bf -v upgrade .                # Upgrade with verbose output
+  radp-bf --debug upgrade .           # Upgrade with debug output
   source "$(radp-bf path init)" "$@"
   export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
   source "$(radp-bf path launcher)" "$@"
@@ -169,8 +175,38 @@ __radp_bf_main() {
   esac
 }
 
-# default disable log and banner
+# 解析全局选项（在加载框架前处理）
+__radp_bf_parse_global_opts() {
+  local -a remaining_args=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    -v | --verbose)
+      export GX_RADP_FW_LOG_CONSOLE_ENABLED=true
+      export GX_RADP_FW_LOG_LEVEL=info
+      shift
+      ;;
+    --debug)
+      export GX_RADP_FW_LOG_CONSOLE_ENABLED=true
+      export GX_RADP_FW_LOG_LEVEL=debug
+      shift
+      ;;
+    *)
+      remaining_args+=("$1")
+      shift
+      ;;
+    esac
+  done
+
+  # 返回剩余参数
+  printf '%s\n' "${remaining_args[@]}"
+}
+
+# 默认禁用日志和 banner
 GX_RADP_FW_LOG_CONSOLE_ENABLED=${GX_RADP_FW_LOG_CONSOLE_ENABLED:-false}
 GX_RADP_FW_LOG_FILE_ENABLED=${GX_RADP_FW_LOG_FILE_ENABLED:-false}
 
-__radp_bf_main "$@"
+# 解析全局选项并获取剩余参数
+mapfile -t __radp_bf_args < <(__radp_bf_parse_global_opts "$@")
+
+__radp_bf_main "${__radp_bf_args[@]}"
