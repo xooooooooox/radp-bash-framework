@@ -12,7 +12,7 @@ radp:
       debug: false
       level: info
       console:
-        enabled: true
+        enabled: false
       file:
         enabled: false
 

@@ -196,12 +196,12 @@ radp:
 
   # Framework settings override (optional)
   fw:
-    banner-mode: on
+    banner-mode: off
     log:
       debug: false
       level: info
       console:
-        enabled: true
+        enabled: false
       file:
         enabled: false
 
