@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 解析脚本真实路径（支持 symlink，如 Homebrew 安装）
-__resolve_project_root() {
+# 解析脚本真实路径（用于定位本地 radp-bf）
+__resolve_bin_dir() {
   local src="${BASH_SOURCE[0]}"
   local dir
   while [[ -L "$src" ]]; do
@@ -10,40 +10,19 @@ __resolve_project_root() {
     src="$(readlink "$src")"
     [[ "$src" != /* ]] && src="$dir/$src"
   done
-  local bin_dir
-  bin_dir="$(cd -P "$(dirname "$src")" && pwd)"
-  dirname "$bin_dir"
+  cd -P "$(dirname "$src")" && pwd
 }
 
-export RADP_APP_ROOT="$(__resolve_project_root)"
+# 开发模式：使用框架源码中的 radp-bf
+__bin_dir="$(__resolve_bin_dir)"
+__radp_bf="$__bin_dir/../../../../main/shell/bin/radp-bf"
 
-# 加载 radp-bash-framework
-if ! command -v radp-bf &>/dev/null; then
-  echo "Error: radp-bash-framework not found. Please install it first." >&2
-  echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
+if [[ ! -x "$__radp_bf" ]]; then
+  echo "Error: radp-bf not found at $__radp_bf" >&2
   exit 1
 fi
 
-# 自定义 banner（可选，在 framework 之前定义）
-# shellcheck disable=SC2154
-radp_app_banner() {
-  cat <<'BANNER'
-    ____  ___    ____  ____     ________    ____
-   / __ \/   |  / __ \/ __ \   / ____/ /   /  _/
-  / /_/ / /| | / / / / /_/ /  / /   / /    / /
- / _, _/ ___ |/ /_/ / ____/  / /___/ /____/ /
-/_/ |_/_/  |_/_____/_/       \____/_____/___/
-BANNER
-  printf ' :: example_cli ::                       (%s)\n' "${gr_radp_extend_example_cli_version:-v0.1.0}"
-  printf ' :: radp-bash-framework ::               (%s)\n' "$gr_fw_version"
-}
-
-# 应用声明式配置
-export RADP_APP_NAME="example_cli"
-export RADP_APP_GLOBAL_OPTIONS="-v --verbose --debug"
-
-# 启动：框架负责全部初始化和 dispatch
-# shellcheck source=/dev/null
-# source "$(radp-bf path launcher)" "$@"
-# 说明: 这里为了便于调试, 使用工程内的入口, 而不是安装入口
-source "$RADP_APP_ROOT"/../../../main/shell/framework/launcher.sh "$@"
+# 解析项目根目录并启动
+export RADP_APP_ROOT="$("$__radp_bf" resolve-root "${BASH_SOURCE[0]}")"
+# shellcheck source=../../../../main/shell/framework/launcher.sh
+source "$("$__radp_bf" path launcher)" "$@"

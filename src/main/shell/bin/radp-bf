@@ -3,27 +3,33 @@ set -euo pipefail
 
 __radp_bf_usage() {
   cat <<'USAGE'
-radp-bash-framework
+radp-bf - radp-bash-framework CLI
+
 Usage:
-  radp-bf [command] [options...]
+  radp-bf <command> [args...]
 
 Commands:
-  new <name>          Create a new CLI project based on radp-bash-framework.
-  path [name]         Print framework paths.
-                        init       Path to init.sh (framework initializer).
-                        launcher   Path to launcher.sh (app launcher).
-                        root       Framework root directory.
-                        (no args)  Print all paths.
-  -h, --help          Show this help.
-  --version           Show version number.
+  new <name> [dir]      Create a new CLI project based on radp-bash-framework
+  path <name>           Print framework path (init|launcher|root)
+  resolve-root <path>   Resolve project root from script path (for entry scripts)
+  version               Show version
+  help                  Show this help
+
+Path names:
+  init       Path to init.sh (framework initializer)
+  launcher   Path to launcher.sh (app launcher)
+  root       Framework root directory
 
 Examples:
-  source "$(radp-bf path init)"
-  source "$(radp-bf path launcher)" "$@"
   radp-bf new my-cli
+  radp-bf new my-cli ~/projects
+  source "$(radp-bf path init)" "$@"
+  export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
+  source "$(radp-bf path launcher)" "$@"
 USAGE
 }
 
+# 解析 radp-bf 自身的 bin 目录（处理 symlink）
 __radp_bf_bin_dir() {
   local src="${BASH_SOURCE[0]}"
 
@@ -41,6 +47,30 @@ __radp_bf_bin_dir() {
   done
 
   cd -P -- "$(dirname -- "${src}")" && pwd
+}
+
+# 解析任意脚本的项目根目录（处理 symlink）
+# 用于简化入口脚本中的 RADP_APP_ROOT 计算
+__radp_bf_resolve_root() {
+  local src="$1"
+
+  # 如果是相对路径，转为绝对路径
+  if [[ "${src}" != /* ]]; then
+    src="$(cd -P -- "$(dirname -- "${src}")" && pwd)/$(basename -- "${src}")"
+  fi
+
+  # 解决符号链接
+  local dir
+  while [[ -L "${src}" ]]; do
+    dir="$(cd -P -- "$(dirname -- "${src}")" && pwd)"
+    src="$(readlink "${src}")"
+    [[ "${src}" != /* ]] && src="${dir}/${src}"
+  done
+
+  # 返回 bin 目录的父目录（即项目根目录）
+  local bin_dir
+  bin_dir="$(cd -P -- "$(dirname -- "${src}")" && pwd)"
+  dirname "$bin_dir"
 }
 
 __radp_bf_setup() {
@@ -66,45 +96,44 @@ __radp_bf_path() {
     echo "${gr_fw_root_path}"
     ;;
   "")
-    printf "%-17s %s\n" "Root path:" "$gr_fw_root_path"
-    printf "%-17s %s\n" "Config path:" "$gr_fw_config_path"
-    printf "%-17s %s\n" "User config path:" "$gr_fw_user_config_path"
-    if [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
-      printf "%-17s %s\n" "User lib paths:" "<not set>"
-    elif [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 1 ]]; then
-      printf "%-17s %s\n" "User lib paths:" "${gra_radp_fw_user_lib_paths[0]}"
-    else
-      printf "%-17s\n" "User lib paths:"
-      local lib_path
-      for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
-        printf "                  - %s\n" "$lib_path"
-      done
-    fi
+    echo "radp-bf path: name required" >&2
+    echo "Available: init, launcher, root" >&2
+    return 1
     ;;
   *)
     echo "radp-bf path: unknown name '${1}'" >&2
     echo "Available: init, launcher, root" >&2
-    return 2
+    return 1
     ;;
   esac
 }
 
 __radp_bf_main() {
-  # 丢弃打印 banner 等信息
+  # 加载框架
   __radp_bf_setup "$@"
 
   case "${1:-}" in
-  --help | -h | "")
+  help | -h | --help | "")
     __radp_bf_usage
     return 0
     ;;
-  --version)
+  version | --version)
     radp_get_fw_install_version
     return 0
     ;;
   path)
     shift
     __radp_bf_path "${1:-}"
+    return $?
+    ;;
+  resolve-root)
+    shift
+    if [[ -z "${1:-}" ]]; then
+      echo "radp-bf resolve-root: script path required" >&2
+      echo "Usage: radp-bf resolve-root <script-path>" >&2
+      return 1
+    fi
+    __radp_bf_resolve_root "$1"
     return $?
     ;;
   new)
@@ -118,9 +147,9 @@ __radp_bf_main() {
     return $?
     ;;
   *)
-    echo "radp-bash-framework: unknown argument '${1}'" >&2
-    __radp_bf_usage >&2
-    return 2
+    echo "radp-bf: unknown command '${1}'" >&2
+    echo "Run 'radp-bf help' for usage." >&2
+    return 1
     ;;
   esac
 }

@@ -80,37 +80,20 @@ radp_cli_scaffold_new() {
 __radp_cli_scaffold_bin() {
   local project_name="$1"
   local target_dir="$2"
-  local project_var="${project_name//-/_}"
 
   cat >"$target_dir/bin/$project_name" <<'ENTRY_SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 解析脚本真实路径（支持 symlink，如 Homebrew 安装）
-__resolve_project_root() {
-  local src="${BASH_SOURCE[0]}"
-  local dir
-  while [[ -L "$src" ]]; do
-    dir="$(cd -P "$(dirname "$src")" && pwd)"
-    src="$(readlink "$src")"
-    [[ "$src" != /* ]] && src="$dir/$src"
-  done
-  local bin_dir
-  bin_dir="$(cd -P "$(dirname "$src")" && pwd)"
-  dirname "$bin_dir"
-}
-
-export RADP_APP_ROOT="$(__resolve_project_root)"
-
-# 检查 radp-bash-framework
+# 检查框架是否已安装
 if ! command -v radp-bf &>/dev/null; then
   echo "Error: radp-bash-framework not found. Please install it first." >&2
   echo "  See: https://github.com/xooooooooox/radp-bash-framework" >&2
   exit 1
 fi
 
-# 加载 radp-bash-framework
-# shellcheck source=/dev/null
+# 解析项目根目录并加载框架
+export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
 source "$(radp-bf path launcher)" "$@"
 ENTRY_SCRIPT
 

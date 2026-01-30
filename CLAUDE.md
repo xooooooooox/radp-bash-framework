@@ -21,13 +21,15 @@ source "$(./src/main/shell/bin/radp-bf path init)"    # Via CLI wrapper
 source "$(radp-bf path launcher)" "$@"                # App launcher (thin entry script)
 ```
 
-### CLI Options
+### CLI Commands
 ```bash
-radp-bf path init       # Print path to init.sh (framework initializer)
-radp-bf path launcher   # Print path to launcher.sh (app launcher)
-radp-bf path root       # Print framework root path
-radp-bf path            # Print all paths
-radp-bf --version       # Print version
+radp-bf new <name> [dir]           # Create a new CLI project
+radp-bf path init                  # Print path to init.sh (framework initializer)
+radp-bf path launcher              # Print path to launcher.sh (app launcher)
+radp-bf path root                  # Print framework root path
+radp-bf resolve-root <script>      # Resolve project root from script path
+radp-bf version                    # Print version
+radp-bf help                       # Show help
 ```
 
 ### Global Options (for apps using launcher.sh)
