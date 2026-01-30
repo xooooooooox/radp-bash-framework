@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.6.14
+## v0.6.15
 
 ### feat
 
@@ -29,6 +29,7 @@
   - Upgradable components: entry, ide, gitignore
   - Tracks scaffold version in `.radp-cli/` metadata
 - Add `radp-bf completion` command to generate completion for Bash/Zsh.
+- Shell completion is automatically installed with all installation methods (Homebrew, dnf, apt, install.sh).
 
 ### fix
 
