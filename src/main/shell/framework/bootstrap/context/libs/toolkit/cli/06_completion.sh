@@ -376,7 +376,7 @@ radp_cli_completion_zsh() {
   # 生成所有动态补全的 wrapper 函数
   __radp_cli_zsh_gen_completion_wrappers "$app_func"
 
-  # 生成全局选项的 _arguments 规格
+  # 生成全局选项的 _arguments 规格（用于顶级函数）
   local global_opts_spec=""
   if [[ -n "${__radp_cli_global_options:-}" ]]; then
     local opt
@@ -399,6 +399,13 @@ radp_cli_completion_zsh() {
     done
   fi
 
+  # 递归生成所有子命令的独立函数
+  local cmd
+  for cmd in $(radp_cli_list_commands); do
+    __radp_cli_zsh_gen_cmd_func "$app_func" "$cmd"
+  done
+
+  # 生成顶级入口函数
   cat <<ZSH_COMPLETION_HEADER
 _${app_func}() {
     local context state state_descr line
@@ -424,7 +431,6 @@ ZSH_COMPLETION_HEADER
 ZSH_COMPLETION_ARGS
 
   # 生成顶级命令列表
-  local cmd
   for cmd in $(radp_cli_list_commands); do
     local desc=""
     local -A meta=()
@@ -439,54 +445,56 @@ ZSH_COMPLETION_ARGS
     echo "                '$cmd:$desc'"
   done
 
-  cat <<'ZSH_COMPLETION_MIDDLE'
+  cat <<ZSH_COMPLETION_DISPATCH
             )
             _describe 'command' commands
             ;;
         args)
-            case "${words[1]}" in
-ZSH_COMPLETION_MIDDLE
-
-  # 为每个命令生成子命令或选项补全
-  for cmd in $(radp_cli_list_commands); do
-    __radp_cli_zsh_gen_cmd_completion "$cmd" "words[1]" 16
-  done
-
-  cat <<'ZSH_COMPLETION_FOOTER'
-                *)
-                    _files
-                    ;;
-            esac
+            local cmd_func="_${app_func}_\${words[1]//-/_}"
+            if (( \$+functions[\$cmd_func] )); then
+                \$cmd_func
+            else
+                _files
+            fi
             ;;
     esac
 }
-ZSH_COMPLETION_FOOTER
+ZSH_COMPLETION_DISPATCH
 
   echo
   echo "_${app_func} \"\$@\""
 }
 
 #######################################
-# 递归生成 Zsh 命令补全（内部函数）
+# 递归生成 Zsh 命令函数（新的函数式方法）
+# 为每个命令生成独立的函数，使用 _arguments -C 自动处理 word 移位
 # Arguments:
-#   1 - cmd_path: 当前命令路径
-#   2 - words_expr: words 表达式（用于嵌套 case）
-#   3 - indent: 缩进空格数
+#   1 - app_func: 应用函数名前缀
+#   2 - cmd_path: 当前命令路径
 #######################################
-__radp_cli_zsh_gen_cmd_completion() {
-  local cmd_path="$1"
-  local words_expr="$2"
-  local indent="$3"
-  local pad=""
-  local i
-  for ((i = 0; i < indent; i++)); do pad+=" "; done
-
-  local cmd_name="${cmd_path##* }"
-  echo "${pad}${cmd_name})"
+__radp_cli_zsh_gen_cmd_func() {
+  local app_func="$1"
+  local cmd_path="$2"
+  local func_name="_${app_func}_${cmd_path// /_}"
+  func_name="${func_name//-/_}"
 
   if radp_cli_has_subcommands "$cmd_path"; then
-    # 有子命令：生成子命令列表
-    echo "${pad}    local subcommands=("
+    # 有子命令：生成带状态机的函数
+    cat <<FUNC_HEADER
+${func_name}() {
+    local context state state_descr line
+    typeset -A opt_args
+
+    _arguments -C \\
+        '(-h --help)'{-h,--help}'[Show help]' \\
+        '1: :->command' \\
+        '*:: :->args'
+
+    case "\$state" in
+        command)
+            local commands=(
+FUNC_HEADER
+
     local subcmd
     for subcmd in $(radp_cli_list_subcommands "$cmd_path"); do
       local desc=""
@@ -499,78 +507,78 @@ __radp_cli_zsh_gen_cmd_completion() {
         desc="Manage $subcmd"
       fi
       desc="${desc//\'/\'\\\'\'}"
-      echo "${pad}        '$subcmd:$desc'"
+      echo "                '$subcmd:$desc'"
     done
-    echo "${pad}    )"
 
-    # 计算当前深度
-    local depth
-    depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
-    local next_word_idx=$((depth + 1))
+    cat <<FUNC_DISPATCH
+            )
+            _describe 'subcommand' commands
+            ;;
+        args)
+            local cmd_func="${func_name}_\${words[1]//-/_}"
+            if (( \$+functions[\$cmd_func] )); then
+                \$cmd_func
+            else
+                _files
+            fi
+            ;;
+    esac
+}
 
-    echo "${pad}    case \"\${words[$next_word_idx]}\" in"
+FUNC_DISPATCH
 
-    # 递归处理子命令
+    # 递归生成子命令的函数
     for subcmd in $(radp_cli_list_subcommands "$cmd_path"); do
-      __radp_cli_zsh_gen_cmd_completion "$cmd_path $subcmd" "words[$next_word_idx]" $((indent + 4))
+      __radp_cli_zsh_gen_cmd_func "$app_func" "$cmd_path $subcmd"
     done
-
-    echo "${pad}        *)"
-    echo "${pad}            _describe 'subcommand' subcommands"
-    echo "${pad}            ;;"
-    echo "${pad}    esac"
   else
-    # 没有子命令：补全选项和参数
-    __radp_cli_zsh_gen_args_completion "$cmd_path" "$pad"
+    # 没有子命令：生成叶子命令函数（直接补全选项和参数）
+    __radp_cli_zsh_gen_leaf_func "$app_func" "$cmd_path" "$func_name"
   fi
-
-  echo "${pad}    ;;"
 }
 
 #######################################
-# 生成 Zsh 参数和选项补全（内部函数）
-# 使用 wrapper 函数替代 state actions，避免嵌套上下文问题
+# 生成 Zsh 叶子命令函数（没有子命令的命令）
 # Arguments:
-#   1 - cmd_path: 命令路径
-#   2 - pad: 缩进字符串
+#   1 - app_func: 应用函数名前缀
+#   2 - cmd_path: 命令路径
+#   3 - func_name: 函数名
 #######################################
-__radp_cli_zsh_gen_args_completion() {
-  local cmd_path="$1"
-  local pad="$2"
-  local app_func="${__radp_cli_app_name//-/_}"
+__radp_cli_zsh_gen_leaf_func() {
+  local app_func="$1"
+  local cmd_path="$2"
+  local func_name="$3"
 
-  # 将命令路径转换为函数名后缀 (setup info -> setup_info)
-  local func_suffix="${cmd_path// /_}"
-
-  # 计算命令深度，用于移位 words 和 CURRENT
-  local depth
-  depth=$(echo "$cmd_path" | wc -w | tr -d ' ')
-
-  # 移位 words 和 CURRENT，使 _arguments 从正确位置开始解析
-  # 在 '*::arg:->args' 之后，words 包含子命令路径和参数，需要移除子命令路径部分
-  echo "${pad}    # Shift words to remove subcommand path (depth=$depth)"
-  echo "${pad}    words=( \"\${words[@]:$depth}\" )"
-  echo "${pad}    (( CURRENT -= $depth ))"
-  echo ""
-  echo "${pad}    _arguments -s \\"
-  echo "${pad}        '(-h --help)'{-h,--help}'[Show help]' \\"
+  echo "${func_name}() {"
 
   if ! radp_cli_cmd_exists "$cmd_path"; then
-    echo "${pad}        '*:file:_files'"
+    echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
+    echo "}"
+    echo ""
     return
   fi
 
   local -A meta=()
   if ! radp_cli_get_cmd_meta "$cmd_path" meta 2>/dev/null; then
-    echo "${pad}        '*:file:_files'"
+    echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
+    echo "}"
+    echo ""
     return
   fi
 
-  # 检查是否是透传模式 - 只保留 --help，其余作为 passthrough
+  # 检查是否是透传模式
   if [[ "${meta[metas]}" == *passthrough* ]]; then
-    echo "${pad}        '*:args:'"
+    echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:args:'"
+    echo "}"
+    echo ""
     return
   fi
+
+  # 将命令路径转换为函数名后缀
+  local func_suffix="${cmd_path// /_}"
+
+  echo "    _arguments -s \\"
+  echo "        '(-h --help)'{-h,--help}'[Show help]' \\"
 
   # 生成选项补全
   local opt_line
@@ -589,66 +597,56 @@ __radp_cli_zsh_gen_args_completion() {
     if [[ -n "$opt_spec" ]]; then
       local desc="${opt_info[desc]//\'/\'\\\'\'}"
       if [[ "${opt_info[has_value]}" == "true" ]]; then
-        # 检查是否有动态补全函数
         local complete_func
         if complete_func=$(radp_cli_get_complete_func "${opt_info[long]}" "${meta[completes]}" 2>/dev/null); then
-          # 动态补全 - 使用 wrapper 函数
           local opt_name="${opt_info[long]//-/_}"
           local wrapper_name="_${app_func}_opt_${func_suffix}_${opt_name}"
-          echo "${pad}        ${opt_spec}[${desc}]:${opt_info[value_name]}:${wrapper_name}' \\"
+          echo "        ${opt_spec}[${desc}]:${opt_info[value_name]}:${wrapper_name}' \\"
         else
-          echo "${pad}        ${opt_spec}[${desc}]:${opt_info[value_name]}:' \\"
+          echo "        ${opt_spec}[${desc}]:${opt_info[value_name]}:' \\"
         fi
       else
-        echo "${pad}        ${opt_spec}[${desc}]' \\"
+        echo "        ${opt_spec}[${desc}]' \\"
       fi
     fi
   done <<<"${meta[options]}"
 
-  # 收集参数补全规格
+  # 生成参数补全
   local arg_line arg_idx=1
-  local -a arg_specs=()
+  local has_args=false
   while IFS= read -r arg_line; do
     [[ -z "$arg_line" ]] && continue
+    has_args=true
     local -A arg_info=()
     radp_cli_parse_arg_spec "$arg_line" arg_info
 
+    local arg_spec=""
+    if [[ "${arg_info[variadic]}" == "true" ]]; then
+      arg_spec="'*"
+    else
+      arg_spec="'$arg_idx"
+    fi
+
     local complete_func
     if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
-      # 动态补全 - 使用 wrapper 函数
       local wrapper_name="_${app_func}_arg_${func_suffix}_${arg_info[name]}"
-      if [[ "${arg_info[variadic]}" == "true" ]]; then
-        arg_specs+=("'*:${arg_info[name]}:${wrapper_name}'")
-      else
-        arg_specs+=("'${arg_idx}:${arg_info[name]}:${wrapper_name}'")
-      fi
+      echo "        ${arg_spec}:${arg_info[name]}:${wrapper_name}'"
     else
-      if [[ "${arg_info[variadic]}" == "true" ]]; then
-        arg_specs+=("'*:${arg_info[name]}:_files'")
-      else
-        arg_specs+=("'${arg_idx}:${arg_info[name]}:_files'")
-      fi
+      echo "        ${arg_spec}:${arg_info[name]}:_files'"
     fi
     ((arg_idx++)) || true
   done <<<"${meta[args]}"
 
-  # 输出参数规格（最后一个不带反斜杠）
-  if [[ ${#arg_specs[@]} -eq 0 ]]; then
-    # 如果没有参数定义，添加默认文件补全
-    echo "${pad}        '*:file:_files'"
-  else
-    local i
-    for ((i = 0; i < ${#arg_specs[@]}; i++)); do
-      if [[ $i -eq $((${#arg_specs[@]} - 1)) ]]; then
-        # 最后一个参数不带反斜杠
-        echo "${pad}        ${arg_specs[$i]}"
-      else
-        echo "${pad}        ${arg_specs[$i]} \\"
-      fi
-    done
+  # 如果没有参数，添加默认文件补全
+  if [[ "$has_args" != "true" ]]; then
+    echo "        '*:file:_files'"
   fi
+
+  echo "}"
+  echo ""
 }
 
+#######################################
 #######################################
 # 生成补全脚本（统一入口）
 # Arguments:
