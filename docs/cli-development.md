@@ -195,20 +195,22 @@ The framework automatically loads user library files, eliminating the need for m
 
 ### How It Works
 
-Place `.sh` files in your project's `libs/` directory. The framework sources them automatically during bootstrap.
+Place `.sh` files in your project's `libs/` directory. For scaffold projects, the framework automatically detects and loads them - no configuration needed.
 
-### Configuration
+### Automatic Detection (Scaffold Projects)
 
-Set the library path via environment variable or YAML config:
+For projects created with `radp-bf new`, the framework automatically:
+- Detects `$RADP_APP_ROOT/src/main/shell/libs` directory
+- Adds it to the library search paths
+- Sources all `.sh` files during bootstrap
 
-**Environment Variable (recommended for CLI projects)**:
+No manual configuration required!
 
-```bash
-# In bin/myapp entry script (set before sourcing framework)
-export GX_RADP_FW_USER_LIB_PATH="$SCRIPT_DIR/../src/main/shell/libs"
-```
+### Manual Configuration (Non-Scaffold Projects)
 
-**YAML Configuration**:
+For custom setups, configure library paths via YAML or environment variable:
+
+**YAML Configuration (recommended)**:
 
 ```yaml
 # config/config.yaml
@@ -216,8 +218,19 @@ radp:
   fw:
     user:
       lib:
-        path: ${gr_fw_root_path}/../libs
+        paths:
+          - /path/to/libs1
+          - /path/to/libs2
 ```
+
+**Environment Variable**:
+
+```bash
+# Colon-separated paths (like PATH)
+export GX_RADP_FW_USER_LIB_PATHS="/path/to/libs1:/path/to/libs2"
+```
+
+Note: When both are set, paths are merged (union), not overwritten.
 
 ### Loading Order
 
@@ -259,6 +272,24 @@ cmd_migrate() {
 ### Debugging
 
 Enable debug logging to see which libraries are loaded:
+
+**Option 1: Command-line flag (recommended)**:
+
+```bash
+myapp --debug --help
+```
+
+**Option 2: YAML configuration**:
+
+```yaml
+# config/config.yaml
+radp:
+  fw:
+    log:
+      debug: true
+```
+
+**Option 3: Environment variable**:
 
 ```bash
 GX_RADP_FW_LOG_DEBUG=true myapp --help
@@ -559,20 +590,41 @@ myapp/
 
 ### Common Issues
 
-| Issue                   | Cause                    | Solution                                                 |
-|-------------------------|--------------------------|----------------------------------------------------------|
-| Command not found       | Missing `@cmd` marker    | Add `# @cmd` to the command file                         |
-| Option not working      | Wrong variable name      | Use `opt_<long_name>` (e.g., `opt_verbose`)              |
-| Completion not updating | Cached completion script | Regenerate: `myapp completion bash > ...`                |
-| Config not loading      | Wrong path or syntax     | Check YAML syntax and `GX_RADP_FW_USER_CONFIG_PATH`      |
-| Library not loaded      | Path not set             | Set `GX_RADP_FW_USER_LIB_PATH` before sourcing framework |
+| Issue                   | Cause                       | Solution                                                     |
+|-------------------------|-----------------------------|--------------------------------------------------------------|
+| Command not found       | Missing `@cmd` marker       | Add `# @cmd` to the command file                             |
+| Option not working      | Wrong variable name         | Use `opt_<long_name>` (e.g., `opt_verbose`)                  |
+| Completion not updating | Cached completion script    | Regenerate: `myapp completion bash > ...`                    |
+| Config not loading      | Wrong path or syntax        | Run `myapp --config` to check paths; validate YAML syntax    |
+| Library not loaded      | libs/ directory not found   | Ensure `src/main/shell/libs/` exists in project root         |
 
 ### Debugging Tips
 
-**Enable debug logging:**
+**Enable debug logging** (choose one):
 
 ```bash
+# Option 1: Command-line flag (recommended)
+myapp --debug hello
+
+# Option 2: YAML config (persistent)
+# In config/config.yaml:
+#   radp:
+#     fw:
+#       log:
+#         debug: true
+
+# Option 3: Environment variable
 GX_RADP_FW_LOG_DEBUG=true myapp hello
+```
+
+**Check configuration and paths:**
+
+```bash
+# Show all configuration including paths
+myapp --config
+
+# JSON format for scripting
+myapp --config --json
 ```
 
 **Check command discovery:**
@@ -582,14 +634,7 @@ GX_RADP_FW_LOG_DEBUG=true myapp hello
 myapp --help
 
 # Check specific command metadata
-myapp <command >--help
-```
-
-**Verify configuration:**
-
-```bash
-# Print all config variables
-env | grep -E "^(gr_radp_|GX_RADP_)"
+myapp <command> --help
 ```
 
 **Test completion functions:**

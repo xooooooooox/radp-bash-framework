@@ -103,13 +103,26 @@ All logging functions accept:
 | Variable                | Description          | Default         |
 |-------------------------|----------------------|-----------------|
 | `GX_RADP_FW_LOG_DEBUG`  | Enable debug logging | `false`         |
-| `gr_radp_fw_log_level`  | Minimum log level    | `INFO`          |
-| `gr_radp_fw_log_format` | Log format string    | `[%level] %msg` |
+| `GX_RADP_FW_LOG_LEVEL`  | Minimum log level    | `info`          |
+| `gr_radp_fw_log_level`  | Log level (readonly) | `info`          |
+
+**Enable debug logging** (choose one):
+
+```bash
+# CLI flag (for scaffold apps)
+myapp --debug hello
+
+# YAML config (recommended for persistent settings)
+# radp.fw.log.debug: true
+
+# Environment variable
+GX_RADP_FW_LOG_DEBUG=true myapp hello
+```
 
 ### Example
 
 ```bash
-radp_log_debug "Connecting to database" # Only shown if GX_RADP_FW_LOG_DEBUG=true
+radp_log_debug "Connecting to database" # Only shown when debug is enabled
 radp_log_info "Server started on port 8080"
 radp_log_warn "Config file not found, using defaults"
 radp_log_error "Failed to connect to API"
@@ -596,9 +609,32 @@ radp_app_config (name [version] [desc])
 radp_app_config "myapp" "1.0.0" "My awesome CLI tool"
 ```
 
-#### radp_app_bootstrap
+#### Entry Script (Recommended)
 
-Simplified bootstrap with auto-detection.
+For scaffold projects, use `launcher.sh` which handles all setup automatically:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v radp-bf &>/dev/null; then
+  echo "Error: radp-bash-framework not found." >&2
+  exit 1
+fi
+
+export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
+source "$(radp-bf path launcher)" "$@"
+```
+
+The launcher automatically:
+- Detects dev/installed mode via `_ide.sh` marker
+- Sets config and library paths
+- Parses global options (`-v`, `--debug`, `--config`)
+- Runs command dispatch
+
+#### radp_app_bootstrap (Legacy)
+
+Simplified bootstrap with auto-detection. Use `launcher.sh` for new projects.
 
 ```bash
 radp_app_bootstrap (app_root app_name [arguments...])
@@ -609,15 +645,6 @@ radp_app_bootstrap (app_root app_name [arguments...])
 - `app_root` — Application root directory
 - `app_name` — Application name
 - `arguments` — Command-line arguments to pass
-
-**Example:**
-
-```bash
-# In bin/myapp
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$(radp-bf path init)"
-radp_app_bootstrap "$SCRIPT_DIR/.." "myapp" "$@"
-```
 
 #### radp_app_run
 
@@ -633,13 +660,7 @@ radp_app_run ([arguments...])
 
 **Prerequisites:** Commands directory must be set via `radp_cli_set_commands_dir()`
 
-**Example:**
-
-```bash
-radp_cli_set_commands_dir "/path/to/commands"
-radp_app_config "myapp" "1.0.0"
-radp_app_run "$@"
-```
+**Note:** When using `launcher.sh`, this is called automatically.
 
 #### radp_app_version
 
@@ -688,6 +709,44 @@ if radp_app_is_version_request "$@"; then
   exit 0
 fi
 ```
+
+#### radp_app_show_config
+
+Display application configuration information. Outputs paths, framework settings, and application extensions.
+
+```bash
+radp_app_show_config()
+```
+
+**Output formats:**
+
+- **Text** (default): Grouped sections with labels
+- **JSON**: Machine-readable format (set `__RADP_APP_CONFIG_JSON=true`)
+
+**Example output (text):**
+
+```
+myapp Configuration
+========================
+
+[Paths]
+  User config dir        /home/user/.config/myapp
+  Config file            /home/user/.config/myapp/config.yaml (exists)
+  User lib dirs          /home/user/myapp/src/main/shell/libs
+  Framework root         /usr/local/opt/radp-bash-framework/libexec
+
+[Framework]
+  Version                v1.0.0
+  Banner mode            off
+  Log level              info
+  Log debug              false
+
+[Application: myapp]
+  api_url                https://api.example.com
+  timeout                30
+```
+
+**Usage:** This function is typically invoked via `myapp --config` global option (handled by `launcher.sh`).
 
 ### Command Discovery
 
