@@ -124,7 +124,18 @@ __radp_app_parse_global_options "$@"
 # --------------------------------------------------------------------------- #
 # 2. Config 路径自动检测（开发态 vs 安装态）
 # --------------------------------------------------------------------------- #
-if [[ -d "$RADP_APP_ROOT/src/main/shell/config" ]]; then
+# Development mode: source config exists AND is under user's home directory
+# Installed mode: use XDG config directory
+__radp_is_dev_mode() {
+  # Check if source config directory exists
+  [[ -d "$RADP_APP_ROOT/src/main/shell/config" ]] || return 1
+  # Check if RADP_APP_ROOT is under user's home directory (development)
+  [[ "$RADP_APP_ROOT" == "$HOME"* ]] && return 0
+  # Otherwise, it's installed mode (e.g., Homebrew, system packages)
+  return 1
+}
+
+if __radp_is_dev_mode; then
   export GX_RADP_FW_USER_CONFIG_PATH="$RADP_APP_ROOT/src/main/shell/config"
 else
   export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/$RADP_APP_NAME"

@@ -160,7 +160,7 @@ __radp_app_show_config_text() {
   [[ -f "${gr_fw_user_yaml_config_file:-}" ]] && config_exists="exists"
   printf "  %-22s %s\n" "User config dir" "${gr_fw_user_config_path:-<not set>}"
   printf "  %-22s %s (%s)\n" "Config file" "${gr_fw_user_yaml_config_file:-<not set>}" "$config_exists"
-  printf "  %-22s %s\n" "User lib dir" "${gr_fw_user_lib_path:-<not set>}"
+  printf "  %-22s %s\n" "User lib dir" "${gr_radp_fw_user_lib_path:-<not set>}"
   printf "  %-22s %s\n" "Framework root" "${gr_fw_root_path:-<not set>}"
   echo ""
 
@@ -253,7 +253,7 @@ __radp_app_show_config_json() {
     "user_config_dir": "${gr_fw_user_config_path:-}",
     "config_file": "${gr_fw_user_yaml_config_file:-}",
     "config_file_exists": $config_exists,
-    "user_lib_dir": "${gr_fw_user_lib_path:-}",
+    "user_lib_dir": "${gr_radp_fw_user_lib_path:-}",
     "framework_root": "${gr_fw_root_path:-}"
   },
   "framework": {
