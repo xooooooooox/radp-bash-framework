@@ -2,7 +2,7 @@
 
 ## Quick Install
 
-### Homebrew (macOS/Linux)
+### Homebrew (macOS)
 
 ```shell
 brew tap xooooooooox/radp

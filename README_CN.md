@@ -43,7 +43,7 @@
 
 ## 安装
 
-### Homebrew (macOS/Linux)
+### Homebrew (macOS)
 
 ```shell
 brew tap xooooooooox/radp

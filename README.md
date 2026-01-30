@@ -44,7 +44,7 @@ comprehensive toolkit.
 
 ## Installation
 
-### Homebrew (macOS/Linux)
+### Homebrew (macOS)
 
 ```shell
 brew tap xooooooooox/radp
