@@ -1,12 +1,6 @@
 # CHANGELOG
 
-## Unreleased
-
-### refactor
-
-- Support multi user lib paths.
-
-## v0.6.11
+## v0.6.12
 
 ### feat
 
@@ -14,19 +8,6 @@
   - Shows paths, framework settings, and application extensions
   - Supports `--config --json` for JSON output
   - Available for all CLI applications built on radp-bash-framework
-
-## v0.6.10
-
-### refactor
-
-- Scaffold: Move version from `vars/constants.sh` to `config/config.yaml` (`radp.extend.xxx.version`)
-- Scaffold: Remove `vars` directory, add `config/_ide.sh` for IDE code completion support
-- Scaffold: Update workflows to use `yq` for YAML version management
-
-## v0.6.9
-
-### feat
-
 - Add dry-run mode support in exec toolkit (`04_dry_run.sh`)
   - `radp_set_dry_run()` - Enable/disable dry-run mode
   - `radp_is_dry_run()` - Check if dry-run mode is enabled
@@ -36,31 +17,43 @@
 - Add `radp_get_install_version()` helper function for accurate version display
 - Add `radp_get_fw_install_version()` helper function for framework version
 - Generate `.install-version` file during manual installation
-- Update scaffold template to use version helper functions in banner
-- Update cli scaffold default banner
 - Add GNU getopt preflight check to ensure CLI works on macOS (BSD getopt incompatible)
   - Auto-detect and use GNU getopt path
   - Auto-install via Homebrew on macOS if missing
 - Add post-uninstall note about user config directory
+- Add `_ide.sh` as development mode marker for automatic config path detection
+  - Development mode (source): uses `$RADP_APP_ROOT/src/main/shell/config`
+  - Installed mode: uses `~/.config/$RADP_APP_NAME`
 
 ### fix
 
 - Fix CLI argument parsing fails on macOS due to BSD getopt
 - Fix passthrough mode intercepting `--help` instead of passing to underlying command
-- Fix preflight
-- Fix installer
+- Fix preflight no such file or directory error
 - Fix IDE code completion not work
 - Fix radp_os_install_pkgs
 - Fix auto-generated ide hints file error on install-mode
-- Fix preflight no such file or directory error
 
 ### refactor
 
+- Refactor `radp-bf` CLI to unified subcommand style
+  - Add `resolve-root <path>` command for entry script simplification
+  - Change `--version` to `version` subcommand (keep alias)
+  - Change `--help` to `help` subcommand (keep `-h`/`--help` aliases)
+  - Remove `path` no-argument verbose output
+- Simplify scaffold entry script from ~28 lines to ~12 lines using `resolve-root`
 - Refactor preflight to two-stage architecture for better maintainability
   - Stage 1 (POSIX shell): bash check/install only
   - Stage 2 (Bash): other dependencies with cleaner bash syntax
 - Refactor version mechanism
-- Refactor run.sh to init.sh and refactor radp-bf options
+- Refactor run.sh to init.sh
+- Refactor banner: separate ASCII art from version info with auto-alignment
+- Rename IDE hints file from `completion.sh` to `_idecomp.sh`
+- Support multiple user lib paths with union merge
+- Scaffold: Move version from `vars/constants.sh` to `config/config.yaml` (`radp.extend.xxx.version`)
+- Scaffold: Remove `vars` directory, add `config/_ide.sh` for IDE code completion support
+- Scaffold: Update workflows to use `yq` for YAML version management
+- Scaffold: Remove `_ide.sh` during installation (manual/rpm/deb/homebrew)
 
 ### chore
 
@@ -70,6 +63,7 @@
 ### docs
 
 - Update installation
+- Update CLI commands documentation
 
 ### test
 
