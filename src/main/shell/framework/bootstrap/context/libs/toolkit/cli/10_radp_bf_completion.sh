@@ -77,7 +77,7 @@ _radp_bf() {
             ;;
         upgrade)
             local upgrade_opts="--dry-run --force --diff"
-            local components="entry ide gitignore all"
+            local components="entry ide gitignore version workflows all"
 
             case "$cur" in
                 -*)
@@ -163,7 +163,7 @@ _radp_bf_upgrade() {
     '--force[Overwrite user-modified files]' \
     '--diff[Show file differences]' \
     '1:directory:_files -/' \
-    '*:component:(entry ide gitignore all)'
+    '*:component:(entry ide gitignore version workflows all)'
 }
 
 _radp_bf_new() {
