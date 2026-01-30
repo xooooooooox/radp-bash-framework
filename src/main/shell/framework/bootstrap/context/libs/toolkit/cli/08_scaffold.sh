@@ -1146,7 +1146,7 @@ radp_workflow_content_release_prep() {
   local project_name="$1"
   local project_var="$2"
 
-  cat <<WORKFLOW
+  cat <<'WORKFLOW'
 name: Release prep
 
 on:
@@ -1155,11 +1155,15 @@ on:
       bump_type:
         description: "Release version bump type"
         type: choice
-        options: [patch, minor, major, manual]
+        options:
+          - patch
+          - minor
+          - major
+          - manual
         default: patch
         required: true
       version:
-        description: "Manual version (vX.Y.Z) when bump_type=manual"
+        description: "Manual release version tag (vX.Y.Z) when bump_type=manual"
         required: false
 
 permissions:
@@ -1170,48 +1174,305 @@ jobs:
   release-prep:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: git fetch --tags --force
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
       - name: Resolve version
         id: version
         run: |
           set -euo pipefail
-          bump_type="\${{ inputs.bump_type }}"
-          manual_version="\${{ inputs.version }}"
-          latest_tag="\$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
-          [[ -z "\${latest_tag}" ]] && { echo "No tags found" >&2; exit 1; }
-          [[ ! "\${latest_tag}" =~ ^v([0-9]+)\\.([0-9]+)\\.([0-9]+)\$ ]] && exit 1
-          major="\${BASH_REMATCH[1]}" minor="\${BASH_REMATCH[2]}" patch="\${BASH_REMATCH[3]}"
-          case "\${bump_type}" in
-            patch) version="v\${major}.\${minor}.\$((patch + 1))" ;;
-            minor) version="v\${major}.\$((minor + 1)).0" ;;
-            major) version="v\$((major + 1)).0.0" ;;
-            manual) version="\${manual_version}" ;;
+          bump_type="${{ inputs.bump_type }}"
+          manual_version="${{ inputs.version }}"
+          latest_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+
+          # Handle initial release (no existing tags)
+          if [[ -z "${latest_tag}" ]]; then
+            echo "No tags found; using v0.0.0 as base for initial release."
+            latest_tag="v0.0.0"
+          fi
+
+          if [[ ! "${latest_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Latest tag '${latest_tag}' does not match vX.Y.Z" >&2
+            exit 1
+          fi
+          major="${BASH_REMATCH[1]}"
+          minor="${BASH_REMATCH[2]}"
+          patch="${BASH_REMATCH[3]}"
+
+          case "${bump_type}" in
+            patch)
+              version="v${major}.${minor}.$((patch + 1))"
+              ;;
+            minor)
+              version="v${major}.$((minor + 1)).0"
+              ;;
+            major)
+              version="v$((major + 1)).0.0"
+              ;;
+            manual)
+              if [[ -z "${manual_version}" ]]; then
+                echo "Manual bump_type requires inputs.version." >&2
+                exit 1
+              fi
+              version="${manual_version}"
+              ;;
+            *)
+              echo "Unsupported bump_type: ${bump_type}" >&2
+              exit 1
+              ;;
           esac
-          echo "version=\${version}" >> "\$GITHUB_OUTPUT"
-      - name: Create branch and update files
+
+          if [[ ! "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '${version}' does not match vX.Y.Z" >&2
+            exit 1
+          fi
+
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "latest=${latest_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release branch
+        id: branch
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          if git rev-parse "${version}" >/dev/null 2>&1; then
+            echo "Tag ${version} already exists. Aborting release prep." >&2
+            exit 1
+          fi
+          branch="workflow/${version}"
+          reused=false
+          if git ls-remote --exit-code --heads origin "${branch}" >/dev/null 2>&1; then
+            git checkout -b "${branch}" "origin/${branch}"
+            echo "Reusing existing branch ${branch}"
+            reused=true
+          else
+            git checkout -b "${branch}"
+          fi
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          echo "reused=${reused}" >> "$GITHUB_OUTPUT"
+
+      - name: Update versions and changelog
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+WORKFLOW
+
+  # 这部分需要插入 project_name
+  cat <<WORKFLOW
+        run: |
+          set -euo pipefail
+          version="\${VERSION}"
+          version_no_prefix="\${version#v}"
+
+          # Update version.sh
+          sed -i "s/^declare -gr gr_app_version=.*/declare -gr gr_app_version=\"\${version}\"/" src/main/shell/commands/version.sh
+
+          # Update spec files
+          sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
+          sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
+
+          # Update CHANGELOG.md
+          python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          version = os.environ["VERSION"].strip()
+          if not re.match(r"^v[0-9]+\.[0-9]+\.[0-9]+\$", version):
+            raise SystemExit(f"Invalid version: {version}")
+          version_no_prefix = version[1:]
+
+          def git(*args: str) -> str:
+            return subprocess.check_output(["git", *args], text=True, errors="replace").strip()
+
+          def try_git(*args: str) -> str:
+            try:
+              return git(*args)
+            except subprocess.CalledProcessError:
+              return ""
+
+          changelog_path = Path("CHANGELOG.md")
+          if not changelog_path.exists():
+            raise SystemExit("CHANGELOG.md not found.")
+          changelog_text = changelog_path.read_text()
+          header_pattern = re.compile(rf"^##\\s+v?{re.escape(version_no_prefix)}(\\s|\$)")
+
+          last_tag = try_git("describe", "--tags", "--abbrev=0", "--match", "v*")
+          log_range = f"{last_tag}..HEAD" if last_tag else "HEAD"
+          log_output = try_git("log", "--no-merges", "--pretty=%h %s", log_range)
+          base_types = ["feat", "fix", "chore"]
+          standard_types = base_types + ["docs", "refactor", "perf", "test", "build", "ci"]
+          other_key = "other"
+          entries_by_type = {t: [] for t in standard_types}
+          entries_by_type[other_key] = []
+          type_pattern = re.compile(r"^(?P<type>[A-Za-z][A-Za-z0-9_-]*)(\\([^\\)]*\\))?:\\s+(?P<desc>.+)\$")
+
+          for line in log_output.splitlines():
+            line = line.strip()
+            if not line:
+              continue
+            parts = line.split(" ", 1)
+            sha = parts[0]
+            subject = parts[1] if len(parts) > 1 else ""
+            subject_ascii = subject.encode("ascii", "ignore").decode("ascii").strip()
+            if not subject_ascii:
+              subject_ascii = "<non-ascii subject>"
+            match = type_pattern.match(subject_ascii)
+            if match:
+              commit_type = match.group("type").lower()
+              desc = match.group("desc").strip() or subject_ascii
+            else:
+              commit_type = other_key
+              desc = subject_ascii
+            if commit_type not in entries_by_type:
+              commit_type = other_key
+            entries_by_type[commit_type].append(desc)
+
+          default_header = f"## {version}"
+          include_types = [t for t in standard_types if entries_by_type[t]]
+          if entries_by_type[other_key]:
+            include_types.append(other_key)
+
+          def build_section_lines(header_line: str, leading_blank: bool) -> list[str]:
+            section = []
+            if leading_blank:
+              section.append("")
+            section.append(header_line)
+            section.append("")
+            if not include_types:
+              section.append("- TODO: no commits found; add summary manually.")
+              return section
+            for commit_type in include_types:
+              section.append(f"### {commit_type}")
+              section.append("")
+              for entry in entries_by_type.get(commit_type, []):
+                section.append(f"- {entry}")
+              section.append("")
+            while section and section[-1] == "":
+              section.pop()
+            return section
+
+          lines = changelog_text.splitlines()
+          start = None
+          for idx, line in enumerate(lines):
+            if header_pattern.match(line):
+              start = idx
+              break
+          if start is not None:
+            end = len(lines)
+            for idx in range(start + 1, len(lines)):
+              if lines[idx].startswith("## "):
+                end = idx
+                break
+            existing_section = "\\n".join(lines[start:end])
+            todo_markers = (
+              "TODO: curate and rewrite this list before release.",
+              "TODO: no commits found; add summary manually.",
+            )
+            if any(marker in existing_section for marker in todo_markers):
+              header_line = lines[start]
+              new_lines = build_section_lines(header_line, leading_blank=False)
+              lines = lines[:start] + new_lines + lines[end:]
+            else:
+              print("CHANGELOG entry exists and appears edited; leaving it unchanged.")
+          else:
+            insert_at = 1 if lines and lines[0].strip() == "# CHANGELOG" else 0
+            new_lines = build_section_lines(default_header, leading_blank=True)
+            lines = lines[:insert_at] + new_lines + lines[insert_at:]
+
+          changelog_path.write_text("\\n".join(lines).rstrip() + "\\n")
+
+          print(f"Updated version to {version} (last tag: {last_tag or 'none'})")
+          PY
+WORKFLOW
+
+  cat <<WORKFLOW
+
+      - name: Install radp-bash-framework
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | \\
+            RADP_BF_INSTALL_MODE=manual bash
+          echo "\$HOME/.local/bin" >> "\$GITHUB_PATH"
+
+      - name: Regenerate completion scripts
+        run: |
+          set -euo pipefail
+          export PATH="\$HOME/.local/bin:\$PATH"
+          ./bin/${project_name} completion bash > completions/${project_name}.bash
+          ./bin/${project_name} completion zsh > completions/${project_name}.zsh
+          echo "Completion scripts regenerated"
+
+      - name: Commit changes
+        id: commit
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            if [[ "\${{ steps.branch.outputs.reused }}" == "true" ]]; then
+              echo "No changes to commit; branch already exists."
+              exit 0
+            fi
+            echo "No changes to commit; aborting release prep." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \\
+            src/main/shell/commands/version.sh \\
+            packaging/copr/${project_name}.spec \\
+            packaging/obs/${project_name}.spec \\
+            completions/${project_name}.bash \\
+            completions/${project_name}.zsh \\
+            CHANGELOG.md
+          git commit -m "Release prep \${{ steps.version.outputs.version }}"
+
+      - name: Push branch
+        run: |
+          set -euo pipefail
+          git push --set-upstream origin "\${{ steps.branch.outputs.branch }}"
+
+      - name: Create pull request
+        env:
+          GH_TOKEN: \${{ secrets.RELEASE_PREP_TOKEN || github.token }}
+          HAS_RELEASE_PREP_TOKEN: \${{ secrets.RELEASE_PREP_TOKEN != '' }}
         run: |
           set -euo pipefail
           version="\${{ steps.version.outputs.version }}"
-          version_no_prefix="\${version#v}"
-          git checkout -b "workflow/\${version}"
-          sed -i "s/^declare -gr gr_app_version=.*/declare -gr gr_app_version=\"\${version}\"/" src/main/shell/commands/version.sh
-          sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
-          sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Release prep \${version}"
-          git push --set-upstream origin "workflow/\${version}"
-      - name: Create PR
-        env:
-          GH_TOKEN: \${{ github.token }}
-        run: |
-          version="\${{ steps.version.outputs.version }}"
-          gh pr create --base main --head "workflow/\${version}" --title "Release \${version}" --body "Release prep for \${version}"
+          branch="\${{ steps.branch.outputs.branch }}"
+          title="Release \${version}"
+          body_file="\$(mktemp)"
+          cat > "\${body_file}" <<EOF
+          Release prep for \${version}.
+
+          - Update gr_app_version in version.sh
+          - Sync spec versions
+          - Add changelog entry (please review and edit)
+
+          When this PR is merged, create-version-tag will run automatically to validate and tag the release.
+          EOF
+          if gh pr create --base main --head "\${branch}" --title "\${title}" --body-file "\${body_file}"; then
+            exit 0
+          fi
+          if gh pr view --head "\${branch}" >/dev/null 2>&1; then
+            echo "PR already exists for \${branch}."
+            exit 0
+          fi
+          if [[ "\${HAS_RELEASE_PREP_TOKEN}" == "true" ]]; then
+            echo "PR creation failed even with RELEASE_PREP_TOKEN; check token scopes and repo settings." >&2
+            exit 1
+          fi
+          echo "PR creation not permitted for GitHub Actions token." >&2
+          echo "Enable 'Allow GitHub Actions to create and approve pull requests' or create the PR manually:" >&2
+          echo "  gh pr create --base main --head \"\${branch}\" --title \"\${title}\" --body-file \"\${body_file}\"" >&2
 WORKFLOW
 }
 
@@ -1219,38 +1480,146 @@ radp_workflow_content_create_tag() {
   local project_name="$1"
   local project_var="$2"
 
-  cat <<WORKFLOW
+  cat <<'WORKFLOW'
 name: Create version tag
 
 on:
   workflow_dispatch:
   pull_request:
-    types: [closed]
-    branches: [main]
+    types:
+      - closed
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   create-version-tag:
-    if: |
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'workflow/v'))
+    if: >-
+      ${{
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'pull_request' &&
+          github.event.pull_request.merged == true &&
+          startsWith(github.event.pull_request.head.ref, 'workflow/v'))
+      }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: main
-      - run: git fetch --tags --force
-      - name: Read and tag
+
+      - name: Checkout (auto)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Resolve context
+        id: ctx
         run: |
           set -euo pipefail
-          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
-          [[ -z "\$version" ]] && exit 1
-          git rev-parse "\$version" >/dev/null 2>&1 && { echo "Tag exists"; exit 0; }
-          git tag "\$version"
-          git push origin "\$version"
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            head_ref="${{ github.event.pull_request.head.ref }}"
+            expected_version="${head_ref#workflow/}"
+            echo "expected_version=${expected_version}" >> "$GITHUB_OUTPUT"
+            echo "tag_target=${{ github.event.pull_request.merge_commit_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "expected_version=" >> "$GITHUB_OUTPUT"
+            echo "tag_target=HEAD" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read version
+        id: version
+        run: |
+          set -euo pipefail
+          version_file="src/main/shell/commands/version.sh"
+          version=$(grep -oP 'declare -gr gr_app_version="\K[^"]+' "$version_file")
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_app_version from $version_file" >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '$version' does not match vx.y.z" >&2
+            exit 1
+          fi
+          expected_version="${{ steps.ctx.outputs.expected_version }}"
+          if [[ -n "$expected_version" && "$version" != "$expected_version" ]]; then
+            echo "Version mismatch: expected ${expected_version}, got ${version}" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate changelog
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          version_no_prefix="${version#v}"
+          changelog_file="CHANGELOG.md"
+          if [[ ! -f "$changelog_file" ]]; then
+            echo "CHANGELOG.md not found; update changelog before tagging." >&2
+            exit 1
+          fi
+          if ! grep -Eq "^##[[:space:]]+v?${version_no_prefix}([[:space:]]|$)" "$changelog_file"; then
+            echo "CHANGELOG.md missing entry for ${version}; update changelog before tagging." >&2
+            exit 1
+          fi
+WORKFLOW
+
+  cat <<WORKFLOW
+
+      - name: Validate spec versions
+        run: |
+          set -euo pipefail
+          version="\${{ steps.version.outputs.version }}"
+          version_no_prefix="\${version#v}"
+          copr_spec_file="packaging/copr/${project_name}.spec"
+          obs_spec_file="packaging/obs/${project_name}.spec"
+          for spec_file in "\$copr_spec_file" "\$obs_spec_file"; do
+            if [[ ! -f "\$spec_file" ]]; then
+              echo "Spec file not found: \$spec_file" >&2
+              exit 1
+            fi
+            spec_version="\$(awk -F'[: ]+' '/^Version:/{print \$2; exit}' "\$spec_file")"
+            if [[ -z "\$spec_version" ]]; then
+              echo "Failed to read Version from \$spec_file" >&2
+              exit 1
+            fi
+            if [[ "\$spec_version" != "\$version_no_prefix" ]]; then
+              echo "Spec version mismatch in \$spec_file: expected \$version_no_prefix, got \$spec_version" >&2
+              echo "Run release-prep to sync spec versions before tagging." >&2
+              exit 1
+            fi
+          done
+WORKFLOW
+
+  cat <<'WORKFLOW'
+
+      - name: Create and push tag
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          tag_target="${{ steps.ctx.outputs.tag_target }}"
+          if [[ -z "$tag_target" ]]; then
+            tag_target="HEAD"
+          fi
+          if ! git cat-file -e "${tag_target}^{commit}" 2>/dev/null; then
+            echo "Tag target not found: ${tag_target}" >&2
+            exit 1
+          fi
+          if git rev-parse "$version" >/dev/null 2>&1; then
+            echo "Tag $version already exists."
+            exit 0
+          fi
+          git tag "$version" "$tag_target"
+          git push origin "$version"
 WORKFLOW
 }
 
@@ -1258,13 +1627,15 @@ radp_workflow_content_update_spec() {
   local project_name="$1"
   local project_var="$2"
 
-  cat <<WORKFLOW
+  cat <<'WORKFLOW'
 name: Update spec version
 
 on:
   workflow_run:
-    workflows: [Create version tag]
-    types: [completed]
+    workflows:
+      - Create version tag
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -1272,26 +1643,83 @@ permissions:
 
 jobs:
   update-spec-version:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      ${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.head_branch == 'main' ||
+         startsWith(github.event.workflow_run.head_branch, 'workflow/')))
+      }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: main
-      - run: git fetch --tags --force
-      - name: Update specs
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Read and validate version
+        id: version
         run: |
           set -euo pipefail
-          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
+          version_file="src/main/shell/commands/version.sh"
+          version=$(grep -oP 'declare -gr gr_app_version="\K[^"]+' "$version_file")
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_app_version from $version_file" >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '$version' does not match vx.y.z" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+WORKFLOW
+
+  cat <<WORKFLOW
+
+      - name: Update spec version
+        run: |
+          set -euo pipefail
+          version="\${{ steps.version.outputs.version }}"
           version_no_prefix="\${version#v}"
-          sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
-          sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
-          git diff --quiet && exit 0
+          copr_spec_file="packaging/copr/${project_name}.spec"
+          if [[ -f "\$copr_spec_file" ]]; then
+            sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" "\$copr_spec_file"
+          else
+            echo "COPR spec file not found: \$copr_spec_file" >&2
+            exit 1
+          fi
+          obs_spec_file="packaging/obs/${project_name}.spec"
+          if [[ -f "\$obs_spec_file" ]]; then
+            sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" "\$obs_spec_file"
+          else
+            echo "OBS spec file not found: \$obs_spec_file" >&2
+            exit 1
+          fi
+WORKFLOW
+
+  cat <<WORKFLOW
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packaging/
-          git commit -m "Update spec version to \${version}"
+          git add packaging/copr/${project_name}.spec
+          if [[ -f "packaging/obs/${project_name}.spec" ]]; then
+            git add packaging/obs/${project_name}.spec
+          fi
+          git commit -m "Update spec version to \${{ steps.version.outputs.version }}"
           git push
 WORKFLOW
 }
@@ -1300,50 +1728,120 @@ radp_workflow_content_build_copr() {
   local project_name="$1"
   local project_var="$2"
 
-  cat <<WORKFLOW
+  cat <<'WORKFLOW'
 name: Build COPR package
 
 on:
   workflow_run:
-    workflows: [Update spec version]
-    types: [completed]
+    workflows:
+      - Update spec version
+    types:
+      - completed
 
 permissions:
   contents: read
 
 jobs:
   build-copr-package:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.head_branch == 'main' ||
+         startsWith(github.event.workflow_run.head_branch, 'workflow/'))
+      }}
     runs-on: ubuntu-latest
     env:
-      COPR_LOGIN: \${{ secrets.COPR_LOGIN }}
-      COPR_TOKEN: \${{ secrets.COPR_TOKEN }}
-      COPR_USERNAME: \${{ secrets.COPR_USERNAME }}
-      COPR_PROJECT: \${{ secrets.COPR_PROJECT }}
+      COPR_LOGIN: ${{ secrets.COPR_LOGIN }}
+      COPR_TOKEN: ${{ secrets.COPR_TOKEN }}
+      COPR_USERNAME: ${{ secrets.COPR_USERNAME }}
+      COPR_PROJECT: ${{ secrets.COPR_PROJECT }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Build
+      - name: Validate COPR secrets
         run: |
           set -euo pipefail
-          for v in COPR_LOGIN COPR_TOKEN COPR_USERNAME COPR_PROJECT; do
-            [[ -z "\${!v:-}" ]] && { echo "Missing \$v" >&2; exit 1; }
+          for value in COPR_LOGIN COPR_TOKEN COPR_USERNAME COPR_PROJECT; do
+            if [[ -z "${!value:-}" ]]; then
+              echo "Missing required secret: ${value}" >&2
+              exit 1
+            fi
           done
-          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          set -euo pipefail
+          version_file="src/main/shell/commands/version.sh"
+          version=$(grep -oP 'declare -gr gr_app_version="\K[^"]+' "$version_file")
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_app_version from $version_file" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag exists
+        id: tag
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
           git fetch --tags --force
-          git rev-parse "\$version" >/dev/null 2>&1 || { echo "Tag not found"; exit 0; }
-          tag_sha=\$(git rev-parse "\$version^{commit}")
-          pip install copr-cli
+          if ! git rev-parse "$version" >/dev/null 2>&1; then
+            echo "Tag $version does not exist. Skipping COPR build."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tag_sha="$(git rev-parse "$version^{commit}")"
+          run_sha="${{ github.event.workflow_run.head_sha }}"
+          if [[ -n "${run_sha}" && "${tag_sha}" != "${run_sha}" ]]; then
+            echo "Tag ${version} points to ${tag_sha}, workflow head is ${run_sha}; skipping COPR build."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "should_build=true" >> "$GITHUB_OUTPUT"
+          echo "tag_sha=${tag_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Install copr-cli
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install copr-cli
+
+      - name: Configure copr-cli
+        run: |
+          set -euo pipefail
           mkdir -p ~/.config
-          cat > ~/.config/copr << EOF
+          cat <<CONFIG > ~/.config/copr
           [copr-cli]
-          login = \${COPR_LOGIN}
-          token = \${COPR_TOKEN}
-          username = \${COPR_USERNAME}
+          login = ${COPR_LOGIN}
+          token = ${COPR_TOKEN}
+          username = ${COPR_USERNAME}
           copr_url = https://copr.fedorainfracloud.org
-          EOF
-          copr-cli buildscm "\${COPR_PROJECT}" --clone-url "\${GITHUB_SERVER_URL}/\${GITHUB_REPOSITORY}.git" --commit "\${tag_sha}" --subdir "packaging/copr" --spec "${project_name}.spec"
+          encrypted = false
+
+          [main]
+          login = ${COPR_LOGIN}
+          token = ${COPR_TOKEN}
+          username = ${COPR_USERNAME}
+          copr_url = https://copr.fedorainfracloud.org
+          encrypted = false
+          CONFIG
+WORKFLOW
+
+  cat <<WORKFLOW
+
+      - name: Trigger COPR build
+        if: steps.tag.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+          copr-cli buildscm "\${COPR_PROJECT}" \\
+            --clone-url "\${GITHUB_SERVER_URL}/\${GITHUB_REPOSITORY}.git" \\
+            --commit "\${{ steps.tag.outputs.tag_sha }}" \\
+            --subdir "packaging/copr" \\
+            --spec "${project_name}.spec"
 WORKFLOW
 }
 
@@ -1351,13 +1849,15 @@ radp_workflow_content_build_obs() {
   local project_name="$1"
   local project_var="$2"
 
-  cat <<WORKFLOW
+  cat <<'WORKFLOW'
 name: Build OBS package
 
 on:
   workflow_run:
-    workflows: [Update spec version]
-    types: [completed]
+    workflows:
+      - Update spec version
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -1365,45 +1865,216 @@ permissions:
 
 jobs:
   build-obs-package:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      ${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.head_branch == 'main' ||
+         startsWith(github.event.workflow_run.head_branch, 'workflow/')))
+      }}
     runs-on: ubuntu-latest
     env:
-      OBS_USERNAME: \${{ secrets.OBS_USERNAME }}
-      OBS_PASSWORD: \${{ secrets.OBS_PASSWORD }}
-      OBS_PROJECT: \${{ secrets.OBS_PROJECT }}
-      OBS_PACKAGE: \${{ secrets.OBS_PACKAGE }}
-      OBS_API_URL: \${{ secrets.OBS_API_URL }}
+      OBS_USERNAME: ${{ secrets.OBS_USERNAME }}
+      OBS_PASSWORD: ${{ secrets.OBS_PASSWORD }}
+      OBS_PROJECT: ${{ secrets.OBS_PROJECT }}
+      OBS_PACKAGE: ${{ secrets.OBS_PACKAGE }}
+      OBS_API_URL: ${{ secrets.OBS_API_URL }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: git fetch --tags --force
-      - name: Build
+      - name: Validate OBS secrets
         run: |
           set -euo pipefail
-          for v in OBS_USERNAME OBS_PASSWORD OBS_PROJECT OBS_PACKAGE; do
-            [[ -z "\${!v:-}" ]] && { echo "Missing \$v" >&2; exit 1; }
+          for value in OBS_USERNAME OBS_PASSWORD OBS_PROJECT OBS_PACKAGE; do
+            if [[ -z "${!value:-}" ]]; then
+              echo "Missing required secret: ${value}" >&2
+              exit 1
+            fi
           done
-          : "\${OBS_API_URL:=https://api.opensuse.org}"
-          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
-          version_no_prefix="\${version#v}"
-          git rev-parse "\$version" >/dev/null 2>&1 || { echo "Tag not found"; exit 0; }
-          sudo apt-get update && sudo apt-get install -y osc dpkg-dev debhelper
-          cat > ~/.oscrc << EOF
+
+          default_api_url="https://api.opensuse.org"
+          if [[ -z "${OBS_API_URL:-}" ]]; then
+            echo "OBS_API_URL not set; using default ${default_api_url}"
+            echo "OBS_API_URL=${default_api_url}" >> "$GITHUB_ENV"
+          else
+            echo "OBS_API_URL=${OBS_API_URL}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Read version
+        id: version
+        run: |
+          set -euo pipefail
+          version_file="src/main/shell/commands/version.sh"
+          version=$(grep -oP 'declare -gr gr_app_version="\K[^"]+' "$version_file")
+          if [[ -z "$version" ]]; then
+            echo "Failed to read gr_app_version from $version_file" >&2
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version '$version' does not match vx.y.z" >&2
+            exit 1
+          fi
+          version_no_prefix="${version#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "version_no_prefix=${version_no_prefix}" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag exists
+        id: tag
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          if ! git rev-parse "$version" >/dev/null 2>&1; then
+            echo "Tag $version does not exist. Skipping OBS build."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tag_sha="$(git rev-parse "$version^{commit}")"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            run_sha="${{ github.event.workflow_run.head_sha }}"
+            if [[ -n "${run_sha}" && "${tag_sha}" != "${run_sha}" ]]; then
+              echo "Tag ${version} points to ${tag_sha}, workflow head is ${run_sha}; skipping OBS build."
+              echo "should_build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "should_build=true" >> "$GITHUB_OUTPUT"
+          echo "tag_sha=${tag_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Install osc
+        if: steps.tag.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y osc dpkg-dev debhelper
+
+      - name: Configure osc
+        if: steps.tag.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+          cat > ~/.oscrc <<EOF
           [general]
-          apiurl = \${OBS_API_URL}
-          [\${OBS_API_URL}]
-          user = \${OBS_USERNAME}
-          pass = \${OBS_PASSWORD}
+          apiurl = ${OBS_API_URL}
+
+          [${OBS_API_URL}]
+          user = ${OBS_USERNAME}
+          pass = ${OBS_PASSWORD}
           EOF
           chmod 600 ~/.oscrc
+
+      - name: Verify OBS authentication
+        if: steps.tag.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+          osc -A "${OBS_API_URL}" ls "${OBS_PROJECT}" >/dev/null
+          osc -A "${OBS_API_URL}" ls "${OBS_PROJECT}" "${OBS_PACKAGE}" >/dev/null
+WORKFLOW
+
+  cat <<WORKFLOW
+
+      - name: Sync sources to OBS
+        if: steps.tag.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+          version="\${{ steps.version.outputs.version }}"
+          version_no_prefix="\${{ steps.version.outputs.version_no_prefix }}"
+          checkout_root="\${{ runner.temp }}/obs"
+          mkdir -p "\$checkout_root"
+          pushd "\$checkout_root" >/dev/null
+
           osc -A "\${OBS_API_URL}" checkout "\${OBS_PROJECT}" "\${OBS_PACKAGE}"
           pkg_dir="\${OBS_PROJECT}/\${OBS_PACKAGE}"
-          find "\$pkg_dir" -mindepth 1 -not -path "\$pkg_dir/.osc*" -delete
-          cp packaging/obs/${project_name}.spec "\$pkg_dir/"
-          curl -L -o "\$pkg_dir/v\${version_no_prefix}.tar.gz" "\${GITHUB_SERVER_URL}/\${GITHUB_REPOSITORY}/archive/refs/tags/\${version}.tar.gz"
-          cp -a packaging/obs/debian "\$pkg_dir/"
-          cd "\$pkg_dir" && osc addremove && osc commit -m "Update to \${version}"
+
+          if [[ ! -d "\$pkg_dir/.osc" ]]; then
+            echo "OBS checkout missing .osc directory at \$pkg_dir" >&2
+            exit 1
+          fi
+
+          shopt -s dotglob
+          for entry in "\$pkg_dir"/*; do
+            [[ "\$(basename "\$entry")" == ".osc" ]] && continue
+            rm -rf "\$entry"
+          done
+          shopt -u dotglob
+
+          spec_source="\${GITHUB_WORKSPACE}/packaging/obs/${project_name}.spec"
+          if [[ ! -f "\$spec_source" ]]; then
+            echo "Spec file not found at \$spec_source" >&2
+            exit 1
+          fi
+          cp "\$spec_source" "\$pkg_dir/"
+
+          tarball_url="\${GITHUB_SERVER_URL}/\${GITHUB_REPOSITORY}/archive/refs/tags/\${version}.tar.gz"
+          tarball_name="v\${version_no_prefix}.tar.gz"
+          tarball_path="\$pkg_dir/\${tarball_name}"
+          curl -L --fail --show-error -o "\$tarball_path" "\$tarball_url"
+          if [[ ! -s "\$tarball_path" ]]; then
+            echo "Failed to download tarball from \$tarball_url" >&2
+            exit 1
+          fi
+
+          if [[ -d "\${GITHUB_WORKSPACE}/packaging/obs/debian" ]]; then
+            cp -a "\${GITHUB_WORKSPACE}/packaging/obs/debian" "\$pkg_dir/debian"
+          elif [[ -d "\${GITHUB_WORKSPACE}/packaging/deb/debian" ]]; then
+            cp -a "\${GITHUB_WORKSPACE}/packaging/deb/debian" "\$pkg_dir/debian"
+          else
+            echo "No debian/ metadata found; skipping debian sync."
+          fi
+
+          if [[ -d "\$pkg_dir/debian" ]]; then
+            deb_version="\${version_no_prefix}-1"
+            changelog_path="\$pkg_dir/debian/changelog"
+            {
+              printf '${project_name} (%s) unstable; urgency=medium\\n\\n' "\$deb_version"
+              printf '  * Automated OBS build for version %s\\n\\n' "\$deb_version"
+              printf ' -- xooooooooox <xozoz.sos@gmail.com>  %s\\n' "\$(date -R)"
+            } > "\$changelog_path"
+            tmp_build="\$(mktemp -d)"
+            orig_tarball="\$tmp_build/${project_name}_\${version_no_prefix}.orig.tar.gz"
+            cp "\$tarball_path" "\$orig_tarball"
+            tar --force-local -xzf "\$orig_tarball" -C "\$tmp_build"
+            src_dir="\$tmp_build/${project_name}-\${version_no_prefix}"
+            if [[ ! -d "\$src_dir" ]]; then
+              echo "Expected source dir not found: \$src_dir" >&2
+              exit 1
+            fi
+            cp -a "\$pkg_dir/debian" "\$src_dir/debian"
+            (cd "\$src_dir" && dpkg-source -b .)
+            find "\$tmp_build" -maxdepth 1 -type f -name '${project_name}_*.dsc' -print0 | xargs -0 -I {} mv {} "\$pkg_dir/"
+            find "\$tmp_build" -maxdepth 1 -type f -name '${project_name}_*.debian.tar.*' -print0 | xargs -0 -I {} mv {} "\$pkg_dir/"
+            cp "\$orig_tarball" "\$pkg_dir/"
+            rm -rf "\$tmp_build"
+          fi
+
+          pushd "\$pkg_dir" >/dev/null
+          osc addremove
+          popd >/dev/null
+          popd >/dev/null
+
+      - name: Commit and trigger OBS build
+        if: steps.tag.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+          pkg_dir="\${{ runner.temp }}/obs/\${OBS_PROJECT}/\${OBS_PACKAGE}"
+          if [[ ! -d "\$pkg_dir/.osc" ]]; then
+            echo "OBS package directory missing at \$pkg_dir" >&2
+            exit 1
+          fi
+
+          pushd "\$pkg_dir" >/dev/null
+          status_output="\$(osc status)"
+          if [[ -z "\$status_output" ]]; then
+            echo "No OBS changes to commit."
+            exit 0
+          fi
+
+          osc commit -m "Update ${project_name} to \${{ steps.version.outputs.version }}"
+          popd >/dev/null
 WORKFLOW
 }
 
@@ -1416,15 +2087,24 @@ name: Update Homebrew Tap
 
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "v*"
   workflow_run:
-    workflows: [Create version tag]
-    types: [completed]
+    workflows:
+      - Create version tag
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
   update-tap:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      \${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.head_branch == 'main' ||
+         startsWith(github.event.workflow_run.head_branch, 'workflow/')))
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1432,33 +2112,91 @@ jobs:
       TAP_REPO: xooooooooox/homebrew-radp
       TAP_FORMULA_PATH: Formula/${project_name}.rb
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: git fetch --tags --force
-      - uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
         with:
           repository: \${{ env.TAP_REPO }}
           path: homebrew-radp
           token: \${{ secrets.HOMEBREW_TAP_TOKEN }}
-      - name: Update formula
+
+      - name: Prepare release metadata
+        id: release
         run: |
           set -euo pipefail
-          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
-          version_no_prefix="\${version#v}"
-          tarball_url="https://github.com/\${GITHUB_REPOSITORY}/archive/refs/tags/\${version}.tar.gz"
-          sha256=\$(curl -sL "\$tarball_url" | sha256sum | awk '{print \$1}')
+          if [[ "\${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            head_sha="\${{ github.event.workflow_run.head_sha }}"
+            head_branch="\${{ github.event.workflow_run.head_branch }}"
+            if [[ "\${head_branch}" == workflow/v* ]]; then
+              tag_name="\${head_branch#workflow/}"
+            else
+              tag_name="\$(git tag --points-at "\${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+            fi
+          else
+            tag_name="\${GITHUB_REF_NAME}"
+          fi
+          if [[ -z "\${tag_name}" ]]; then
+            echo "Failed to resolve version tag for event \${GITHUB_EVENT_NAME}" >&2
+            exit 1
+          fi
+          if ! git rev-parse "\${tag_name}" >/dev/null 2>&1; then
+            echo "Resolved tag \${tag_name} does not exist in repository." >&2
+            exit 1
+          fi
+          version_file="src/main/shell/commands/version.sh"
+          version_from_tag="\$(git show "\${tag_name}:\${version_file}" | grep -oP 'declare -gr gr_app_version="\\K[^"]+')"
+          if [[ -z "\${version_from_tag}" ]]; then
+            echo "Failed to read gr_app_version from \${version_file} at \${tag_name}" >&2
+            exit 1
+          fi
+          if [[ "\${version_from_tag}" != "\${tag_name}" ]]; then
+            echo "Tag \${tag_name} does not match gr_app_version (\${version_from_tag})" >&2
+            exit 1
+          fi
+          version="\${tag_name#v}"
+          tarball_url="https://github.com/\${GITHUB_REPOSITORY}/archive/refs/tags/\${tag_name}.tar.gz"
+          sha256="\$(curl -L "\${tarball_url}" | sha256sum | awk '{print \$1}')"
+          echo "tag_name=\${tag_name}" >> "\$GITHUB_OUTPUT"
+          echo "version=\${version}" >> "\$GITHUB_OUTPUT"
+          echo "tarball_url=\${tarball_url}" >> "\$GITHUB_OUTPUT"
+          echo "sha256=\${sha256}" >> "\$GITHUB_OUTPUT"
+
+      - name: Create or update formula
+        env:
+          VERSION: \${{ steps.release.outputs.version }}
+          TARBALL_URL: \${{ steps.release.outputs.tarball_url }}
+          SHA256: \${{ steps.release.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          template="packaging/homebrew/${project_name}.rb"
           formula="homebrew-radp/\${TAP_FORMULA_PATH}"
-          [[ ! -f "\$formula" ]] && { echo "Formula not found"; exit 0; }
-          sed -i "s|url \"[^\"]*\"|url \"\$tarball_url\"|" "\$formula"
-          sed -i "s|sha256 \"[^\"]*\"|sha256 \"\$sha256\"|" "\$formula"
-          sed -i "s|version \"[^\"]*\"|version \"\$version_no_prefix\"|" "\$formula"
+          mkdir -p "\$(dirname "\${formula}")"
+
+          # Copy template and replace placeholders
+          cp "\${template}" "\${formula}"
+          sed -i "s|%%TARBALL_URL%%|\${TARBALL_URL}|g" "\${formula}"
+          sed -i "s|%%SHA256%%|\${SHA256}|g" "\${formula}"
+          sed -i "s|%%VERSION%%|\${VERSION}|g" "\${formula}"
+
+      - name: Commit and push tap
+        run: |
+          set -euo pipefail
           cd homebrew-radp
-          git diff --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "\${TAP_FORMULA_PATH}"
-          git commit -m "Update ${project_name} to \${version}"
+          git add "\${TAP_FORMULA_PATH}" || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Update ${project_name} to \${{ steps.release.outputs.tag_name }}"
           git push
 WORKFLOW
 }
@@ -1566,8 +2304,319 @@ jobs:
           echo "package_name=\${package_name}" >> "\$GITHUB_OUTPUT"
           echo "should_upload=\${should_upload}" >> "\$GITHUB_OUTPUT"
 
+      - name: Download COPR packages
+        if: >-
+          \${{
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build COPR package')
+          }}
+        env:
+          VERSION: \${{ steps.release.outputs.version }}
+          PACKAGE_NAME: \${{ steps.release.outputs.package_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "\${COPR_PROJECT:-}" ]]; then
+            echo "COPR_PROJECT not set; skipping COPR download."
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          copr_project = os.environ["COPR_PROJECT"].strip()
+          version = os.environ["VERSION"].strip()
+          package_name = os.environ["PACKAGE_NAME"].strip()
+
+          if "/" not in copr_project:
+            print(f"Invalid COPR_PROJECT: {copr_project}", file=sys.stderr)
+            sys.exit(0)
+
+          owner, project = copr_project.split("/", 1)
+
+          def request(url: str) -> urllib.request.Request:
+            return urllib.request.Request(
+              url,
+              headers={
+                "User-Agent": "${project_name}-release-bot/1.0",
+                "Accept": "application/json,text/html;q=0.9,*/*;q=0.8",
+              },
+            )
+
+          def fetch(url: str) -> tuple[bytes, int, str]:
+            req = request(url)
+            with urllib.request.urlopen(req) as resp:
+              data = resp.read()
+              status = getattr(resp, "status", None) or resp.getcode()
+              content_type = resp.headers.get("Content-Type", "")
+              return data, int(status), content_type
+
+          def api_json(url: str) -> dict:
+            data, status, content_type = fetch(url)
+            if not data:
+              raise ValueError(f"Empty response from {url}")
+            try:
+              return json.loads(data.decode("utf-8"))
+            except json.JSONDecodeError as exc:
+              snippet = data[:200].decode("utf-8", "ignore")
+              raise ValueError(f"Invalid JSON from {url}: {snippet}") from exc
+
+          def download(url: str, dest: Path) -> None:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            data, status, content_type = fetch(url)
+            if status >= 400:
+              raise ValueError(f"Download failed: {url} status={status}")
+            with open(dest, "wb") as fh:
+              fh.write(data)
+
+          params = {
+            "ownername": owner,
+            "projectname": project,
+            "limit": "50",
+          }
+          builds_url = "https://copr.fedorainfracloud.org/api_3/build/list?" + urllib.parse.urlencode(params)
+          try:
+            build_data = api_json(builds_url)
+            builds = build_data.get("builds") or build_data.get("items") or []
+          except Exception as exc:
+            print(f"Failed to read COPR build list: {exc}", file=sys.stderr)
+            builds = []
+
+          candidates = []
+          for build in builds:
+            if build.get("state") != "succeeded":
+              continue
+            source_pkg = build.get("source_package") or {}
+            source_name = source_pkg.get("name") or build.get("package_name")
+            if source_name and source_name != package_name:
+              continue
+            src_version = source_pkg.get("version")
+            if src_version and not (src_version == version or src_version.startswith(version + "-")):
+              continue
+            candidates.append(build)
+
+          if not candidates:
+            print(f"No COPR builds found for {package_name} {version}", file=sys.stderr)
+            sys.exit(0)
+
+          selected = max(candidates, key=lambda b: b.get("id", 0))
+          build_id = selected.get("id")
+          repo_url = (selected.get("repo_url") or "").rstrip("/")
+          chroots = selected.get("chroots") or []
+
+          dest_dir = Path("release-assets/copr")
+          downloaded = set()
+
+          def fetch_listing(url: str) -> str:
+            data, status, content_type = fetch(url)
+            return data.decode("utf-8", "ignore")
+
+          def download_rpms_from_listing(base_url: str) -> int:
+            try:
+              listing = fetch_listing(base_url)
+            except Exception:
+              return 0
+            hrefs = re.findall(r'href=["\']([^"\']+)["\']', listing)
+            count = 0
+            for href in hrefs:
+              if href in ("../", "./"):
+                continue
+              href_clean = href.split("?", 1)[0].split("#", 1)[0]
+              if not href_clean.endswith(".rpm"):
+                continue
+              filename = href_clean.split("/")[-1]
+              if filename.endswith(".src.rpm"):
+                continue
+              if package_name not in filename or version not in filename:
+                continue
+              if filename in downloaded:
+                continue
+              full_url = urllib.parse.urljoin(base_url, href_clean)
+              try:
+                download(full_url, dest_dir / f"copr-{filename}")
+              except Exception:
+                continue
+              downloaded.add(filename)
+              count += 1
+            return count
+
+          if build_id and package_name and chroots:
+            build_dir_candidates = [f"{int(build_id):08d}-{package_name}", f"{build_id}-{package_name}"]
+            for chroot in chroots:
+              chroot_url = f"{repo_url}/{chroot}/"
+              for build_dir in build_dir_candidates:
+                direct_url = f"{chroot_url}{build_dir}/"
+                download_rpms_from_listing(direct_url)
+
+          if downloaded:
+            print(f"Downloaded {len(downloaded)} COPR RPMs", file=sys.stderr)
+          else:
+            print(f"No COPR RPMs downloaded for {package_name} {version}", file=sys.stderr)
+          PY
+
+      - name: Download OBS packages
+        if: >-
+          \${{
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build OBS package')
+          }}
+        env:
+          VERSION: \${{ steps.release.outputs.version }}
+          PACKAGE_NAME: \${{ steps.release.outputs.package_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "\${OBS_PROJECT:-}" ]]; then
+            echo "OBS_PROJECT not set; skipping OBS download."
+            exit 0
+          fi
+          python - <<'PY'
+          import os
+          import sys
+          import base64
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          import time
+
+          project = os.environ["OBS_PROJECT"].strip()
+          package = (os.environ.get("OBS_PACKAGE") or os.environ.get("PACKAGE_NAME") or "").strip()
+          version = os.environ["VERSION"].strip()
+          api_url = (os.environ.get("OBS_API_URL") or "https://api.opensuse.org").rstrip("/")
+          username = (os.environ.get("OBS_USERNAME") or "").strip()
+          password = (os.environ.get("OBS_PASSWORD") or "").strip()
+          max_wait_seconds = int(os.environ.get("OBS_WAIT_SECONDS", "1200"))
+          poll_interval = int(os.environ.get("OBS_POLL_INTERVAL", "30"))
+
+          if not package:
+            print("OBS package name is missing", file=sys.stderr)
+            sys.exit(0)
+
+          def quote(segment: str) -> str:
+            return urllib.parse.quote(segment, safe="")
+
+          def request(url: str) -> urllib.request.Request:
+            req = urllib.request.Request(
+              url,
+              headers={
+                "User-Agent": "${project_name}-release-bot/1.0",
+                "Accept": "application/xml,text/xml;q=0.9,*/*;q=0.8",
+              },
+            )
+            if username and password:
+              token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+              req.add_header("Authorization", f"Basic {token}")
+            return req
+
+          def fetch(url: str) -> tuple[bytes, int, str]:
+            req = request(url)
+            try:
+              with urllib.request.urlopen(req) as resp:
+                data = resp.read()
+                status = getattr(resp, "status", None) or resp.getcode()
+                content_type = resp.headers.get("Content-Type", "")
+                return data, int(status), content_type
+            except urllib.error.HTTPError as exc:
+              raise ValueError(f"HTTP {exc.code} for {url}") from exc
+
+          def fetch_xml(url: str) -> ET.Element:
+            data, status, content_type = fetch(url)
+            if not data:
+              raise ValueError(f"Empty response from {url}")
+            return ET.fromstring(data)
+
+          def download(url: str, dest: Path) -> None:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with urllib.request.urlopen(request(url)) as resp, open(dest, "wb") as fh:
+              fh.write(resp.read())
+
+          project_q = quote(project)
+          package_q = quote(package)
+          result_url = f"{api_url}/build/{project_q}/_result?package={package_q}"
+
+          dest_dir = Path("release-assets/obs")
+          downloaded: set[str] = set()
+          deadline = time.time() + max_wait_seconds
+
+          while True:
+            try:
+              root = fetch_xml(result_url)
+            except Exception as exc:
+              print(f"Failed to query OBS results: {exc}", file=sys.stderr)
+              break
+
+            candidates = []
+            for result in root.findall(".//result"):
+              repo = result.get("repository")
+              arch = result.get("arch")
+              if not repo or not arch:
+                continue
+              status_nodes = result.findall(f"./status[@package='{package}']")
+              if not status_nodes:
+                continue
+              code = (status_nodes[0].get("code") or "").lower()
+              if code in {"succeeded", "published", "finished", "unchanged"}:
+                candidates.append((repo, arch))
+
+            for repo, arch in candidates:
+              repo_q = quote(repo)
+              arch_q = quote(arch)
+              base_url = f"{api_url}/build/{project_q}/{repo_q}/{arch_q}/{package_q}"
+              try:
+                binaries_root = fetch_xml(base_url)
+              except Exception:
+                continue
+              for binary in binaries_root.findall(".//binary"):
+                filename = binary.get("filename")
+                if not filename:
+                  continue
+                lower = filename.lower()
+                if lower.endswith((".src.rpm", ".nosrc.rpm", ".ddeb")):
+                  continue
+                if not (lower.endswith(".rpm") or lower.endswith(".deb")):
+                  continue
+                if version not in filename:
+                  continue
+                if filename in downloaded:
+                  continue
+                file_url = f"{base_url}/{urllib.parse.quote(filename, safe='')}"
+                try:
+                  download(file_url, dest_dir / f"obs-{filename}")
+                except Exception:
+                  continue
+                downloaded.add(filename)
+
+            if downloaded:
+              break
+
+            if time.time() + poll_interval > deadline:
+              break
+
+            print(f"OBS binaries not ready; retrying in {poll_interval}s", file=sys.stderr)
+            time.sleep(poll_interval)
+
+          if downloaded:
+            print(f"Downloaded {len(downloaded)} OBS binaries")
+          else:
+            print(f"No OBS binaries downloaded for {package} {version}", file=sys.stderr)
+          PY
+
       - name: Download Homebrew formula
-        if: steps.release.outputs.should_upload == 'true'
+        if: >-
+          \${{
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Update Homebrew Tap')
+          }}
         shell: bash
         run: |
           set -euo pipefail
@@ -1576,7 +2625,7 @@ jobs:
             exit 0
           fi
           mkdir -p release-assets/homebrew
-          curl -L --fail --show-error -o release-assets/homebrew/homebrew-${project_name}.rb "\${TAP_FORMULA_URL}" || true
+          curl -L --fail --show-error -o release-assets/homebrew/homebrew-${project_name}.rb "\${TAP_FORMULA_URL}"
 
       - name: Upload assets to release
         if: steps.release.outputs.should_upload == 'true'
