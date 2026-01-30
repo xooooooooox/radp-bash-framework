@@ -100,6 +100,8 @@ radp-bf -v upgrade .                # Upgrade with verbose output
 
 The upgrade command tracks changes via `.radp-cli/` metadata directory and detects user modifications.
 
+See [Upgrade CLI Projects](docs/installation.md#upgrade-cli-projects) for more options.
+
 ### Define Commands
 
 Commands use annotation-based metadata:

@@ -99,6 +99,8 @@ radp-bf -v upgrade .                # 带详细输出的升级
 
 升级命令通过 `.radp-cli/` 元数据目录跟踪变更并检测用户修改。
 
+更多升级相关说明, 请参阅[如何升级已创建的项目](docs/installation.md#upgrade-cli-projects).
+
 ### 定义命令
 
 使用注解定义命令：
