@@ -247,30 +247,23 @@ radp-bf --debug upgrade .      # Upgrade with debug logging
 
 ## radp-bf Shell Completion
 
-Enable shell completion for `radp-bf` to get command and option suggestions:
-
-### Bash
-
-```shell
-# Generate and install completion
-radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
-
-# Or for system-wide installation (requires sudo)
-radp-bf completion bash | sudo tee /etc/bash_completion.d/radp-bf > /dev/null
-```
-
-### Zsh
-
-```shell
-# Ensure completions directory exists
-mkdir -p ~/.zfunc
-
-# Generate completion
-radp-bf completion zsh > ~/.zfunc/_radp-bf
-
-# Add to .zshrc if not already present
-echo 'fpath=(~/.zfunc $fpath)' >> ~/.zshrc
-echo 'autoload -Uz compinit && compinit' >> ~/.zshrc
-```
+Shell completion is **automatically installed** with all installation methods (Homebrew, dnf, apt, install.sh).
 
 After installation, restart your shell or run `source ~/.bashrc` / `source ~/.zshrc`.
+
+### Manual Installation
+
+If you need to manually regenerate or install completions:
+
+```shell
+# Bash
+radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
+
+# Zsh
+mkdir -p ~/.zfunc
+radp-bf completion zsh > ~/.zfunc/_radp-bf
+
+# For zsh, ensure fpath is configured in ~/.zshrc:
+#   fpath=(~/.zfunc $fpath)
+#   autoload -Uz compinit && compinit
+```

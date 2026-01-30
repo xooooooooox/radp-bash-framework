@@ -27,6 +27,10 @@ class RadpBashFramework < Formula
       #!/bin/bash
       exec "#{libexec}/bin/radp-bf" "$@"
     EOS
+
+    # Install shell completions
+    bash_completion.install "src/main/shell/completions/radp-bf"
+    zsh_completion.install "src/main/shell/completions/_radp-bf"
   end
 
   def caveats
@@ -43,12 +47,8 @@ class RadpBashFramework < Formula
       To use the framework in your scripts:
         source "$(radp-bf path init)"
 
-      Shell completion:
-        # Bash
-        radp-bf completion bash > $(brew --prefix)/etc/bash_completion.d/radp-bf
-
-        # Zsh
-        radp-bf completion zsh > $(brew --prefix)/share/zsh/site-functions/_radp-bf
+      Shell completion has been installed automatically.
+      Restart your shell or run: source ~/.bashrc (or ~/.zshrc)
     EOS
   end
 

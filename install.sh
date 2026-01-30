@@ -586,6 +586,7 @@ install_manual() {
   mkdir -p "${install_dir}"
   cp -R "${src_root}/src/main/shell/bin" "${install_dir}/"
   cp -R "${src_root}/src/main/shell/framework" "${install_dir}/"
+  cp -R "${src_root}/src/main/shell/completions" "${install_dir}/"
 
   chmod 0755 "${install_dir}/bin/radp-bf"
   find "${install_dir}/framework" -type f -name "*.sh" -exec chmod 0755 {} \;
@@ -621,11 +622,79 @@ install_manual() {
     ln -sf "${target}" "${link_path}"
   done
 
+  # Install shell completions
+  install_completions "${install_dir}"
+
   log ""
   log "Installed ${REPO_NAME} (ref: ${ref}) to ${install_dir}"
   log "Symlinked to ${bin_dir}/radp-bf and ${bin_dir}/radp-bash-framework"
   log "Ensure ${bin_dir} is in your PATH."
   log "Run: hash -r && source \"\$(radp-bf path init)\""
+}
+
+# ============================================================================
+# Shell Completion Installation
+# ============================================================================
+
+install_completions() {
+  local install_dir="$1"
+  local completions_dir="${install_dir}/completions"
+
+  if [[ ! -d "${completions_dir}" ]]; then
+    log "Completions directory not found, skipping completion installation"
+    return 0
+  fi
+
+  local bash_completion_installed=false
+  local zsh_completion_installed=false
+
+  # Determine bash completion directory
+  local bash_comp_dir=""
+  if [[ -d "${HOME}/.local/share/bash-completion/completions" ]]; then
+    bash_comp_dir="${HOME}/.local/share/bash-completion/completions"
+  elif [[ -d "${HOME}/.bash_completion.d" ]]; then
+    bash_comp_dir="${HOME}/.bash_completion.d"
+  else
+    # Create user-local completion directory
+    mkdir -p "${HOME}/.local/share/bash-completion/completions"
+    bash_comp_dir="${HOME}/.local/share/bash-completion/completions"
+  fi
+
+  # Install bash completion
+  if [[ -n "${bash_comp_dir}" && -f "${completions_dir}/radp-bf" ]]; then
+    cp "${completions_dir}/radp-bf" "${bash_comp_dir}/radp-bf"
+    bash_completion_installed=true
+    log "Installed bash completion to ${bash_comp_dir}/radp-bf"
+  fi
+
+  # Determine zsh completion directory
+  local zsh_comp_dir=""
+  if [[ -d "${HOME}/.zfunc" ]]; then
+    zsh_comp_dir="${HOME}/.zfunc"
+  elif [[ -d "${HOME}/.local/share/zsh/site-functions" ]]; then
+    zsh_comp_dir="${HOME}/.local/share/zsh/site-functions"
+  else
+    # Create user-local zsh completion directory
+    mkdir -p "${HOME}/.zfunc"
+    zsh_comp_dir="${HOME}/.zfunc"
+  fi
+
+  # Install zsh completion
+  if [[ -n "${zsh_comp_dir}" && -f "${completions_dir}/_radp-bf" ]]; then
+    cp "${completions_dir}/_radp-bf" "${zsh_comp_dir}/_radp-bf"
+    zsh_completion_installed=true
+    log "Installed zsh completion to ${zsh_comp_dir}/_radp-bf"
+  fi
+
+  # Provide instructions if zsh fpath might need updating
+  if [[ "${zsh_completion_installed}" == "true" && "${zsh_comp_dir}" == "${HOME}/.zfunc" ]]; then
+    if ! grep -q 'fpath=.*\.zfunc' "${HOME}/.zshrc" 2>/dev/null; then
+      log ""
+      log "Note: Add the following to your ~/.zshrc for zsh completion:"
+      log "  fpath=(~/.zfunc \$fpath)"
+      log "  autoload -Uz compinit && compinit"
+    fi
+  fi
 }
 
 # ============================================================================
@@ -722,6 +791,7 @@ main() {
   }
 
   log "Successfully installed ${REPO_NAME} via ${pkm}"
+  log "Shell completions have been installed automatically."
   log "Run: hash -r && source \"\$(radp-bf path init)\""
 }
 
