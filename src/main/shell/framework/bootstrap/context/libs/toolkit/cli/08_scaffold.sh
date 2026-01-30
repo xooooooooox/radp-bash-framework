@@ -109,7 +109,7 @@ if ! command -v radp-bf &>/dev/null; then
   exit 1
 fi
 
-# 启动（RADP_APP_NAME 由框架自动从目录名派生）
+# 加载 radp-bash-framework
 # shellcheck source=/dev/null
 source "$(radp-bf path launcher)" "$@"
 ENTRY_SCRIPT
@@ -793,6 +793,9 @@ install_manual() {
   cp -R "${src_root}/bin" "${install_dir}/"
   cp -R "${src_root}/src" "${install_dir}/"
 
+  # Remove development mode marker (only used in source tree)
+  rm -f "${install_dir}/src/main/shell/config/_ide.sh"
+
   chmod 0755 "${install_dir}/bin/__PROJECT_NAME__"
   find "${install_dir}/src" -type f -name "*.sh" -exec chmod 0755 {} \;
 
@@ -937,6 +940,8 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_libdir}/${project_name}
 cp -a bin %{buildroot}%{_libdir}/${project_name}/
 cp -a src %{buildroot}%{_libdir}/${project_name}/
+# Remove development mode marker (only used in source tree)
+rm -f %{buildroot}%{_libdir}/${project_name}/src/main/shell/config/_ide.sh
 chmod 0755 %{buildroot}%{_libdir}/${project_name}/bin/${project_name}
 find %{buildroot}%{_libdir}/${project_name}/src -type f -name "*.sh" -exec chmod 0755 {} \;
 mkdir -p %{buildroot}%{_bindir}
@@ -992,6 +997,8 @@ override_dh_auto_install:
 
 override_dh_fixperms:
 	dh_fixperms
+	# Remove development mode marker (only used in source tree)
+	rm -f debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/src/main/shell/config/_ide.sh
 	chmod 0755 debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/bin/__PROJECT_NAME__
 	find debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/src -type f -name '*.sh' -exec chmod 0755 {} \;
 RULES
@@ -1082,6 +1089,9 @@ class ${class_name} < Formula
   def install
     # Install to libexec
     libexec.install "bin", "src"
+
+    # Remove development mode marker (only used in source tree)
+    (libexec/"src/main/shell/config/_ide.sh").delete if (libexec/"src/main/shell/config/_ide.sh").exist?
 
     # Create wrapper script that sets up paths
     (bin/"${project_name}").write <<~EOS

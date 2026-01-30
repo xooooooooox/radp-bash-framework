@@ -108,7 +108,17 @@ __radp_app_parse_global_options "$@"
 # --------------------------------------------------------------------------- #
 # 2. Config 路径
 # --------------------------------------------------------------------------- #
-export GX_RADP_FW_USER_CONFIG_PATH="${GX_RADP_FW_USER_CONFIG_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/$RADP_APP_NAME}"
+# Development mode detection: if _ide.sh exists, use source config path
+# Otherwise (installed mode), use XDG config path
+if [[ -z "${GX_RADP_FW_USER_CONFIG_PATH:-}" ]]; then
+  if [[ -f "$RADP_APP_ROOT/src/main/shell/config/_ide.sh" ]]; then
+    # Development mode - use source config
+    export GX_RADP_FW_USER_CONFIG_PATH="$RADP_APP_ROOT/src/main/shell/config"
+  else
+    # Installed mode - use XDG config
+    export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/$RADP_APP_NAME"
+  fi
+fi
 
 # --------------------------------------------------------------------------- #
 # 3. User lib 路径
