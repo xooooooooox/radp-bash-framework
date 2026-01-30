@@ -59,31 +59,7 @@ brew install radp-bash-framework
 curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
-Install from a specific branch or tag:
-
-```shell
-bash install.sh --ref main
-bash install.sh --ref v1.0.0-rc1
-```
-
-### RPM (Fedora/RHEL/CentOS)
-
-```shell
-sudo dnf copr enable -y xooooooooox/radp
-sudo dnf install -y radp-bash-framework
-```
-
-See [Installation Guide](docs/installation.md) for more options (OBS, manual install, upgrade).
-
-### Load the Framework
-
-After installation, load the framework in your shell:
-
-```shell
-source "$(radp-bf path init)"
-```
-
-Add this to `~/.bashrc` for automatic loading.
+See [Installation Guide](docs/installation.md) for more options (RPM, OBS, manual install, upgrade).
 
 ## Quick Start
 
@@ -119,7 +95,10 @@ When the framework updates, upgrade your project's scaffold files:
 radp-bf upgrade                     # Upgrade current directory
 radp-bf upgrade ./myapp --dry-run   # Preview changes
 radp-bf upgrade --force             # Overwrite modified files
+radp-bf -v upgrade .                # Upgrade with verbose output
 ```
+
+The upgrade command tracks changes via `.radp-cli/` metadata directory and detects user modifications.
 
 ### Define Commands
 
@@ -197,6 +176,24 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 
 # Zsh
 myapp completion zsh >~/.zfunc/_myapp
+```
+
+## radp-bf CLI
+
+The `radp-bf` command-line tool manages framework operations:
+
+```shell
+radp-bf new <name> [dir]      # Create new CLI project
+radp-bf upgrade [dir] [opts]  # Upgrade existing project scaffold
+radp-bf path <name>           # Print framework paths (init|launcher|root)
+radp-bf version               # Show framework version
+```
+
+**Global options** (for any command):
+
+```shell
+radp-bf -v upgrade .          # Verbose output (info logs)
+radp-bf --debug upgrade .     # Debug output (debug logs)
 ```
 
 ## Documentation

@@ -411,27 +411,3 @@ $ myapp db --help
 $ myapp db migrate --help
 ```
 
-## Project Structure
-
-When you create a new project with `radp-bf new myapp`, it generates:
-
-```
-myapp/
-├── bin/myapp                      # CLI entry point
-├── src/main/shell/
-│   ├── commands/                  # Command implementations
-│   │   ├── hello.sh
-│   │   ├── version.sh
-│   │   └── completion.sh
-│   ├── config/                    # YAML configuration
-│   │   ├── config.yaml            # Base configuration (includes version)
-│   │   ├── config-dev.yaml        # Environment overrides
-│   │   └── _ide.sh                # IDE support & dev mode marker
-│   └── libs/                      # Project-specific libraries
-├── .radp-cli/                     # Scaffold metadata (for upgrade)
-├── packaging/                     # Distribution packaging
-└── install.sh                     # Installer script
-```
-
-The `config/` directory contains YAML configuration files that are automatically parsed by the framework.
-See [Configuration](configuration.md) for details on the YAML configuration system.

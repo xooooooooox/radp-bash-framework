@@ -21,15 +21,17 @@ myapp/
 │   ├── commands/                  # Command implementations
 │   │   ├── hello.sh               # myapp hello
 │   │   ├── version.sh             # myapp version
-│   │   └── completion.sh          # myapp completion
+│   │   └── completion.sh          # myapp completion (shell completion)
 │   ├── config/
 │   │   ├── config.yaml            # Base configuration (includes version)
 │   │   ├── config-dev.yaml        # Environment overrides
-│   │   └── _ide.sh                # IDE support & dev mode marker
+│   │   ├── _ide.sh                # IDE support & dev mode marker
+│   │   └── _idecomp.sh            # Auto-generated IDE completion (in .gitignore)
 │   └── libs/                      # Project-specific libraries
 ├── .radp-cli/                     # Scaffold metadata (for upgrade)
 │   ├── version                    # Framework version when created
-│   └── name                       # Project name
+│   ├── name                       # Project name
+│   └── checksums/                 # File checksums for modification detection
 ├── packaging/                     # Distribution packaging
 └── install.sh                     # Installer script
 ```

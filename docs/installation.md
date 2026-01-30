@@ -215,6 +215,32 @@ radp-bf upgrade
 
 # Upgrade specific project
 radp-bf upgrade ./myproject
+
+# Verbose output for debugging
+radp-bf -v upgrade .
+radp-bf --debug upgrade .
 ```
 
+The upgrade command:
+- Tracks scaffold version in `.radp-cli/version`
+- Detects user modifications via checksums in `.radp-cli/checksums/`
+- Skips modified files unless `--force` is specified
+
 See [CLI Development Guide](cli-development.md#upgrading-projects) for details.
+
+## radp-bf Global Options
+
+The `radp-bf` CLI supports global options that work with any command:
+
+| Option          | Description                          |
+|-----------------|--------------------------------------|
+| `-v, --verbose` | Enable verbose output (info logs)    |
+| `--debug`       | Enable debug output (debug logs)     |
+| `-h, --help`    | Show help                            |
+
+Example:
+
+```shell
+radp-bf -v new myapp           # Create project with verbose output
+radp-bf --debug upgrade .      # Upgrade with debug logging
+```

@@ -58,31 +58,7 @@ brew install radp-bash-framework
 curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
-从指定分支或标签安装：
-
-```shell
-bash install.sh --ref main
-bash install.sh --ref v1.0.0-rc1
-```
-
-### RPM (Fedora/RHEL/CentOS)
-
-```shell
-sudo dnf copr enable -y xooooooooox/radp
-sudo dnf install -y radp-bash-framework
-```
-
-更多安装方式（OBS、手动安装、升级）请参阅 [安装指南](docs/installation.md)。
-
-### 加载框架
-
-安装后，在 shell 中加载框架：
-
-```shell
-source "$(radp-bf path init)"
-```
-
-将此命令添加到 `~/.bashrc` 可实现自动加载。
+更多安装方式（RPM、OBS、手动安装、升级）请参阅 [安装指南](docs/installation.md)。
 
 ## 快速开始
 
@@ -118,7 +94,10 @@ myapp/
 radp-bf upgrade                     # 升级当前目录
 radp-bf upgrade ./myapp --dry-run   # 预览变更
 radp-bf upgrade --force             # 覆盖已修改的文件
+radp-bf -v upgrade .                # 带详细输出的升级
 ```
+
+升级命令通过 `.radp-cli/` 元数据目录跟踪变更并检测用户修改。
 
 ### 定义命令
 
@@ -196,6 +175,24 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 
 # Zsh
 myapp completion zsh >~/.zfunc/_myapp
+```
+
+## radp-bf 命令行工具
+
+`radp-bf` 命令行工具管理框架操作：
+
+```shell
+radp-bf new <name> [dir]      # 创建新 CLI 项目
+radp-bf upgrade [dir] [opts]  # 升级现有项目脚手架
+radp-bf path <name>           # 打印框架路径 (init|launcher|root)
+radp-bf version               # 显示框架版本
+```
+
+**全局选项**（适用于任何命令）：
+
+```shell
+radp-bf -v upgrade .          # 详细输出（info 日志）
+radp-bf --debug upgrade .     # 调试输出（debug 日志）
 ```
 
 ## 文档
