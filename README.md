@@ -186,6 +186,7 @@ The `radp-bf` command-line tool manages framework operations:
 radp-bf new <name> [dir]      # Create new CLI project
 radp-bf upgrade [dir] [opts]  # Upgrade existing project scaffold
 radp-bf path <name>           # Print framework paths (init|launcher|root)
+radp-bf completion <shell>    # Generate shell completion (bash|zsh)
 radp-bf version               # Show framework version
 ```
 
@@ -194,6 +195,16 @@ radp-bf version               # Show framework version
 ```shell
 radp-bf -v upgrade .          # Verbose output (info logs)
 radp-bf --debug upgrade .     # Debug output (debug logs)
+```
+
+**Shell completion for radp-bf:**
+
+```shell
+# Bash
+radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
+
+# Zsh
+radp-bf completion zsh > ~/.zfunc/_radp-bf
 ```
 
 ## Documentation

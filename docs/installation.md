@@ -244,3 +244,33 @@ Example:
 radp-bf -v new myapp           # Create project with verbose output
 radp-bf --debug upgrade .      # Upgrade with debug logging
 ```
+
+## radp-bf Shell Completion
+
+Enable shell completion for `radp-bf` to get command and option suggestions:
+
+### Bash
+
+```shell
+# Generate and install completion
+radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
+
+# Or for system-wide installation (requires sudo)
+radp-bf completion bash | sudo tee /etc/bash_completion.d/radp-bf > /dev/null
+```
+
+### Zsh
+
+```shell
+# Ensure completions directory exists
+mkdir -p ~/.zfunc
+
+# Generate completion
+radp-bf completion zsh > ~/.zfunc/_radp-bf
+
+# Add to .zshrc if not already present
+echo 'fpath=(~/.zfunc $fpath)' >> ~/.zshrc
+echo 'autoload -Uz compinit && compinit' >> ~/.zshrc
+```
+
+After installation, restart your shell or run `source ~/.bashrc` / `source ~/.zshrc`.

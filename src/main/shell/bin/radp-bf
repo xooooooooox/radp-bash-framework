@@ -18,6 +18,7 @@ Commands:
   upgrade [dir] [opts]  Upgrade an existing CLI project to latest scaffold
   path <name>           Print framework path (init|launcher|root)
   resolve-root <path>   Resolve project root from script path (for entry scripts)
+  completion <shell>    Generate shell completion script (bash|zsh)
   version               Show version
   help                  Show this help
 
@@ -39,6 +40,8 @@ Examples:
   radp-bf upgrade ./my-cli --dry-run  # Preview changes
   radp-bf -v upgrade .                # Upgrade with verbose output
   radp-bf --debug upgrade .           # Upgrade with debug output
+  radp-bf completion bash             # Generate bash completion
+  radp-bf completion zsh              # Generate zsh completion
   source "$(radp-bf path init)" "$@"
   export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
   source "$(radp-bf path launcher)" "$@"
@@ -165,6 +168,11 @@ __radp_bf_main() {
   upgrade)
     shift
     radp_cli_upgrade "$@"
+    return $?
+    ;;
+  completion)
+    shift
+    radp_cli_bf_completion_generate "${1:-}"
     return $?
     ;;
   *)

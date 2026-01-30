@@ -185,6 +185,7 @@ myapp completion zsh >~/.zfunc/_myapp
 radp-bf new <name> [dir]      # 创建新 CLI 项目
 radp-bf upgrade [dir] [opts]  # 升级现有项目脚手架
 radp-bf path <name>           # 打印框架路径 (init|launcher|root)
+radp-bf completion <shell>    # 生成 Shell 补全脚本 (bash|zsh)
 radp-bf version               # 显示框架版本
 ```
 
@@ -193,6 +194,16 @@ radp-bf version               # 显示框架版本
 ```shell
 radp-bf -v upgrade .          # 详细输出（info 日志）
 radp-bf --debug upgrade .     # 调试输出（debug 日志）
+```
+
+**radp-bf 的 Shell 补全：**
+
+```shell
+# Bash
+radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
+
+# Zsh
+radp-bf completion zsh > ~/.zfunc/_radp-bf
 ```
 
 ## 文档
