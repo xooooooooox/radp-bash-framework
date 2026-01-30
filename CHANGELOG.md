@@ -1,15 +1,18 @@
 # CHANGELOG
 
-## v0.6.23
+## v0.6.24
 
 ### feat
 
 - Add `workflows` component to `radp-bf upgrade` command
   - Upgrades GitHub Actions workflows to latest templates
-  - Supports 7 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package, build-obs-package, update-homebrew-tap, attach-release-packages
+  - Supports 8 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package, build-obs-package, update-homebrew-tap, attach-release-packages, cleanup-branches
   - Uses checksum-based user modification detection (skips modified files unless `--force`)
   - Templates use new version scheme (`gr_app_version` in `version.sh`)
 - Add `attach-release-packages.yml` workflow to scaffold
+- Add `cleanup-branches.yml` workflow to scaffold
+  - Automatically deletes stale `workflow/v*` branches older than 14 days
+  - Supports scheduled (weekly) and manual trigger with configurable days and dry-run mode
 - Refactor workflow templates to shared content generator functions (`radp_workflow_content_*`)
   - Both `radp-bf new` and `radp-bf upgrade workflows` now use the same templates
 - Add `-q`/`--quiet` global option to disable banner and console log output

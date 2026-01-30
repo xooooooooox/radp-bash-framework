@@ -627,6 +627,7 @@ __radp_upgrade_workflows() {
     "build-obs-package.yml"
     "update-homebrew-tap.yml"
     "attach-release-packages.yml"
+    "cleanup-branches.yml"
   )
 
   local workflow
@@ -763,6 +764,9 @@ __radp_workflow_generate_content() {
     ;;
   attach-release-packages.yml)
     radp_workflow_content_attach_packages "$project_name" "$project_var"
+    ;;
+  cleanup-branches.yml)
+    radp_workflow_content_cleanup_branches "$project_name" "$project_var"
     ;;
   *)
     return 1
