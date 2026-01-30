@@ -62,12 +62,13 @@ radp-bf upgrade entry ide
 
 **Upgradable components:**
 
-| Component   | Files                                  | Description                                    |
-|-------------|----------------------------------------|------------------------------------------------|
-| `entry`     | `bin/<name>`                           | Entry script                                   |
-| `ide`       | `src/main/shell/config/_ide.sh`        | IDE support file                               |
-| `gitignore` | `.gitignore`                           | Git ignore patterns                            |
-| `version`   | `src/main/shell/commands/version.sh`   | Migrate version from config.yaml to version.sh |
+| Component   | Files                                | Description                                    |
+|-------------|--------------------------------------|------------------------------------------------|
+| `entry`     | `bin/<name>`                         | Entry script                                   |
+| `ide`       | `src/main/shell/config/_ide.sh`      | IDE support file                               |
+| `gitignore` | `.gitignore`                         | Git ignore patterns                            |
+| `version`   | `src/main/shell/commands/version.sh` | Migrate version from config.yaml to version.sh |
+| `workflows` | `.github/workflows/*.yml`            | GitHub Actions CI/CD workflows (8 files)       |
 
 The upgrade command detects user modifications and skips those files unless `--force` is specified.
 
@@ -205,11 +206,12 @@ The application version is defined in `commands/version.sh` as a single source o
 declare -gr gr_app_version="v0.0.1"
 
 cmd_version() {
-    echo "myapp $(radp_get_install_version "${gr_app_version}")"
+  echo "myapp $(radp_get_install_version "${gr_app_version}")"
 }
 ```
 
 The CI workflows automatically update `gr_app_version` during releases. This design:
+
 - Keeps version in version-controlled code
 - Prevents accidental deletion (version.sh is a command file)
 - Follows single responsibility principle
@@ -220,11 +222,13 @@ The framework automatically loads user library files, eliminating the need for m
 
 ### How It Works
 
-Place `.sh` files in your project's `libs/` directory. For scaffold projects, the framework automatically detects and loads them - no configuration needed.
+Place `.sh` files in your project's `libs/` directory. For scaffold projects, the framework automatically detects and
+loads them - no configuration needed.
 
 ### Automatic Detection (Scaffold Projects)
 
 For projects created with `radp-bf new`, the framework automatically:
+
 - Detects `$RADP_APP_ROOT/src/main/shell/libs` directory
 - Adds it to the library search paths
 - Sources all `.sh` files during bootstrap
@@ -615,13 +619,13 @@ myapp/
 
 ### Common Issues
 
-| Issue                   | Cause                       | Solution                                                     |
-|-------------------------|-----------------------------|--------------------------------------------------------------|
-| Command not found       | Missing `@cmd` marker       | Add `# @cmd` to the command file                             |
-| Option not working      | Wrong variable name         | Use `opt_<long_name>` (e.g., `opt_verbose`)                  |
-| Completion not updating | Cached completion script    | Regenerate: `myapp completion bash > ...`                    |
-| Config not loading      | Wrong path or syntax        | Run `myapp --config` to check paths; validate YAML syntax    |
-| Library not loaded      | libs/ directory not found   | Ensure `src/main/shell/libs/` exists in project root         |
+| Issue                   | Cause                     | Solution                                                  |
+|-------------------------|---------------------------|-----------------------------------------------------------|
+| Command not found       | Missing `@cmd` marker     | Add `# @cmd` to the command file                          |
+| Option not working      | Wrong variable name       | Use `opt_<long_name>` (e.g., `opt_verbose`)               |
+| Completion not updating | Cached completion script  | Regenerate: `myapp completion bash > ...`                 |
+| Config not loading      | Wrong path or syntax      | Run `myapp --config` to check paths; validate YAML syntax |
+| Library not loaded      | libs/ directory not found | Ensure `src/main/shell/libs/` exists in project root      |
 
 ### Debugging Tips
 
@@ -659,7 +663,7 @@ myapp --config --json
 myapp --help
 
 # Check specific command metadata
-myapp <command> --help
+myapp <command >--help
 ```
 
 **Test completion functions:**
@@ -669,6 +673,60 @@ myapp <command> --help
 source src/main/shell/commands/install.sh
 _complete_packages
 ```
+
+## CI/CD Workflows
+
+Projects created with `radp-bf new` include GitHub Actions workflows for automated releases.
+
+### Included Workflows
+
+| Workflow                      | Trigger                   | Purpose                        |
+|-------------------------------|---------------------------|--------------------------------|
+| `release-prep.yml`            | Manual on `main`          | Create release branch and PR   |
+| `create-version-tag.yml`      | PR merge or manual        | Validate and create git tag    |
+| `update-spec-version.yml`     | After tag creation        | Update spec Version field      |
+| `build-copr-package.yml`      | After spec update         | Trigger COPR build             |
+| `build-obs-package.yml`       | After spec update         | Sync to OBS and build          |
+| `update-homebrew-tap.yml`     | Tag push                  | Update Homebrew formula        |
+| `attach-release-packages.yml` | After package builds      | Upload packages to release     |
+| `cleanup-branches.yml`        | Weekly schedule or manual | Delete stale workflow branches |
+
+### Release Process
+
+1. **Trigger release-prep** — Choose bump type (patch/minor/major) and run workflow
+2. **Review PR** — Edit auto-generated changelog, then merge to `main`
+3. **Automatic flow** — Tag creation, package builds, and release publishing happen automatically
+
+### Upgrading Workflows
+
+When workflow templates are updated, upgrade your project:
+
+```bash
+# Preview workflow changes
+radp-bf upgrade --diff workflows
+
+# Apply workflow updates
+radp-bf upgrade workflows
+
+# Force overwrite modified workflows
+radp-bf upgrade --force workflows
+```
+
+### Required Secrets
+
+Configure these in GitHub repository settings:
+
+| Secret               | Purpose                     |
+|----------------------|-----------------------------|
+| `COPR_LOGIN`         | COPR API login              |
+| `COPR_TOKEN`         | COPR API token              |
+| `COPR_USERNAME`      | COPR username               |
+| `COPR_PROJECT`       | COPR project (user/project) |
+| `OBS_USERNAME`       | OBS username                |
+| `OBS_PASSWORD`       | OBS password                |
+| `OBS_PROJECT`        | OBS project name            |
+| `OBS_PACKAGE`        | OBS package name            |
+| `HOMEBREW_TAP_TOKEN` | GitHub token for tap repo   |
 
 ## Best Practices
 

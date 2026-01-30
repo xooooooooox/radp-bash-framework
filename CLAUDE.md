@@ -232,6 +232,23 @@ The framework will automatically append:
  :: radp-bash-framework :: (v0.6.11)
 ```
 
+## CI/CD Workflows
+
+The framework and scaffolded projects include GitHub Actions workflows:
+
+| Workflow                      | Trigger                    | Purpose                           |
+|-------------------------------|----------------------------|-----------------------------------|
+| `release-prep.yml`            | Manual on `main`           | Create release branch and PR      |
+| `create-version-tag.yml`      | PR merge or manual         | Validate and create git tag       |
+| `update-spec-version.yml`     | After tag creation         | Update spec Version field         |
+| `build-copr-package.yml`      | After spec update          | Trigger COPR build                |
+| `build-obs-package.yml`       | After spec update          | Sync to OBS and build             |
+| `update-homebrew-tap.yml`     | Tag push                   | Update Homebrew formula           |
+| `attach-release-packages.yml` | After package builds       | Upload packages to release        |
+| `cleanup-branches.yml`        | Weekly schedule or manual  | Delete stale workflow branches    |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#release-process) for detailed release process.
+
 ## Code Style
 
 - Entry scripts (`init.sh`, `preflight/*.sh`) use POSIX-compatible syntax

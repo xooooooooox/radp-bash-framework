@@ -109,6 +109,12 @@ build-copr-package  build-obs-package
        └──────┬───────┘
               ▼
   attach-release-packages
+
+
+cleanup-branches (scheduled weekly / manual)
+       │
+       ▼
+  Delete stale workflow/v* branches (>14 days old)
 ```
 
 ### 1. Prepare Release
@@ -116,9 +122,10 @@ build-copr-package  build-obs-package
 Trigger `release-prep` workflow with `bump_type` (patch/minor/major/manual):
 
 - Creates branch `workflow/vX.Y.Z`
-- Updates `gr_fw_version`
+- Updates `gr_fw_version` in `version.sh`
 - Syncs spec versions
-- Inserts changelog entry
+- Generates changelog entry from commits
+- Regenerates shell completion scripts
 - Opens PR for review
 
 ### 2. Review and Merge
@@ -145,14 +152,23 @@ Tag triggers:
 
 `attach-release-packages` downloads built packages from COPR/OBS and uploads to GitHub Release.
 
+### 6. Branch Cleanup
+
+`cleanup-branches` runs weekly (Sunday 00:00 UTC) or manually:
+
+- Deletes stale `workflow/v*` branches older than 14 days
+- Supports dry-run mode to preview deletions
+- Configurable days threshold via manual trigger
+
 ## GitHub Actions Reference
 
-| Workflow                      | Trigger            | Purpose                      |
-|-------------------------------|--------------------|------------------------------|
-| `release-prep.yml`            | Manual on `main`   | Create release branch and PR |
-| `create-version-tag.yml`      | PR merge or manual | Validate and create git tag  |
-| `update-spec-version.yml`     | After tag creation | Update spec Version field    |
-| `build-copr-package.yml`      | After spec update  | Trigger COPR build           |
-| `build-obs-package.yml`       | After spec update  | Sync to OBS and build        |
-| `update-homebrew-tap.yml`     | Tag push           | Update Homebrew formula      |
-| `attach-release-packages.yml` | Release published  | Upload packages to release   |
+| Workflow                      | Trigger                    | Purpose                           |
+|-------------------------------|----------------------------|-----------------------------------|
+| `release-prep.yml`            | Manual on `main`           | Create release branch and PR      |
+| `create-version-tag.yml`      | PR merge or manual         | Validate and create git tag       |
+| `update-spec-version.yml`     | After tag creation         | Update spec Version field         |
+| `build-copr-package.yml`      | After spec update          | Trigger COPR build                |
+| `build-obs-package.yml`       | After spec update          | Sync to OBS and build             |
+| `update-homebrew-tap.yml`     | Tag push                   | Update Homebrew formula           |
+| `attach-release-packages.yml` | After package builds       | Upload packages to release        |
+| `cleanup-branches.yml`        | Weekly schedule or manual  | Delete stale workflow branches    |
