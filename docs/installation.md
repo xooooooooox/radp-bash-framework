@@ -113,8 +113,10 @@ source /path/to/radp-bash-framework/src/main/shell/framework/init.sh
 ### Uninstall Script (Recommended)
 
 ```shell
-bash uninstall.sh
-bash uninstall.sh --yes # Skip confirmation
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/uninstall.sh | bash
+
+# Skip confirmation
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/uninstall.sh | bash -s -- --yes
 ```
 
 The script auto-detects both package-manager and manual installations and removes them.

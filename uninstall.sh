@@ -193,9 +193,15 @@ confirm() {
     return 0
   fi
 
+  # Check if /dev/tty is available for interactive input
+  if [[ ! -r /dev/tty ]]; then
+    err "No tty available for interactive prompt. Use --yes to skip confirmation."
+    return 1
+  fi
+
   printf "%s [y/N] " "${prompt}"
   local reply
-  read -r reply
+  read -r reply </dev/tty
   case "${reply}" in
   y | Y | yes | YES) return 0 ;;
   *) return 1 ;;
