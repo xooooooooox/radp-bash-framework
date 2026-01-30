@@ -71,7 +71,7 @@ jobs:
             last_commit_date=$(git log -1 --format=%cI "origin/${branch}" 2>/dev/null || echo "")
             if [[ -z "$last_commit_date" ]]; then
               echo "[SKIP] ${branch} (no commit date)"
-              ((skipped_count++))
+              skipped_count=$((skipped_count + 1))
               continue
             fi
 
@@ -87,14 +87,14 @@ jobs:
                 echo "[DELETE] ${branch} (last commit: ${last_commit_date})"
                 git push origin --delete "${branch}" || {
                   echo "  Failed to delete ${branch}"
-                  ((skipped_count++))
+                  skipped_count=$((skipped_count + 1))
                   continue
                 }
               fi
-              ((deleted_count++))
+              deleted_count=$((deleted_count + 1))
             else
               echo "[KEEP] ${branch} (last commit: ${last_commit_date})"
-              ((skipped_count++))
+              skipped_count=$((skipped_count + 1))
             fi
           done < <(git for-each-ref --format='%(refname)' refs/remotes/origin/)
 
