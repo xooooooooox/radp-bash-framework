@@ -38,11 +38,12 @@ radp_banner_build() {
 
   # 2. 获取版本信息
   local app_name="${RADP_APP_NAME:-radp-cli}"
-  local app_var="${app_name//-/_}"
-  # 检查 gr_* 变量（automap 生成）和 YAML_* 变量（YAML 解析）
-  local gr_version_var="gr_radp_extend_${app_var}_version"
-  local yaml_version_var="YAML_RADP_EXTEND_${app_var^^}_VERSION"
-  local app_version="${!gr_version_var:-${!yaml_version_var:-}}"
+  # 从 commands/version.sh 文件中读取版本
+  local version_sh_path="${gr_fw_user_config_path%/config}/commands/version.sh"
+  local app_version=""
+  if [[ -f "$version_sh_path" ]]; then
+    app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"
+  fi
   local fw_version
   fw_version="$(radp_get_fw_install_version)"
 

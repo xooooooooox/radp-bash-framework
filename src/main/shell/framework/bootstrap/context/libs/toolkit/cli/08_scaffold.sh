@@ -113,17 +113,21 @@ __radp_cli_scaffold_commands() {
   local target_dir="$2"
 
   # version 命令
-  local project_var="${project_name//-/_}"
-  cat >"$target_dir/src/main/shell/commands/version.sh" <<VERSION_CMD
+  cat >"$target_dir/src/main/shell/commands/version.sh" <<'VERSION_CMD'
 #!/usr/bin/env bash
 # @cmd
 # @desc Show version information
 
+# Application version
+# Update this value when releasing a new version
+declare -gr gr_app_version="v0.0.1"
+
 cmd_version() {
-    # Version is loaded from config/config.yaml (radp.extend.${project_var}.version)
-    echo "${project_name} \$(radp_get_install_version "\${gr_radp_extend_${project_var}_version:-v0.1.0}")"
+    echo "__PROJECT_NAME__ $(radp_get_install_version "${gr_app_version}")"
 }
 VERSION_CMD
+  sed -i.bak "s/__PROJECT_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/version.sh"
+  rm -f "$target_dir/src/main/shell/commands/version.sh.bak"
 
   # completion 命令
   cat >"$target_dir/src/main/shell/commands/completion.sh" <<'COMPLETION_CMD'
@@ -205,9 +209,8 @@ radp:
   # Variables defined here will be available as gr_radp_extend_* in shell
   extend:
     ${project_var}:
-      # Version - single source of truth for release management
-      # Available as \$gr_radp_extend_${project_var}_version in shell
-      version: v0.0.1
+      # Add your application-specific configuration here
+      # Example: api_url: https://api.example.com
 YAML_CONFIG
 
   # 生成环境特定配置示例
@@ -355,17 +358,27 @@ radp:
 
   extend:                # Application-specific settings
     ${project_name//-/_}:
-      version: v0.1.0
       # Your custom config here
+      # api_url: https://api.example.com
 \`\`\`
+
+### Version Management
+
+The application version is defined in \`src/main/shell/commands/version.sh\`:
+
+\`\`\`bash
+declare -gr gr_app_version="v0.0.1"
+\`\`\`
+
+This is the single source of truth for version management. The CI workflows automatically update this value during releases.
 
 ### Accessing Config in Code
 
 Variables from \`radp.extend.*\` are available as \`gr_radp_extend_*\`:
 
 \`\`\`bash
-# radp.extend.${project_name//-/_}.version -> gr_radp_extend_${project_name//-/_}_version
-echo "\$gr_radp_extend_${project_name//-/_}_version"
+# radp.extend.${project_name//-/_}.api_url -> gr_radp_extend_${project_name//-/_}_api_url
+echo "\$gr_radp_extend_${project_name//-/_}_api_url"
 \`\`\`
 
 ### Environment Variables
@@ -800,9 +813,9 @@ install_manual() {
   else
     # ref is branch/SHA, append to base version from source
     local base_version
-    base_version=$(grep -oE 'version:[[:space:]]*v[0-9]+\.[0-9]+\.[0-9]+' \
-      "${install_dir}/src/main/shell/config/config.yaml" 2>/dev/null \
-      | head -1 | sed 's/.*version:[[:space:]]*//' || echo "v0.0.0")
+    base_version=$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' \
+      "${install_dir}/src/main/shell/commands/version.sh" 2>/dev/null)
+    base_version="${base_version:-v0.0.0}"
     installed_version="${base_version}+${ref}"
   fi
   echo "${installed_version}" >"${install_dir}/.install-version"
@@ -1178,7 +1191,7 @@ jobs:
           version="\${{ steps.version.outputs.version }}"
           version_no_prefix="\${version#v}"
           git checkout -b "workflow/\${version}"
-          yq -i ".radp.extend.${project_var}.version = \"\${version}\"" src/main/shell/config/config.yaml
+          sed -i "s/^declare -gr gr_app_version=.*/declare -gr gr_app_version=\"\${version}\"/" src/main/shell/commands/version.sh
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
           git config user.name "github-actions[bot]"
@@ -1227,7 +1240,7 @@ jobs:
       - name: Read and tag
         run: |
           set -euo pipefail
-          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
+          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
           [[ -z "\$version" ]] && exit 1
           git rev-parse "\$version" >/dev/null 2>&1 && { echo "Tag exists"; exit 0; }
           git tag "\$version"
@@ -1265,7 +1278,7 @@ jobs:
       - name: Update specs
         run: |
           set -euo pipefail
-          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
+          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
           version_no_prefix="\${version#v}"
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/copr/${project_name}.spec
           sed -i "s/^Version:.*/Version:        \${version_no_prefix}/" packaging/obs/${project_name}.spec
@@ -1313,7 +1326,7 @@ jobs:
           for v in COPR_LOGIN COPR_TOKEN COPR_USERNAME COPR_PROJECT; do
             [[ -z "\${!v:-}" ]] && { echo "Missing \$v" >&2; exit 1; }
           done
-          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
+          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
           git fetch --tags --force
           git rev-parse "\$version" >/dev/null 2>&1 || { echo "Tag not found"; exit 0; }
           tag_sha=\$(git rev-parse "\$version^{commit}")
@@ -1369,7 +1382,7 @@ jobs:
             [[ -z "\${!v:-}" ]] && { echo "Missing \$v" >&2; exit 1; }
           done
           : "\${OBS_API_URL:=https://api.opensuse.org}"
-          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
+          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
           version_no_prefix="\${version#v}"
           git rev-parse "\$version" >/dev/null 2>&1 || { echo "Tag not found"; exit 0; }
           sudo apt-get update && sudo apt-get install -y osc dpkg-dev debhelper
@@ -1429,7 +1442,7 @@ jobs:
       - name: Update formula
         run: |
           set -euo pipefail
-          version=\$(yq '.radp.extend.${project_var}.version' src/main/shell/config/config.yaml)
+          version=\$(grep -oP 'declare -gr gr_app_version="\\K[^"]+' src/main/shell/commands/version.sh)
           version_no_prefix="\${version#v}"
           tarball_url="https://github.com/\${GITHUB_REPOSITORY}/archive/refs/tags/\${version}.tar.gz"
           sha256=\$(curl -sL "\$tarball_url" | sha256sum | awk '{print \$1}')

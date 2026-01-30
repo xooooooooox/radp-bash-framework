@@ -183,6 +183,18 @@ __radp_app_show_config_text() {
   printf "  %-22s %s\n" "Log debug" "${gr_radp_fw_log_debug:-false}"
   echo ""
 
+  # [Application] - show app version from commands/version.sh
+  local version_sh_path="${gr_fw_user_config_path%/config}/commands/version.sh"
+  local app_version=""
+  if [[ -f "$version_sh_path" ]]; then
+    app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"
+  fi
+  if [[ -n "$app_version" ]]; then
+    echo "[Application]"
+    printf "  %-22s %s\n" "Version" "$app_version"
+    echo ""
+  fi
+
   # [Application Extensions]
   # Collect all gr_radp_extend_* variables and group them
   __radp_app_show_config_extensions_text "$app_name"
@@ -268,10 +280,20 @@ __radp_app_show_config_json() {
     user_lib_dirs_json="[${json_paths[*]}]"
   fi
 
+  # Get app version from commands/version.sh
+  local version_sh_path="${gr_fw_user_config_path%/config}/commands/version.sh"
+  local app_version=""
+  if [[ -f "$version_sh_path" ]]; then
+    app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"
+  fi
+  local app_version_json="null"
+  [[ -n "$app_version" ]] && app_version_json="\"$app_version\""
+
   # Build JSON output
   cat <<EOF
 {
   "app_name": "$app_name",
+  "app_version": $app_version_json,
   "paths": {
     "user_config_dir": "${gr_fw_user_config_path:-}",
     "config_file": "${gr_fw_user_yaml_config_file:-}",

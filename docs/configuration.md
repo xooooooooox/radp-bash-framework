@@ -90,7 +90,6 @@ radp:
   # All keys under extend.* are auto-mapped to gr_radp_extend_* variables
   extend:
     myapp:
-      version: v1.0.0
       api:
         url: https://api.example.com
         timeout: 30

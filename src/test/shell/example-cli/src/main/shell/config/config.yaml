@@ -20,6 +20,5 @@ radp:
   # Variables defined here will be available as gr_radp_extend_* in shell
   extend:
     example_cli:
-      # Version - single source of truth for release management
-      # Available as $gr_radp_extend_example_cli_version in shell
-      version: v0.0.1
+      # Add your application-specific configuration here
+      # Example: api_url: https://api.example.com

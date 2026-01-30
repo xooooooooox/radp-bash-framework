@@ -2,7 +2,10 @@
 # @cmd
 # @desc Show version information
 
+# Application version
+# Update this value when releasing a new version
+declare -gr gr_app_version="v0.0.1"
+
 cmd_version() {
-    # Version is loaded from config/config.yaml (radp.extend.example_cli.version)
-    echo "example-cli ${gr_radp_extend_example_cli_version:-v0.1.0}"
+    echo "example-cli $(radp_get_install_version "${gr_app_version}")"
 }

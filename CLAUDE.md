@@ -67,13 +67,9 @@ homelabctl Configuration
   Log level              error
   Log debug              false
 
-[Application: homelabctl]
-  version                v0.1.6
+[Application]
+  Version                v0.1.6
 
-[Application: homelabctl.gitlab]
-  type                   gitlab-ce
-  default_version        latest
-  ...
 ```
 
 ## Architecture

@@ -104,17 +104,27 @@ radp:
 
   extend:                # Application-specific settings
     example_cli:
-      version: v0.1.0
       # Your custom config here
+      # api_url: https://api.example.com
 ```
+
+### Version Management
+
+The application version is defined in `src/main/shell/commands/version.sh`:
+
+```bash
+declare -gr gr_app_version="v0.0.1"
+```
+
+This is the single source of truth for version management. The CI workflows automatically update this value during releases.
 
 ### Accessing Config in Code
 
 Variables from `radp.extend.*` are available as `gr_radp_extend_*`:
 
 ```bash
-# radp.extend.example_cli.version -> gr_radp_extend_example_cli_version
-echo "$gr_radp_extend_example_cli_version"
+# radp.extend.example_cli.api_url -> gr_radp_extend_example_cli_api_url
+echo "$gr_radp_extend_example_cli_api_url"
 ```
 
 ### Environment Variables

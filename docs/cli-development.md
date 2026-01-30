@@ -23,7 +23,7 @@ myapp/
 │   │   ├── version.sh             # myapp version
 │   │   └── completion.sh          # myapp completion (shell completion)
 │   ├── config/
-│   │   ├── config.yaml            # Base configuration (includes version)
+│   │   ├── config.yaml            # Base configuration
 │   │   ├── config-dev.yaml        # Environment overrides
 │   │   ├── _ide.sh                # IDE support & dev mode marker
 │   │   └── _idecomp.sh            # Auto-generated IDE completion (in .gitignore)
@@ -188,6 +188,30 @@ GX_RADP_EXTEND_MYAPP_API_URL=http://localhost:8080 myapp hello
 ```
 
 See [Configuration](configuration.md) for complete reference.
+
+### Version Management
+
+The application version is defined in `commands/version.sh` as a single source of truth:
+
+```bash
+# src/main/shell/commands/version.sh
+
+# @cmd
+# @desc Show version information
+
+# Application version - single source of truth
+# Update this value when releasing a new version
+declare -gr gr_app_version="v0.0.1"
+
+cmd_version() {
+    echo "myapp $(radp_get_install_version "${gr_app_version}")"
+}
+```
+
+The CI workflows automatically update `gr_app_version` during releases. This design:
+- Keeps version in version-controlled code
+- Prevents accidental deletion (version.sh is a command file)
+- Follows single responsibility principle
 
 ## User Libraries
 
