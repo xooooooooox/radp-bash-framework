@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.6.26
+
+### feat
+
+- update scaffold install
+
+### fix
+
+- fix radp-bf completion
+
 ## v0.6.25
 
 ### feat
