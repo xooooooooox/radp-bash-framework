@@ -806,8 +806,8 @@ install_manual() {
   cp -R "${src_root}/bin" "${install_dir}/"
   cp -R "${src_root}/src" "${install_dir}/"
 
-  # Remove development mode marker (only used in source tree)
-  rm -f "${install_dir}/src/main/shell/config/_ide.sh"
+  # Remove IDE support files (development only, not needed at runtime)
+  find "${install_dir}/src" -name "_ide*.sh" -delete 2>/dev/null || true
 
   chmod 0755 "${install_dir}/bin/__PROJECT_NAME__"
   find "${install_dir}/src" -type f -name "*.sh" -exec chmod 0755 {} \;
@@ -1103,8 +1103,8 @@ class ${class_name} < Formula
     # Install to libexec
     libexec.install "bin", "src"
 
-    # Remove development mode marker (only used in source tree)
-    (libexec/"src/main/shell/config/_ide.sh").delete if (libexec/"src/main/shell/config/_ide.sh").exist?
+    # Remove IDE support files (development only, not needed at runtime)
+    Dir.glob(libexec/"src/**/_ide*.sh").each { |f| rm f }
 
     # Create wrapper script that sets up paths
     (bin/"${project_name}").write <<~EOS
