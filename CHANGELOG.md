@@ -4,6 +4,14 @@
 
 ### feat
 
+- Add `workflows` component to `radp-bf upgrade` command
+  - Upgrades GitHub Actions workflows to latest templates
+  - Supports 7 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package, build-obs-package, update-homebrew-tap, attach-release-packages
+  - Uses checksum-based user modification detection (skips modified files unless `--force`)
+  - Templates use new version scheme (`gr_app_version` in `version.sh`)
+- Add `attach-release-packages.yml` workflow to scaffold
+- Refactor workflow templates to shared content generator functions (`radp_workflow_content_*`)
+  - Both `radp-bf new` and `radp-bf upgrade workflows` now use the same templates
 - Add `-q`/`--quiet` global option to disable banner and console log output
   - Useful for shell completion scripts and scripting use cases
   - Sets `GX_RADP_FW_BANNER_MODE=off` and `GX_RADP_FW_LOG_CONSOLE_ENABLED=false`

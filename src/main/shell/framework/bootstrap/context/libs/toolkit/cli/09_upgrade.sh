@@ -3,7 +3,7 @@
 # CLI 项目升级：升级基于 radp-bash-framework 创建的 CLI 项目
 
 # 可升级的组件列表
-declare -ga __radp_upgrade_components=(entry ide gitignore version)
+declare -ga __radp_upgrade_components=(entry ide gitignore version workflows)
 
 #######################################
 # 升级 CLI 项目
@@ -251,6 +251,9 @@ __radp_upgrade_component() {
     ;;
   version)
     __radp_upgrade_version "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
+    ;;
+  workflows)
+    __radp_upgrade_workflows "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
     ;;
   *)
     return 1
@@ -588,4 +591,181 @@ VERSION_SH
   fi
 
   return 0
+}
+
+#######################################
+# 升级 GitHub Workflows
+#######################################
+__radp_upgrade_workflows() {
+  local target_dir="$1"
+  local project_name="$2"
+  local dry_run="$3"
+  local force="$4"
+  local show_diff="$5"
+
+  local workflows_dir="$target_dir/.github/workflows"
+  local project_var="${project_name//-/_}"
+  local has_changes=false
+
+  # 如果目录不存在，创建它
+  if [[ ! -d "$workflows_dir" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] .github/workflows/"
+    else
+      mkdir -p "$workflows_dir"
+      echo "  [CREATE] .github/workflows/"
+    fi
+    has_changes=true
+  fi
+
+  # 定义工作流列表
+  local -a workflow_files=(
+    "release-prep.yml"
+    "create-version-tag.yml"
+    "update-spec-version.yml"
+    "build-copr-package.yml"
+    "build-obs-package.yml"
+    "update-homebrew-tap.yml"
+    "attach-release-packages.yml"
+  )
+
+  local workflow
+  for workflow in "${workflow_files[@]}"; do
+    if __radp_upgrade_single_workflow "$target_dir" "$project_name" "$project_var" "$workflow" "$dry_run" "$force" "$show_diff"; then
+      has_changes=true
+    fi
+  done
+
+  if [[ "$has_changes" == "true" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+#######################################
+# 升级单个工作流文件
+#######################################
+__radp_upgrade_single_workflow() {
+  local target_dir="$1"
+  local project_name="$2"
+  local project_var="$3"
+  local workflow_file="$4"
+  local dry_run="$5"
+  local force="$6"
+  local show_diff="$7"
+
+  local workflows_dir="$target_dir/.github/workflows"
+  local file_path="$workflows_dir/$workflow_file"
+  local checksum_dir="$target_dir/.radp-cli/checksums/workflows"
+  local checksum_file="$checksum_dir/${workflow_file%.yml}"
+
+  # 生成工作流内容
+  local new_content
+  new_content=$(__radp_workflow_generate_content "$project_name" "$project_var" "$workflow_file")
+
+  if [[ -z "$new_content" ]]; then
+    echo "  [SKIP] .github/workflows/$workflow_file (no template)"
+    return 1
+  fi
+
+  # 文件不存在，创建
+  if [[ ! -f "$file_path" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] .github/workflows/$workflow_file"
+    else
+      mkdir -p "$workflows_dir"
+      echo "$new_content" >"$file_path"
+      # 保存 checksum
+      mkdir -p "$checksum_dir"
+      echo -n "$new_content" | shasum -a 256 | cut -d' ' -f1 >"$checksum_file"
+      echo "  [CREATE] .github/workflows/$workflow_file"
+    fi
+    return 0
+  fi
+
+  local current_content
+  current_content=$(cat "$file_path")
+
+  # 检查是否需要更新
+  if [[ "$current_content" == "$new_content" ]]; then
+    echo "  [OK]   .github/workflows/$workflow_file (up to date)"
+    return 1
+  fi
+
+  # 检查是否被用户修改
+  local is_modified=false
+  if [[ -f "$checksum_file" ]]; then
+    local original_checksum
+    original_checksum=$(cat "$checksum_file")
+    local current_checksum
+    current_checksum=$(echo -n "$current_content" | shasum -a 256 | cut -d' ' -f1)
+    if [[ "$original_checksum" != "$current_checksum" ]]; then
+      is_modified=true
+    fi
+  else
+    # 没有 checksum 记录，假设已被修改
+    is_modified=true
+  fi
+
+  if [[ "$is_modified" == "true" && "$force" != "true" ]]; then
+    echo "  [SKIP] .github/workflows/$workflow_file (user modified, use --force to overwrite)"
+    if [[ "$show_diff" == "true" ]]; then
+      echo "    Diff:"
+      diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
+    fi
+    return 1
+  fi
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "  [UPDATE] .github/workflows/$workflow_file"
+    if [[ "$show_diff" == "true" ]]; then
+      diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
+    fi
+  else
+    echo "$new_content" >"$file_path"
+    # 更新 checksum
+    mkdir -p "$checksum_dir"
+    echo -n "$new_content" | shasum -a 256 | cut -d' ' -f1 >"$checksum_file"
+    echo "  [UPDATE] .github/workflows/$workflow_file"
+  fi
+
+  return 0
+}
+
+#######################################
+# 生成工作流内容
+# 复用 08_scaffold.sh 中的 radp_workflow_content_* 函数
+#######################################
+__radp_workflow_generate_content() {
+  local project_name="$1"
+  local project_var="$2"
+  local workflow_file="$3"
+
+  case "$workflow_file" in
+  release-prep.yml)
+    radp_workflow_content_release_prep "$project_name" "$project_var"
+    ;;
+  create-version-tag.yml)
+    radp_workflow_content_create_tag "$project_name" "$project_var"
+    ;;
+  update-spec-version.yml)
+    radp_workflow_content_update_spec "$project_name" "$project_var"
+    ;;
+  build-copr-package.yml)
+    radp_workflow_content_build_copr "$project_name" "$project_var"
+    ;;
+  build-obs-package.yml)
+    radp_workflow_content_build_obs "$project_name" "$project_var"
+    ;;
+  update-homebrew-tap.yml)
+    radp_workflow_content_homebrew "$project_name" "$project_var"
+    ;;
+  attach-release-packages.yml)
+    radp_workflow_content_attach_packages "$project_name" "$project_var"
+    ;;
+  *)
+    return 1
+    ;;
+  esac
 }

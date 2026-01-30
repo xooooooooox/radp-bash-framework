@@ -1126,20 +1126,27 @@ __radp_cli_scaffold_workflows() {
   local target_dir="$2"
   local project_var="${project_name//-/_}"
 
-  __radp_cli_scaffold_workflow_release_prep "$project_name" "$target_dir" "$project_var"
-  __radp_cli_scaffold_workflow_create_tag "$project_name" "$target_dir" "$project_var"
-  __radp_cli_scaffold_workflow_update_spec "$project_name" "$target_dir" "$project_var"
-  __radp_cli_scaffold_workflow_build_copr "$project_name" "$target_dir" "$project_var"
-  __radp_cli_scaffold_workflow_build_obs "$project_name" "$target_dir" "$project_var"
-  __radp_cli_scaffold_workflow_homebrew "$project_name" "$target_dir" "$project_var"
+  mkdir -p "$target_dir/.github/workflows"
+
+  radp_workflow_content_release_prep "$project_name" "$project_var" >"$target_dir/.github/workflows/release-prep.yml"
+  radp_workflow_content_create_tag "$project_name" "$project_var" >"$target_dir/.github/workflows/create-version-tag.yml"
+  radp_workflow_content_update_spec "$project_name" "$project_var" >"$target_dir/.github/workflows/update-spec-version.yml"
+  radp_workflow_content_build_copr "$project_name" "$project_var" >"$target_dir/.github/workflows/build-copr-package.yml"
+  radp_workflow_content_build_obs "$project_name" "$project_var" >"$target_dir/.github/workflows/build-obs-package.yml"
+  radp_workflow_content_homebrew "$project_name" "$project_var" >"$target_dir/.github/workflows/update-homebrew-tap.yml"
+  radp_workflow_content_attach_packages "$project_name" "$project_var" >"$target_dir/.github/workflows/attach-release-packages.yml"
 }
 
-__radp_cli_scaffold_workflow_release_prep() {
-  local project_name="$1"
-  local target_dir="$2"
-  local project_var="$3"
+#######################################
+# Workflow content generators (reusable by scaffold and upgrade)
+# 这些函数输出 workflow 内容到 stdout，可被 scaffold 和 upgrade 复用
+#######################################
 
-  cat >"$target_dir/.github/workflows/release-prep.yml" <<WORKFLOW
+radp_workflow_content_release_prep() {
+  local project_name="$1"
+  local project_var="$2"
+
+  cat <<WORKFLOW
 name: Release prep
 
 on:
@@ -1208,12 +1215,11 @@ jobs:
 WORKFLOW
 }
 
-__radp_cli_scaffold_workflow_create_tag() {
+radp_workflow_content_create_tag() {
   local project_name="$1"
-  local target_dir="$2"
-  local project_var="$3"
+  local project_var="$2"
 
-  cat >"$target_dir/.github/workflows/create-version-tag.yml" <<WORKFLOW
+  cat <<WORKFLOW
 name: Create version tag
 
 on:
@@ -1248,12 +1254,11 @@ jobs:
 WORKFLOW
 }
 
-__radp_cli_scaffold_workflow_update_spec() {
+radp_workflow_content_update_spec() {
   local project_name="$1"
-  local target_dir="$2"
-  local project_var="$3"
+  local project_var="$2"
 
-  cat >"$target_dir/.github/workflows/update-spec-version.yml" <<WORKFLOW
+  cat <<WORKFLOW
 name: Update spec version
 
 on:
@@ -1291,12 +1296,11 @@ jobs:
 WORKFLOW
 }
 
-__radp_cli_scaffold_workflow_build_copr() {
+radp_workflow_content_build_copr() {
   local project_name="$1"
-  local target_dir="$2"
-  local project_var="$3"
+  local project_var="$2"
 
-  cat >"$target_dir/.github/workflows/build-copr-package.yml" <<WORKFLOW
+  cat <<WORKFLOW
 name: Build COPR package
 
 on:
@@ -1343,12 +1347,11 @@ jobs:
 WORKFLOW
 }
 
-__radp_cli_scaffold_workflow_build_obs() {
+radp_workflow_content_build_obs() {
   local project_name="$1"
-  local target_dir="$2"
-  local project_var="$3"
+  local project_var="$2"
 
-  cat >"$target_dir/.github/workflows/build-obs-package.yml" <<WORKFLOW
+  cat <<WORKFLOW
 name: Build OBS package
 
 on:
@@ -1404,12 +1407,11 @@ jobs:
 WORKFLOW
 }
 
-__radp_cli_scaffold_workflow_homebrew() {
+radp_workflow_content_homebrew() {
   local project_name="$1"
-  local target_dir="$2"
-  local project_var="$3"
+  local project_var="$2"
 
-  cat >"$target_dir/.github/workflows/update-homebrew-tap.yml" <<WORKFLOW
+  cat <<WORKFLOW
 name: Update Homebrew Tap
 
 on:
@@ -1458,5 +1460,144 @@ jobs:
           git add "\${TAP_FORMULA_PATH}"
           git commit -m "Update ${project_name} to \${version}"
           git push
+WORKFLOW
+}
+
+radp_workflow_content_attach_packages() {
+  local project_name="$1"
+  local project_var="$2"
+
+  cat <<WORKFLOW
+name: Attach release packages
+
+on:
+  workflow_run:
+    workflows:
+      - Build COPR package
+      - Build OBS package
+      - Update Homebrew Tap
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  attach-release-packages:
+    if: >-
+      \${{
+        github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.head_branch == 'main' ||
+         startsWith(github.event.workflow_run.head_branch, 'workflow/')))
+      }}
+    runs-on: ubuntu-latest
+    env:
+      COPR_PROJECT: \${{ secrets.COPR_PROJECT }}
+      OBS_PROJECT: \${{ secrets.OBS_PROJECT }}
+      OBS_PACKAGE: \${{ secrets.OBS_PACKAGE }}
+      OBS_API_URL: \${{ secrets.OBS_API_URL }}
+      OBS_USERNAME: \${{ secrets.OBS_USERNAME }}
+      OBS_PASSWORD: \${{ secrets.OBS_PASSWORD }}
+      TAP_FORMULA_URL: https://raw.githubusercontent.com/xooooooooox/homebrew-radp/HEAD/Formula/${project_name}.rb
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Resolve tag and package
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "\${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            head_sha="\${{ github.event.workflow_run.head_sha }}"
+            tag_name="\$(git tag --points-at "\${head_sha}" --list 'v*' | sort -V | tail -n 1)"
+          else
+            tag_name="\${GITHUB_REF_NAME}"
+          fi
+
+          version_file="src/main/shell/commands/version.sh"
+          if [[ -z "\${tag_name}" && "\${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            version_from_commit="\$(git show "\${head_sha}:\${version_file}" | grep -oP 'declare -gr gr_app_version="\\K[^"]+')"
+            if [[ -z "\${version_from_commit}" ]]; then
+              echo "Failed to read gr_app_version from \${version_file} at \${head_sha}" >&2
+              exit 1
+            fi
+            tag_name="\${version_from_commit}"
+          fi
+
+          if [[ -z "\${tag_name}" ]]; then
+            echo "Failed to resolve version tag for event \${GITHUB_EVENT_NAME}" >&2
+            exit 1
+          fi
+
+          if [[ ! "\${tag_name}" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+\$ ]]; then
+            echo "Resolved tag '\${tag_name}' does not match vx.y.z" >&2
+            exit 1
+          fi
+
+          should_upload=true
+          if ! git rev-parse "\${tag_name}" >/dev/null 2>&1; then
+            echo "Tag \${tag_name} does not exist yet; skipping release attachment."
+            should_upload=false
+          elif [[ "\${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            tag_sha="\$(git rev-parse "\${tag_name}^{commit}")"
+            if [[ -n "\${head_sha}" && "\${tag_sha}" != "\${head_sha}" ]]; then
+              echo "Tag \${tag_name} points to \${tag_sha}, workflow head is \${head_sha}; skipping release attachment."
+              should_upload=false
+            fi
+          fi
+
+          version="\${tag_name#v}"
+          package_name="\$(awk -F': *' '/^Name:/{print \$2; exit}' packaging/copr/${project_name}.spec)"
+          if [[ -z "\${package_name}" ]]; then
+            echo "Failed to read package name from packaging/copr/${project_name}.spec" >&2
+            exit 1
+          fi
+
+          echo "tag_name=\${tag_name}" >> "\$GITHUB_OUTPUT"
+          echo "version=\${version}" >> "\$GITHUB_OUTPUT"
+          echo "package_name=\${package_name}" >> "\$GITHUB_OUTPUT"
+          echo "should_upload=\${should_upload}" >> "\$GITHUB_OUTPUT"
+
+      - name: Download Homebrew formula
+        if: steps.release.outputs.should_upload == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "\${TAP_FORMULA_URL:-}" ]]; then
+            echo "TAP_FORMULA_URL not set; skipping formula download."
+            exit 0
+          fi
+          mkdir -p release-assets/homebrew
+          curl -L --fail --show-error -o release-assets/homebrew/homebrew-${project_name}.rb "\${TAP_FORMULA_URL}" || true
+
+      - name: Upload assets to release
+        if: steps.release.outputs.should_upload == 'true'
+        env:
+          GH_TOKEN: \${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="\${{ steps.release.outputs.tag_name }}"
+          if ! gh release view "\$tag" >/dev/null 2>&1; then
+            gh release create "\$tag" --title "\$tag" --generate-notes
+          fi
+          if [[ ! -d release-assets ]]; then
+            echo "No assets directory to upload."
+            exit 0
+          fi
+          mapfile -t assets < <(find release-assets -maxdepth 3 -type f | sort)
+          if [[ \${#assets[@]} -eq 0 ]]; then
+            echo "No assets to upload."
+            exit 0
+          fi
+          gh release upload "\$tag" "\${assets[@]}" --clobber
 WORKFLOW
 }
