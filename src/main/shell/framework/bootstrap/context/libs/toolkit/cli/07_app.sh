@@ -184,7 +184,7 @@ __radp_app_show_config_text() {
   echo ""
 
   # [Application] - show app version from commands/version.sh
-  local version_sh_path="${gr_fw_user_config_path%/config}/commands/version.sh"
+  local version_sh_path="${RADP_APP_ROOT:-}/src/main/shell/commands/version.sh"
   local app_version=""
   if [[ -f "$version_sh_path" ]]; then
     app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"
@@ -281,7 +281,7 @@ __radp_app_show_config_json() {
   fi
 
   # Get app version from commands/version.sh
-  local version_sh_path="${gr_fw_user_config_path%/config}/commands/version.sh"
+  local version_sh_path="${RADP_APP_ROOT:-}/src/main/shell/commands/version.sh"
   local app_version=""
   if [[ -f "$version_sh_path" ]]; then
     app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"

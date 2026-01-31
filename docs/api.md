@@ -5,9 +5,9 @@ The framework provides utility functions organized by domain under `src/main/she
 ## Table of Contents
 
 - [Overview](#overview)
-    - [Function Naming Conventions](#function-naming-conventions)
-    - [Variable Naming Conventions](#variable-naming-conventions)
-    - [Return Code Conventions](#return-code-conventions)
+  - [Function Naming Conventions](#function-naming-conventions)
+  - [Variable Naming Conventions](#variable-naming-conventions)
+  - [Return Code Conventions](#return-code-conventions)
 - [Logging (`radp_log_*`)](#logging-radp_log_)
 - [OS Detection (`radp_os_*`)](#os-detection-radp_os_)
 - [File System (`radp_io_*`)](#file-system-radp_io_)
@@ -15,17 +15,17 @@ The framework provides utility functions organized by domain under `src/main/she
 - [Arrays (`radp_nr_*`)](#arrays-radp_nr_)
 - [Dry-Run Mode (`radp_exec_*`)](#dry-run-mode-radp_exec_)
 - [CLI Infrastructure (`radp_cli_*`)](#cli-infrastructure-radp_cli_)
-    - [Application Bootstrap](#application-bootstrap)
-    - [Request Detection](#request-detection)
-    - [Command Discovery](#command-discovery)
-    - [Metadata Parsing](#metadata-parsing)
-    - [Argument Parsing](#argument-parsing)
-    - [Help Generation](#help-generation)
-    - [Command Dispatch](#command-dispatch)
-    - [Shell Completion](#shell-completion)
-    - [Dynamic Completion](#dynamic-completion)
-    - [Passthrough Mode](#passthrough-mode)
-    - [Scaffolding](#scaffolding)
+  - [Application Bootstrap](#application-bootstrap)
+  - [Request Detection](#request-detection)
+  - [Command Discovery](#command-discovery)
+  - [Metadata Parsing](#metadata-parsing)
+  - [Argument Parsing](#argument-parsing)
+  - [Help Generation](#help-generation)
+  - [Command Dispatch](#command-dispatch)
+  - [Shell Completion](#shell-completion)
+  - [Dynamic Completion](#dynamic-completion)
+  - [Passthrough Mode](#passthrough-mode)
+  - [Scaffolding](#scaffolding)
 - [IDE Integration (`radp_ide_*`)](#ide-integration-radp_ide_)
 
 ---
@@ -64,14 +64,15 @@ The framework provides utility functions organized by domain under `src/main/she
 
 ### Common Global Variables
 
-| Variable                   | Description                           |
-|----------------------------|---------------------------------------|
-| `gr_fw_root_path`          | Framework installation root directory |
-| `gr_fw_version`            | Framework version string              |
-| `gr_fw_user_config_path`   | User configuration directory          |
-| `gr_fw_context_cache_path` | Framework cache directory             |
-| `gw_fw_run_initialized`    | Framework initialization flag         |
-| `gwxa_fw_sourced_scripts`  | Array of sourced script paths         |
+| Variable                   | Description                                            |
+|----------------------------|--------------------------------------------------------|
+| `gr_fw_root_path`          | Framework installation root directory                  |
+| `gr_fw_version`            | Framework version string                               |
+| `gr_fw_user_config_path`   | User configuration directory                           |
+| `gr_fw_app_config_path`    | App bundled config directory (always points to source) |
+| `gr_fw_context_cache_path` | Framework cache directory                              |
+| `gw_fw_run_initialized`    | Framework initialization flag                          |
+| `gwxa_fw_sourced_scripts`  | Array of sourced script paths                          |
 
 ---
 
@@ -100,11 +101,11 @@ All logging functions accept:
 
 ### Configuration
 
-| Variable                | Description          | Default         |
-|-------------------------|----------------------|-----------------|
-| `GX_RADP_FW_LOG_DEBUG`  | Enable debug logging | `false`         |
-| `GX_RADP_FW_LOG_LEVEL`  | Minimum log level    | `info`          |
-| `gr_radp_fw_log_level`  | Log level (readonly) | `info`          |
+| Variable               | Description          | Default |
+|------------------------|----------------------|---------|
+| `GX_RADP_FW_LOG_DEBUG` | Enable debug logging | `false` |
+| `GX_RADP_FW_LOG_LEVEL` | Minimum log level    | `info`  |
+| `gr_radp_fw_log_level` | Log level (readonly) | `info`  |
 
 **Enable debug logging** (choose one):
 
@@ -627,6 +628,7 @@ source "$(radp-bf path launcher)" "$@"
 ```
 
 The launcher automatically:
+
 - Detects dev/installed mode via `_ide.sh` marker
 - Sets config and library paths
 - Parses global options (`-v`, `--debug`, `--config`)

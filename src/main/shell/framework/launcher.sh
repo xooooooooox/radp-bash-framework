@@ -100,14 +100,16 @@ __radp_app_parse_global_options() {
     export GX_RADP_FW_BANNER_MODE=off
     export GX_RADP_FW_LOG_CONSOLE_ENABLED=false
   elif [[ "$debug" == "true" ]]; then
-    # Debug 模式: banner on, log level debug, debug enabled
+    # Debug 模式: banner on, log level debug, debug enabled, console enabled
     export GX_RADP_FW_BANNER_MODE=on
     export GX_RADP_FW_LOG_LEVEL=debug
     export GX_RADP_FW_LOG_DEBUG=true
+    export GX_RADP_FW_LOG_CONSOLE_ENABLED=true
   elif [[ "$verbose" == "true" ]]; then
-    # Verbose 模式: banner on, log level info
+    # Verbose 模式: banner on, log level info, console enabled
     export GX_RADP_FW_BANNER_MODE=on
     export GX_RADP_FW_LOG_LEVEL=info
+    export GX_RADP_FW_LOG_CONSOLE_ENABLED=true
   fi
 }
 
@@ -126,6 +128,13 @@ if [[ -z "${GX_RADP_FW_USER_CONFIG_PATH:-}" ]]; then
     # Installed mode - use XDG config
     export GX_RADP_FW_USER_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/$RADP_APP_NAME"
   fi
+fi
+
+# --------------------------------------------------------------------------- #
+# 2.1 App config 路径（应用内置配置，始终指向源码目录）
+# --------------------------------------------------------------------------- #
+if [[ -z "${GX_RADP_FW_APP_CONFIG_PATH:-}" ]]; then
+  export GX_RADP_FW_APP_CONFIG_PATH="$RADP_APP_ROOT/src/main/shell/config"
 fi
 
 # --------------------------------------------------------------------------- #

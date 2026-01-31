@@ -6,8 +6,9 @@
 # Get banner ASCII art from various sources
 # Priority:
 #   1. radp_app_banner_art() function (if defined)
-#   2. $gr_fw_user_config_path/banner.txt (if exists)
-#   3. $gr_fw_banner_file (framework default)
+#   2. $gr_fw_user_config_path/banner.txt (user override)
+#   3. $gr_fw_app_config_path/banner.txt (app bundled)
+#   4. $gr_fw_banner_file (framework default)
 # Outputs:
 #   ASCII art string to stdout
 #######################################
@@ -16,6 +17,8 @@ radp_banner_get_art() {
     radp_app_banner_art
   elif [[ -f "$gr_fw_user_config_path/banner.txt" ]]; then
     cat "$gr_fw_user_config_path/banner.txt"
+  elif [[ -n "${gr_fw_app_config_path:-}" && -f "$gr_fw_app_config_path/banner.txt" ]]; then
+    cat "$gr_fw_app_config_path/banner.txt"
   else
     cat "$gr_fw_banner_file"
   fi
@@ -39,7 +42,8 @@ radp_banner_build() {
   # 2. 获取版本信息
   local app_name="${RADP_APP_NAME:-radp-cli}"
   # 从 commands/version.sh 文件中读取版本
-  local version_sh_path="${gr_fw_user_config_path%/config}/commands/version.sh"
+  # 使用 RADP_APP_ROOT 定位，兼容开发模式和安装模式
+  local version_sh_path="${RADP_APP_ROOT:-}/src/main/shell/commands/version.sh"
   local app_version=""
   if [[ -f "$version_sh_path" ]]; then
     app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"

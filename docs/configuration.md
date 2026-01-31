@@ -235,7 +235,7 @@ Define `radp_app_banner_art()` function **before** sourcing the framework (ASCII
 
 # Define custom banner art BEFORE sourcing framework
 radp_app_banner_art() {
-  cat << 'EOF'
+  cat <<'EOF'
     __  ___      ___
    /  |/  /_  __/   |  ____  ____
   / /|_/ / / / / /| | / __ \/ __ \
@@ -250,6 +250,7 @@ source "$(radp-bf path launcher)" "$@"
 ```
 
 The framework automatically appends version info:
+
 ```
  :: my_app :: (v1.0.0)
  :: radp-bash-framework :: (v0.6.11)
@@ -273,8 +274,9 @@ The file should contain ASCII art only. Version info is appended automatically.
 #### Banner Priority (ASCII Art)
 
 1. **`radp_app_banner_art()` function** - If defined before framework loads
-2. **`$gr_fw_user_config_path/banner.txt`** - User config path banner file
-3. **Framework default banner** - Built-in RADP BASH banner
+2. **`$gr_fw_user_config_path/banner.txt`** - User override (e.g., `~/.config/myapp/banner.txt`)
+3. **`$gr_fw_app_config_path/banner.txt`** - App bundled banner (shipped with app)
+4. **Framework default banner** - Built-in RADP BASH banner
 
 ### Log Levels
 

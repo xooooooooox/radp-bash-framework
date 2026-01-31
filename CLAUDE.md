@@ -206,8 +206,9 @@ The framework automatically appends version information.
 
 ### Priority Order (ASCII Art)
 1. `radp_app_banner_art()` function - defined before sourcing framework
-2. `$gr_fw_user_config_path/banner.txt` - user config path banner file
-3. Framework default banner - `config/banner.txt`
+2. `$gr_fw_user_config_path/banner.txt` - user override (e.g., `~/.config/myapp/banner.txt`)
+3. `$gr_fw_app_config_path/banner.txt` - app bundled banner (shipped with app)
+4. Framework default banner - `config/banner.txt`
 
 ### Hook Function Example
 ```bash

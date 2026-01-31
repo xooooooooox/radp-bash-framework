@@ -1,9 +1,18 @@
 # CHANGELOG
 
-## v0.6.27
+## v0.6.28
 
 ### feat
 
+- Add `gr_fw_app_config_path` variable for app bundled config path
+  - New environment variable `GX_RADP_FW_APP_CONFIG_PATH` (set by launcher.sh)
+  - Always points to `$RADP_APP_ROOT/src/main/shell/config` regardless of dev/install mode
+  - Ensures app bundled `banner.txt` works in both development and installed modes
+- Enhance banner art loading with 4-level priority:
+  1. `radp_app_banner_art()` function (code-level customization)
+  2. `$gr_fw_user_config_path/banner.txt` (user override, e.g., `~/.config/myapp/banner.txt`)
+  3. `$gr_fw_app_config_path/banner.txt` (app bundled, shipped with app)
+  4. `$gr_fw_banner_file` (framework default)
 - Add `workflows` component to `radp-bf upgrade` command
   - Upgrades GitHub Actions workflows to latest templates
   - Supports 8 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package, build-obs-package, update-homebrew-tap, attach-release-packages, cleanup-branches

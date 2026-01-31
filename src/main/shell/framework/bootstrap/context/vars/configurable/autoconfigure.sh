@@ -638,4 +638,7 @@ declare -gr gr_fw_user_config_filename="${GX_RADP_FW_USER_CONFIG_FILENAME:-confi
 declare -gr gr_fw_user_config_file="$gr_fw_user_config_path"/"$gr_fw_user_config_filename".sh
 declare -gr gr_fw_user_yaml_config_file="$gr_fw_user_config_path"/"$gr_fw_user_config_filename".yaml
 
+# Application bundled config path (set by launcher.sh, always points to app source config)
+declare -gr gr_fw_app_config_path="${GX_RADP_FW_APP_CONFIG_PATH:-}"
+
 __main "$@"
