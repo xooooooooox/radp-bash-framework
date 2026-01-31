@@ -649,11 +649,15 @@ GX_RADP_FW_LOG_DEBUG=true myapp hello
 **Check configuration and paths:**
 
 ```bash
-# Show all configuration including paths
+# Show core configuration
 myapp --config
+
+# Include extension configurations
+myapp --config --all
 
 # JSON format for scripting
 myapp --config --json
+myapp --config --all --json
 ```
 
 **Check command discovery:**

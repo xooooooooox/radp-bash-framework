@@ -145,63 +145,88 @@ radp_app_show_config() {
 }
 
 #######################################
-# Display configuration in text format (Style A: Grouped)
+# Display configuration in text format (Docker info style)
 #######################################
 __radp_app_show_config_text() {
   local app_name="$1"
 
-  echo "$app_name Configuration"
-  echo "========================"
-  echo ""
-
-  # [Paths]
-  echo "[Paths]"
-  local config_exists="not found"
-  [[ -f "${gr_fw_user_yaml_config_file:-}" ]] && config_exists="exists"
-  printf "  %-22s %s\n" "User config dir" "${gr_fw_user_config_path:-<not set>}"
-  printf "  %-22s %s (%s)\n" "Config file" "${gr_fw_user_yaml_config_file:-<not set>}" "$config_exists"
-  # Display user lib dirs (multiple paths supported)
-  if [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
-    printf "  %-22s %s\n" "User lib dirs" "<not set>"
-  elif [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 1 ]]; then
-    printf "  %-22s %s\n" "User lib dirs" "${gra_radp_fw_user_lib_paths[0]}"
-  else
-    printf "  %-22s\n" "User lib dirs"
-    local lib_path
-    for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
-      printf "    - %s\n" "$lib_path"
-    done
-  fi
-  printf "  %-22s %s\n" "Framework root" "${gr_fw_root_path:-<not set>}"
-  echo ""
-
-  # [Framework]
-  echo "[Framework]"
-  printf "  %-22s %s\n" "Version" "${gr_fw_version:-unknown}"
-  printf "  %-22s %s\n" "Banner mode" "${gr_radp_fw_banner_mode:-off}"
-  printf "  %-22s %s\n" "Log level" "${gr_radp_fw_log_level:-info}"
-  printf "  %-22s %s\n" "Log debug" "${gr_radp_fw_log_debug:-false}"
-  echo ""
-
-  # [Application] - show app version from commands/version.sh
+  # Get app version from commands/version.sh
   local version_sh_path="${RADP_APP_ROOT:-}/src/main/shell/commands/version.sh"
   local app_version=""
   if [[ -f "$version_sh_path" ]]; then
     app_version="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh_path" 2>/dev/null || true)"
   fi
-  if [[ -n "$app_version" ]]; then
-    echo "[Application]"
-    printf "  %-22s %s\n" "Version" "$app_version"
-    echo ""
-  fi
 
-  # [Application Extensions]
-  # Collect all gr_radp_extend_* variables and group them
-  __radp_app_show_config_extensions_text "$app_name"
+  # App section
+  printf "%-13s%s\n" "App:" "$app_name"
+  printf "%-13s%s\n" "Version:" "${app_version:-unknown}"
+  printf "%-13s%s\n" "Environment:" "${gr_radp_env:-local}"
+  echo ""
+
+  # Framework section
+  echo "Framework:"
+  printf " %-12s%s\n" "Version:" "${gr_fw_version:-unknown}"
+  printf " %-12s%s\n" "Root:" "${gr_fw_root_path:-<not set>}"
+  echo ""
+
+  # Config section
+  local config_exists_text="not found"
+  [[ -f "${gr_fw_user_yaml_config_file:-}" ]] && config_exists_text="exists"
+
+  echo "Config:"
+  printf " %-12s%s\n" "Directory:" "${gr_fw_user_config_path:-<not set>}"
+  printf " %-12s%s (%s)\n" "File:" "${gr_fw_user_yaml_config_file:-<not set>}" "$config_exists_text"
+  # Display libs (first path only for brevity, or list all)
+  if [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 0 ]]; then
+    printf " %-12s%s\n" "Libs:" "<not set>"
+  elif [[ ${#gra_radp_fw_user_lib_paths[@]} -eq 1 ]]; then
+    printf " %-12s%s\n" "Libs:" "${gra_radp_fw_user_lib_paths[0]}"
+  else
+    printf " %-12s\n" "Libs:"
+    local lib_path
+    for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
+      printf "   - %s\n" "$lib_path"
+    done
+  fi
+  echo ""
+
+  # Settings section
+  echo "Settings:"
+  printf " %-12s%s\n" "Banner:" "${gr_radp_fw_banner_mode:-off}"
+  echo ""
+
+  # Log section
+  local console_status="disabled"
+  [[ "${gr_radp_fw_log_console_enabled:-true}" == "true" ]] && console_status="enabled"
+  local file_status="disabled"
+  [[ "${gr_radp_fw_log_file_enabled:-true}" == "true" ]] && file_status="enabled"
+
+  echo "Log:"
+  printf " %-12s%s\n" "Level:" "${gr_radp_fw_log_level:-info}"
+  printf " %-12s%s\n" "Debug:" "${gr_radp_fw_log_debug:-false}"
+  printf " %-12s%s\n" "Console:" "$console_status"
+  printf " %-12s%s\n" "File:" "$file_status"
+  printf " %-12s%s\n" "File Path:" "${gr_radp_fw_log_file_name:-<not set>}"
+  echo ""
+
+  # Log Rolling section
+  local rolling_status="false"
+  [[ "${gr_radp_fw_log_rolling_policy_enabled:-true}" == "true" ]] && rolling_status="true"
+
+  echo "Log Rolling:"
+  printf " %-15s%s\n" "Enabled:" "$rolling_status"
+  printf " %-15s%s\n" "Max History:" "${gr_radp_fw_log_rolling_policy_max_history:-7}"
+  printf " %-15s%s\n" "Max File Size:" "${gr_radp_fw_log_rolling_policy_max_file_size:-10MB}"
+  printf " %-15s%s\n" "Total Size:" "${gr_radp_fw_log_rolling_policy_total_size_cap:-5GB}"
+
+  # Extensions section (only when --all is specified)
+  if [[ "${__RADP_APP_CONFIG_ALL:-}" == "true" ]]; then
+    __radp_app_show_config_extensions_text "$app_name"
+  fi
 }
 
 #######################################
-# Display application extensions in text format
+# Display application extensions in text format (Docker info style)
 #######################################
 __radp_app_show_config_extensions_text() {
   local app_name="$1"
@@ -215,70 +240,69 @@ __radp_app_show_config_extensions_text() {
 
   [[ -z "$vars" ]] && return 0
 
+  echo ""
+  echo "Extensions:"
+
   while IFS= read -r var_name; do
     var_value="${!var_name}"
 
-    # Extract key: gr_radp_extend_homelabctl_gitlab_type -> homelabctl_gitlab_type
+    # Extract key: gr_radp_extend_homelabctl_vf_config_dir -> homelabctl_vf_config_dir
     key="${var_name#$prefix}"
 
-    # Determine section from first part: homelabctl_gitlab_type -> homelabctl
-    section="${key%%_*}"
+    # Determine top section from first part: homelabctl_vf_config_dir -> homelabctl
+    local top_section="${key%%_*}"
 
-    # Check for subsection: homelabctl_gitlab_type -> gitlab
+    # Get remaining part after top section: vf_config_dir
     local rest="${key#*_}"
-    local subsection=""
-    if [[ "$rest" == *_* ]]; then
-      subsection="${rest%%_*}"
-    fi
 
-    # Build section header
-    local full_section="$section"
-    [[ -n "$subsection" ]] && full_section="${section}.${subsection}"
+    # Determine subsection: vf_config_dir -> vf
+    local subsection="${rest%%_*}"
+
+    # Get the key name: config_dir
+    local display_key="${rest#*_}"
+    # If no underscore in rest, display_key is same as rest (e.g., "version")
+    [[ "$display_key" == "$rest" ]] && display_key="$rest"
+
+    # Build section identifier: homelabctl.vf or just homelabctl
+    local full_section="$top_section"
+    # Check if this is a subsection (more than one underscore in original key)
+    if [[ "$key" == *_*_* ]]; then
+      full_section="${top_section}_${subsection}"
+    fi
 
     # Print section header if changed
     if [[ "$full_section" != "$current_section" ]]; then
-      [[ -n "$current_section" ]] && echo ""
-      echo "[Application: $full_section]"
+      if [[ "$key" == *_*_* ]]; then
+        # Has subsection
+        printf " %s:\n" "$subsection"
+      else
+        # No subsection, top-level extension key
+        :
+      fi
       current_section="$full_section"
     fi
 
-    # Extract display key (remove section prefix)
-    local display_key="$key"
-    if [[ -n "$subsection" ]]; then
-      # homelabctl_gitlab_type -> type
-      display_key="${rest#*_}"
-      [[ "$display_key" == "$rest" ]] && display_key="${rest}"
-    else
-      # homelabctl_version -> version
-      display_key="${key#*_}"
-    fi
-
     # Handle empty values
-    [[ -z "$var_value" ]] && var_value="<not set>"
+    [[ -z "$var_value" ]] && var_value="-"
 
-    printf "  %-22s %s\n" "$display_key" "$var_value"
+    # Output with proper indentation
+    if [[ "$key" == *_*_* ]]; then
+      # Has subsection - deeper indent
+      printf "  %-22s%s\n" "${display_key}:" "$var_value"
+    else
+      # Top-level extension
+      printf " %-23s%s\n" "${display_key}:" "$var_value"
+    fi
   done <<<"$vars"
 }
 
 #######################################
-# Display configuration in JSON format
+# Display configuration in JSON format (Docker info style)
 #######################################
 __radp_app_show_config_json() {
   local app_name="$1"
   local config_exists="false"
   [[ -f "${gr_fw_user_yaml_config_file:-}" ]] && config_exists="true"
-
-  # Build user_lib_dirs JSON array
-  local user_lib_dirs_json="[]"
-  if [[ ${#gra_radp_fw_user_lib_paths[@]} -gt 0 ]]; then
-    local -a json_paths=()
-    local lib_path
-    for lib_path in "${gra_radp_fw_user_lib_paths[@]}"; do
-      json_paths+=("\"$lib_path\"")
-    done
-    local IFS=','
-    user_lib_dirs_json="[${json_paths[*]}]"
-  fi
 
   # Get app version from commands/version.sh
   local version_sh_path="${RADP_APP_ROOT:-}/src/main/shell/commands/version.sh"
@@ -289,58 +313,101 @@ __radp_app_show_config_json() {
   local app_version_json="null"
   [[ -n "$app_version" ]] && app_version_json="\"$app_version\""
 
+  # Build libs JSON (first path for backward compatibility, but can show all)
+  local libs_json="null"
+  if [[ ${#gra_radp_fw_user_lib_paths[@]} -gt 0 ]]; then
+    libs_json="\"${gra_radp_fw_user_lib_paths[0]}\""
+  fi
+
   # Build JSON output
   cat <<EOF
 {
-  "app_name": "$app_name",
-  "app_version": $app_version_json,
-  "paths": {
-    "user_config_dir": "${gr_fw_user_config_path:-}",
-    "config_file": "${gr_fw_user_yaml_config_file:-}",
-    "config_file_exists": $config_exists,
-    "user_lib_dirs": $user_lib_dirs_json,
-    "framework_root": "${gr_fw_root_path:-}"
+  "app": {
+    "name": "$app_name",
+    "version": ${app_version_json},
+    "environment": "${gr_radp_env:-local}"
   },
   "framework": {
     "version": "${gr_fw_version:-unknown}",
-    "banner_mode": "${gr_radp_fw_banner_mode:-off}",
-    "log_level": "${gr_radp_fw_log_level:-info}",
-    "log_debug": ${gr_radp_fw_log_debug:-false}
+    "root": "${gr_fw_root_path:-}"
   },
+  "config": {
+    "directory": "${gr_fw_user_config_path:-}",
+    "file": "${gr_fw_user_yaml_config_file:-}",
+    "file_exists": $config_exists,
+    "libs": ${libs_json}
+  },
+  "settings": {
+    "banner": "${gr_radp_fw_banner_mode:-off}"
+  },
+  "log": {
+    "level": "${gr_radp_fw_log_level:-info}",
+    "debug": ${gr_radp_fw_log_debug:-false},
+    "console": ${gr_radp_fw_log_console_enabled:-true},
+    "file": {
+      "enabled": ${gr_radp_fw_log_file_enabled:-true},
+      "path": "${gr_radp_fw_log_file_name:-}"
+    },
+    "rolling": {
+      "enabled": ${gr_radp_fw_log_rolling_policy_enabled:-true},
+      "max_history": ${gr_radp_fw_log_rolling_policy_max_history:-7},
+      "max_file_size": "${gr_radp_fw_log_rolling_policy_max_file_size:-10MB}",
+      "total_size_cap": "${gr_radp_fw_log_rolling_policy_total_size_cap:-5GB}"
+    }
+  }
 EOF
 
-  # Add extensions
-  echo '  "extend": {'
-  __radp_app_show_config_extensions_json
-  echo '  }'
+  # Add extensions only when --all is specified
+  if [[ "${__RADP_APP_CONFIG_ALL:-}" == "true" ]]; then
+    echo ','
+    echo '  "extensions": {'
+    __radp_app_show_config_extensions_json
+    echo '  }'
+  fi
   echo '}'
 }
 
 #######################################
 # Display application extensions in JSON format
+# Groups by subsection (e.g., gr_radp_extend_homelabctl_vf_* -> extensions.vf.*)
 #######################################
 __radp_app_show_config_extensions_json() {
   local prefix="gr_radp_extend_"
   local vars var_name var_value key
-  local -A sections
-  local -a section_order
+  local -A subsections
+  local -a subsection_order
 
   # Get all gr_radp_extend_* variables
   vars=$(compgen -v | grep "^${prefix}" | sort)
 
   [[ -z "$vars" ]] && return 0
 
-  # Group variables by top-level section
+  # Group variables by subsection
+  # gr_radp_extend_homelabctl_vf_config_dir -> subsection=vf, key=config_dir
   while IFS= read -r var_name; do
     var_value="${!var_name}"
     key="${var_name#$prefix}"
-    local section="${key%%_*}"
+
+    # Skip top-level app keys like homelabctl_version (no subsection)
+    # Only process keys with subsections: homelabctl_vf_config_dir
+    local top_section="${key%%_*}"
     local rest="${key#*_}"
 
-    # Initialize section if not exists
-    if [[ -z "${sections[$section]:-}" ]]; then
-      sections[$section]=""
-      section_order+=("$section")
+    # Determine if there's a subsection
+    local subsection=""
+    local field_key=""
+    if [[ "$rest" == *_* ]]; then
+      subsection="${rest%%_*}"
+      field_key="${rest#*_}"
+    else
+      # No subsection, skip for now (could add to top-level if needed)
+      continue
+    fi
+
+    # Initialize subsection if not exists
+    if [[ -z "${subsections[$subsection]:-}" ]]; then
+      subsections[$subsection]=""
+      subsection_order+=("$subsection")
     fi
 
     # Escape JSON value
@@ -348,22 +415,22 @@ __radp_app_show_config_extensions_json() {
     var_value="${var_value//\"/\\\"}"
     [[ -z "$var_value" ]] && var_value="null" || var_value="\"$var_value\""
 
-    # Add to section
-    if [[ -n "${sections[$section]}" ]]; then
-      sections[$section]="${sections[$section]},"
+    # Add to subsection
+    if [[ -n "${subsections[$subsection]}" ]]; then
+      subsections[$subsection]="${subsections[$subsection]}, "
     fi
-    sections[$section]="${sections[$section]}\"$rest\": $var_value"
+    subsections[$subsection]="${subsections[$subsection]}\"$field_key\": $var_value"
   done <<<"$vars"
 
-  # Output sections
+  # Output subsections
   local first=true
-  for section in "${section_order[@]}"; do
+  for subsection in "${subsection_order[@]}"; do
     if [[ "$first" == "true" ]]; then
       first=false
     else
       echo ","
     fi
-    printf '    "%s": {%s}' "$section" "${sections[$section]}"
+    printf '    "%s": {%s}' "$subsection" "${subsections[$subsection]}"
   done
   echo ""
 }

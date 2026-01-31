@@ -33,6 +33,7 @@ __radp_app_parse_global_options() {
   local debug=false
   local show_config=false
   local config_json=false
+  local config_all=false
   local found_command=false
 
   while [[ $# -gt 0 ]]; do
@@ -69,6 +70,15 @@ __radp_app_parse_global_options() {
       fi
       shift
       ;;
+    --all)
+      # Only valid after --config
+      if [[ "$show_config" == "true" ]]; then
+        config_all=true
+      else
+        __radp_app_filtered_args+=("$1")
+      fi
+      shift
+      ;;
     --)
       shift
       __radp_app_filtered_args+=("$@")
@@ -92,6 +102,7 @@ __radp_app_parse_global_options() {
   if [[ "$show_config" == "true" ]]; then
     export __RADP_APP_SHOW_CONFIG=true
     [[ "$config_json" == "true" ]] && export __RADP_APP_CONFIG_JSON=true
+    [[ "$config_all" == "true" ]] && export __RADP_APP_CONFIG_ALL=true
   fi
 
   # 设置输出模式环境变量
@@ -168,7 +179,7 @@ radp_cli_set_commands_dir "$__radp_app_commands_dir"
 unset __radp_app_commands_dir
 
 # 设置默认全局选项（用于帮助和补全）
-radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--config"
+radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--config" "--all"
 
 # --------------------------------------------------------------------------- #
 # 7. Dispatch

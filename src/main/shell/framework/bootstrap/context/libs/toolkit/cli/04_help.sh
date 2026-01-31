@@ -98,6 +98,7 @@ __radp_cli_help_global_options() {
 
   # 内置选项
   echo "  --config                Show configuration"
+  echo "  --config --all          Show configuration with extensions"
   echo "  -h, --help              Show help"
   echo "  --version               Show version"
   echo

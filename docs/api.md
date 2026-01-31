@@ -714,7 +714,8 @@ fi
 
 #### radp_app_show_config
 
-Display application configuration information. Outputs paths, framework settings, and application extensions.
+Display application configuration information. Outputs app info, framework settings, config paths, log settings, and
+optionally extension configurations.
 
 ```bash
 radp_app_show_config()
@@ -722,33 +723,45 @@ radp_app_show_config()
 
 **Output formats:**
 
-- **Text** (default): Grouped sections with labels
+- **Text** (default): Docker info style grouped sections
 - **JSON**: Machine-readable format (set `__RADP_APP_CONFIG_JSON=true`)
+- **With extensions**: Include extension configs (set `__RADP_APP_CONFIG_ALL=true`)
 
 **Example output (text):**
 
 ```
-myapp Configuration
-========================
+App:         myapp
+Version:     v1.0.0
+Environment: local
 
-[Paths]
-  User config dir        /home/user/.config/myapp
-  Config file            /home/user/.config/myapp/config.yaml (exists)
-  User lib dirs          /home/user/myapp/src/main/shell/libs
-  Framework root         /usr/local/opt/radp-bash-framework/libexec
+Framework:
+ Version:    v0.6.29
+ Root:       /usr/local/opt/radp-bash-framework/libexec
 
-[Framework]
-  Version                v1.0.0
-  Banner mode            off
-  Log level              info
-  Log debug              false
+Config:
+ Directory:  /home/user/.config/myapp
+ File:       /home/user/.config/myapp/config.yaml (exists)
+ Libs:       /home/user/myapp/src/main/shell/libs
 
-[Application: myapp]
-  api_url                https://api.example.com
-  timeout                30
+Settings:
+ Banner:     off
+
+Log:
+ Level:      info
+ Debug:      false
+ Console:    enabled
+ File:       enabled
+ File Path:  /home/user/logs/radp/myapp.log
+
+Log Rolling:
+ Enabled:       true
+ Max History:   7
+ Max File Size: 10MB
+ Total Size:    5GB
 ```
 
-**Usage:** This function is typically invoked via `myapp --config` global option (handled by `launcher.sh`).
+**Usage:** This function is typically invoked via `myapp --config` global option (handled by `launcher.sh`). Use
+`--config --all` to include extension configurations.
 
 ### Command Discovery
 

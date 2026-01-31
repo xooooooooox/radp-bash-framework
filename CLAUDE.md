@@ -47,30 +47,41 @@ All CLI applications built on radp-bash-framework support these global options:
 myapp -q, --quiet       # Quiet mode (disable banner and console log)
 myapp -v, --verbose     # Enable verbose output (banner + info logs)
 myapp --debug           # Enable debug output (banner + debug logs)
-myapp --config          # Show configuration (paths, framework, extensions)
+myapp --config          # Show configuration (core settings)
 myapp --config --json   # Show configuration in JSON format
+myapp --config --all    # Show configuration with extensions
 ```
 
 **Example output of `--config`:**
 ```
-homelabctl Configuration
-========================
+App:         homelabctl
+Version:     v0.1.19
+Environment: local
 
-[Paths]
-  User config dir        ~/.config/homelabctl
-  Config file            ~/.config/homelabctl/config.yaml (not found)
-  User lib dir           <not set>
-  Framework root         /usr/local/opt/radp-bash-framework/libexec
+Framework:
+ Version:    v0.6.29
+ Root:       /opt/homebrew/libexec/radp-bash-framework
 
-[Framework]
-  Version                v1.0.0
-  Banner mode            off
-  Log level              error
-  Log debug              false
+Config:
+ Directory:  ~/.config/homelabctl
+ File:       ~/.config/homelabctl/config.yaml (exists)
+ Libs:       ~/.config/homelabctl/libs
 
-[Application]
-  Version                v0.1.6
+Settings:
+ Banner:     off
 
+Log:
+ Level:      info
+ Debug:      false
+ Console:    enabled
+ File:       enabled
+ File Path:  ~/logs/radp/homelabctl.log
+
+Log Rolling:
+ Enabled:       true
+ Max History:   7
+ Max File Size: 10MB
+ Total Size:    5GB
 ```
 
 ## Architecture

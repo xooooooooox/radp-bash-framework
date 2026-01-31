@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.6.29
+## v0.6.30
 
 ### feat
 
@@ -27,9 +27,10 @@
 - Add `-q`/`--quiet` global option to disable banner and console log output
   - Useful for shell completion scripts and scripting use cases
   - Sets `GX_RADP_FW_BANNER_MODE=off` and `GX_RADP_FW_LOG_CONSOLE_ENABLED=false`
-- Add `--config` global option to display application configuration
-  - Shows paths, framework settings, and application extensions
-  - Supports `--config --json` for JSON output
+- Redesign `--config` global option with Docker info style output
+  - New output format: App, Framework, Config, Settings, Log, Log Rolling sections
+  - Add `--config --all` option to include extension configurations (default: hidden)
+  - Supports `--config --json` and `--config --all --json` for JSON output
   - Available for all CLI applications built on radp-bash-framework
 - Add dry-run mode support in exec toolkit (`04_dry_run.sh`)
   - `radp_set_dry_run()` - Enable/disable dry-run mode
