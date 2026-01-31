@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.6.31
+## v0.6.32
 
 ### feat
 
@@ -57,6 +57,9 @@
 
 ### fix
 
+- Fix automap generating empty shell variables for null/empty YAML keys
+  - Root cause: `radp.extend.xxx:` with no value was being converted to `gr_radp_extend_xxx=""`
+  - Solution: skip null/empty values during variable generation in autoconfigure.sh
 - Fix YAML config merge losing `radp.extend.*` keys when env-specific config exists
   - Root cause: bash nameref doesn't support chained pass-through
   - When `config.yaml` has `radp.extend.*` but `config-{env}.yaml` doesn't, the extend keys were lost after merge

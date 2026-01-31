@@ -233,6 +233,7 @@ __radp_app_show_config_extensions_text() {
   local prefix="gr_radp_extend_"
   local current_section=""
   local var_name var_value key section
+  local has_output=false
 
   # Get all gr_radp_extend_* variables, sorted
   local vars
@@ -240,14 +241,17 @@ __radp_app_show_config_extensions_text() {
 
   [[ -z "$vars" ]] && return 0
 
-  echo ""
-  echo "Extensions:"
-
   while IFS= read -r var_name; do
     var_value="${!var_name}"
 
     # Extract key: gr_radp_extend_homelabctl_vf_config_dir -> homelabctl_vf_config_dir
     key="${var_name#$prefix}"
+
+    # Skip variables that are just app name without actual sub-keys
+    # e.g., gr_radp_extend_homelabctl (no underscore after app name)
+    if [[ "$key" != *_* ]]; then
+      continue
+    fi
 
     # Determine top section from first part: homelabctl_vf_config_dir -> homelabctl
     local top_section="${key%%_*}"
@@ -263,6 +267,13 @@ __radp_app_show_config_extensions_text() {
     # If no underscore in rest, display_key is same as rest (e.g., "version")
     [[ "$display_key" == "$rest" ]] && display_key="$rest"
 
+    # Print Extensions header on first valid item
+    if [[ "$has_output" == "false" ]]; then
+      echo ""
+      echo "Extensions:"
+      has_output=true
+    fi
+
     # Build section identifier: homelabctl.vf or just homelabctl
     local full_section="$top_section"
     # Check if this is a subsection (more than one underscore in original key)
@@ -275,9 +286,6 @@ __radp_app_show_config_extensions_text() {
       if [[ "$key" == *_*_* ]]; then
         # Has subsection
         printf " %s:\n" "$subsection"
-      else
-        # No subsection, top-level extension key
-        :
       fi
       current_section="$full_section"
     fi
@@ -290,7 +298,7 @@ __radp_app_show_config_extensions_text() {
       # Has subsection - deeper indent
       printf "  %-22s%s\n" "${display_key}:" "$var_value"
     else
-      # Top-level extension
+      # Direct sub-key under app (e.g., homelabctl_version)
       printf " %-23s%s\n" "${display_key}:" "$var_value"
     fi
   done <<<"$vars"

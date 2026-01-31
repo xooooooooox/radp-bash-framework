@@ -344,10 +344,16 @@ set -e
   # 遍历所有变量，筛选出 YAML_RADP_EXTEND_* 前缀的变量
   for key in "${!__all_vars__[@]}"; do
     if [[ "$key" == YAML_RADP_EXTEND_* ]]; then
+      value="${__all_vars__[$key]}"
+
+      # 跳过空值或 null 值（YAML 中的空键会被解析为 null）
+      if [[ -z "$value" || "$value" == "null" ]]; then
+        continue
+      fi
+
       has_extend_vars=true
       shell_var=$(__fw_yaml_var_to_shell_var "$key")
       env_var=$(__fw_yaml_var_to_env_var "$key")
-      value="${__all_vars__[$key]}"
 
       # 生成 declare 语句，格式与 framework_config.sh 一致
       config_content+="declare -gr ${shell_var}=\"\${${env_var}:-\${${key}:-${value}}}\""
