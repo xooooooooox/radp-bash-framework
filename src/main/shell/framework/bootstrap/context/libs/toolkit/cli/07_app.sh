@@ -319,6 +319,10 @@ __radp_app_show_config_json() {
     libs_json="\"${gra_radp_fw_user_lib_paths[0]}\""
   fi
 
+  # Determine if we need trailing comma for log section
+  local log_trailing_comma=""
+  [[ "${__RADP_APP_CONFIG_ALL:-}" == "true" ]] && log_trailing_comma=","
+
   # Build JSON output
   cat <<EOF
 {
@@ -354,12 +358,11 @@ __radp_app_show_config_json() {
       "max_file_size": "${gr_radp_fw_log_rolling_policy_max_file_size:-10MB}",
       "total_size_cap": "${gr_radp_fw_log_rolling_policy_total_size_cap:-5GB}"
     }
-  }
+  }${log_trailing_comma}
 EOF
 
   # Add extensions only when --all is specified
   if [[ "${__RADP_APP_CONFIG_ALL:-}" == "true" ]]; then
-    echo ','
     echo '  "extensions": {'
     __radp_app_show_config_extensions_json
     echo '  }'
