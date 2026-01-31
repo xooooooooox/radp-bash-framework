@@ -179,7 +179,7 @@ radp_cli_set_commands_dir "$__radp_app_commands_dir"
 unset __radp_app_commands_dir
 
 # 设置默认全局选项（用于帮助和补全）
-radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--config" "--all"
+radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--config" "--all" "--json"
 
 # --------------------------------------------------------------------------- #
 # 7. Dispatch
