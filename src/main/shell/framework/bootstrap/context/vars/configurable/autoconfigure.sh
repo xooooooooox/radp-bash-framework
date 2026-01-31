@@ -521,6 +521,7 @@ __fw_init_radp_env() {
 #   0 - Success
 #######################################
 __fw_load_env_specific_config() {
+  # shellcheck disable=SC2178
   local -n __merged__=${1:?'Missing merged_vars_name argument'}
   local -n __merged_arrays__=${2:?'Missing merged_arrays_name argument'}
 
@@ -541,10 +542,11 @@ __fw_load_env_specific_config() {
     __fw_yaml_to_arrays "$env_config_file" env_yaml_arrays
 
     # merge(merged union env), env override merged (标量覆盖)
-    __fw_merge_env_vars __merged__ env_yaml_vars gw_final_yaml_vars
+    # 注意: 直接使用 $1/$2 而非 nameref 变量名，因为 bash nameref 不支持链式传递
+    __fw_merge_env_vars "$1" env_yaml_vars gw_final_yaml_vars
 
     # merge arrays with union semantics (数组取并集)
-    __fw_merge_arrays __merged_arrays__ env_yaml_arrays gw_final_yaml_arrays
+    __fw_merge_arrays "$2" env_yaml_arrays gw_final_yaml_arrays
 
     # 解析 YAML 内部引用
     __fw_resolve_yaml_references gw_final_yaml_vars
@@ -625,6 +627,7 @@ gr_fw_user_config_path="$(
     # Fallback to user's home config directory (always writable)
     path="$HOME/.config/radp_bash"
   fi
+  # shellcheck disable=SC2088
   if [[ "$path" == "~" || "$path" == "~/"* ]]; then
     path="${path/#\~/$HOME}"
   fi

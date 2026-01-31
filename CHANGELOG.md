@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.6.28
+## v0.6.29
 
 ### feat
 
@@ -56,6 +56,10 @@
 
 ### fix
 
+- Fix YAML config merge losing `radp.extend.*` keys when env-specific config exists
+  - Root cause: bash nameref doesn't support chained pass-through
+  - When `config.yaml` has `radp.extend.*` but `config-{env}.yaml` doesn't, the extend keys were lost after merge
+  - Solution: pass original variable name (`$1`/`$2`) instead of nameref variable to merge functions
 - Fix CLI argument parsing fails on macOS due to BSD getopt
 - Fix passthrough mode intercepting `--help` instead of passing to underlying command
 - Fix preflight no such file or directory error
