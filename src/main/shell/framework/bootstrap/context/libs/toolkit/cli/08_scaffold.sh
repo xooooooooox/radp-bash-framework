@@ -2844,10 +2844,37 @@ refresh_cache() {
   esac
 }
 
+# Install radp-bash-framework dependency by delegating to its install.sh
+install_radp_bf() {
+  local mode="$1"
+
+  if have radp-bf; then
+    log "radp-bash-framework is already installed"
+    return 0
+  fi
+
+  log "Installing radp-bash-framework dependency..."
+
+  local install_url="https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh"
+  local bin_dir="${OPT_BIN_DIR:-$HOME/.local/bin}"
+
+  if have curl; then
+    curl -fsSL "${install_url}" | bash -s -- --mode "${mode}" --bin-dir "${bin_dir}"
+  elif have wget; then
+    wget -qO- "${install_url}" | bash -s -- --mode "${mode}" --bin-dir "${bin_dir}"
+  else
+    die "curl or wget required to install radp-bash-framework"
+  fi
+}
+
 install_via_pkm() {
   local pkm="$1"
 
+  # Refresh cache to ensure we get the latest version
   refresh_cache "${pkm}"
+
+  # Install radp-bash-framework first
+  install_radp_bf "${pkm}" || die "Failed to install radp-bash-framework"
 
   log "Installing ${REPO_NAME} via ${pkm}..."
 
@@ -2976,6 +3003,9 @@ install_manual() {
   local ref
   ref="$(resolve_ref)"
 
+  # Install radp-bash-framework first
+  install_radp_bf "manual" || die "Failed to install radp-bash-framework"
+
   if [[ -z "${install_dir}" || "${install_dir}" == "/" ]]; then
     die "Unsafe install dir: ${install_dir}"
   fi
@@ -3050,16 +3080,142 @@ install_manual() {
   log "Ensure ${bin_dir} is in your PATH."
 }
 
+setup_completion() {
+  local bin_dir="${OPT_BIN_DIR:-$HOME/.local/bin}"
+  local install_dir="${OPT_INSTALL_DIR:-$HOME/.local/lib/${REPO_NAME}}"
+  local cmd=""
+
+  # Find command - prefer system path, then bin_dir, then install_dir
+  if have __PROJECT_NAME__; then
+    cmd="__PROJECT_NAME__"
+  elif [[ -x "${bin_dir}/__PROJECT_NAME__" ]]; then
+    cmd="${bin_dir}/__PROJECT_NAME__"
+  elif [[ -x "${install_dir}/bin/__PROJECT_NAME__" ]]; then
+    cmd="${install_dir}/bin/__PROJECT_NAME__"
+  fi
+
+  # For package manager installs, try system paths
+  if [[ -z "${cmd}" ]]; then
+    for path in /usr/bin/__PROJECT_NAME__ /usr/local/bin/__PROJECT_NAME__ /opt/homebrew/bin/__PROJECT_NAME__; do
+      if [[ -x "${path}" ]]; then
+        cmd="${path}"
+        break
+      fi
+    done
+  fi
+
+  if [[ -z "${cmd}" ]]; then
+    log "Warning: __PROJECT_NAME__ not found, skipping completion setup"
+    return 0
+  fi
+
+  # Detect user's shell
+  local user_shell
+  user_shell="$(basename "${SHELL:-/bin/bash}")"
+
+  case "${user_shell}" in
+  bash)
+    setup_bash_completion "${cmd}"
+    ;;
+  zsh)
+    setup_zsh_completion "${cmd}"
+    ;;
+  *)
+    log "Unknown shell: ${user_shell}, skipping completion setup"
+    log "Run '__PROJECT_NAME__ completion bash' or '__PROJECT_NAME__ completion zsh' manually"
+    ;;
+  esac
+}
+
+setup_bash_completion() {
+  local cmd="$1"
+  local comp_dir="$HOME/.local/share/bash-completion/completions"
+  local comp_file="${comp_dir}/__PROJECT_NAME__"
+
+  log "Setting up bash completion..."
+
+  # Create completions directory
+  mkdir -p "${comp_dir}"
+
+  # Generate completion script
+  if "${cmd}" completion bash >"${comp_file}" 2>/dev/null; then
+    log "Bash completion installed to ${comp_file}"
+  else
+    log "Warning: Failed to generate bash completion"
+    return 0
+  fi
+
+  # Check if bash-completion is installed
+  if ! have bash; then
+    return 0
+  fi
+
+  # Hint about bash-completion package
+  local bash_completion_loaded=false
+  if [[ -f /usr/share/bash-completion/bash_completion ]] ||
+    [[ -f /etc/bash_completion ]] ||
+    [[ -f /opt/homebrew/etc/profile.d/bash_completion.sh ]] ||
+    [[ -f /usr/local/etc/profile.d/bash_completion.sh ]]; then
+    bash_completion_loaded=true
+  fi
+
+  if [[ "${bash_completion_loaded}" != "true" ]]; then
+    log ""
+    log "Note: bash-completion package may not be installed."
+    log "Install it for completion to work:"
+    local os
+    os="$(detect_os)"
+    case "${os}" in
+    macos)
+      log "  brew install bash-completion@2"
+      ;;
+    rhel)
+      log "  sudo dnf install bash-completion"
+      ;;
+    debian)
+      log "  sudo apt install bash-completion"
+      ;;
+    esac
+  fi
+}
+
+setup_zsh_completion() {
+  local cmd="$1"
+  local comp_dir="$HOME/.zfunc"
+  local comp_file="${comp_dir}/___PROJECT_NAME__"
+
+  log "Setting up zsh completion..."
+
+  # Create completions directory
+  mkdir -p "${comp_dir}"
+
+  # Generate completion script
+  if "${cmd}" completion zsh >"${comp_file}" 2>/dev/null; then
+    log "Zsh completion installed to ${comp_file}"
+  else
+    log "Warning: Failed to generate zsh completion"
+    return 0
+  fi
+
+  # Check if fpath includes the directory
+  log ""
+  log "Ensure ~/.zfunc is in your fpath. Add to ~/.zshrc:"
+  log '  fpath=(~/.zfunc $fpath)'
+  log '  autoload -Uz compinit && compinit'
+}
+
 print_post_install() {
   local bin_dir="${OPT_BIN_DIR:-$HOME/.local/bin}"
 
   log ""
-  log "Installation complete!"
-  log ""
-  log "Prerequisites:"
-  log "  - radp-bash-framework must be installed and in PATH"
-  log "  See: https://github.com/xooooooooox/radp-bash-framework"
 
+  # Setup completion
+  setup_completion
+
+  log ""
+  log "Installation complete!"
+
+  # Check if bin_dir is in PATH
   if [[ ":$PATH:" != *":${bin_dir}:"* ]]; then
     log ""
     log "Note: ${bin_dir} is not in your PATH."
