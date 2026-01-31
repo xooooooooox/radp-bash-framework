@@ -3,7 +3,7 @@
 # CLI 项目升级：升级基于 radp-bash-framework 创建的 CLI 项目
 
 # 可升级的组件列表
-declare -ga __radp_upgrade_components=(entry ide gitignore version workflows)
+declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging)
 
 #######################################
 # 升级 CLI 项目
@@ -254,6 +254,9 @@ __radp_upgrade_component() {
     ;;
   workflows)
     __radp_upgrade_workflows "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
+    ;;
+  packaging)
+    __radp_upgrade_packaging "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
     ;;
   *)
     return 1
@@ -756,4 +759,310 @@ __radp_workflow_generate_content() {
     return 1
     ;;
   esac
+}
+
+#######################################
+# 升级 packaging 文件
+# 使用与 scaffold 相同的内容生成器函数
+#######################################
+__radp_upgrade_packaging() {
+  local target_dir="$1"
+  local project_name="$2"
+  local dry_run="$3"
+  local force="$4"
+  local show_diff="$5"
+
+  local packaging_dir="$target_dir/packaging"
+  local checksum_dir="$target_dir/.radp-cli/checksums/packaging"
+  local has_changes=false
+
+  # 如果 packaging 目录不存在，跳过
+  if [[ ! -d "$packaging_dir" ]]; then
+    echo "  [SKIP] packaging/ (directory not found)"
+    return 1
+  fi
+
+  # 定义打包文件列表
+  local -a packaging_files=(
+    "copr/${project_name}.spec"
+    "obs/${project_name}.spec"
+    "homebrew/${project_name}.rb"
+    "obs/debian/control"
+    "obs/debian/rules"
+    "obs/debian/${project_name}.install"
+    "obs/debian/${project_name}.links"
+  )
+
+  local pkg_file
+  for pkg_file in "${packaging_files[@]}"; do
+    if __radp_upgrade_single_packaging "$target_dir" "$project_name" "$pkg_file" "$dry_run" "$force" "$show_diff"; then
+      has_changes=true
+    fi
+  done
+
+  # 升级 install.sh (单独处理因为不在 packaging 目录下)
+  if __radp_upgrade_install_sh "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"; then
+    has_changes=true
+  fi
+
+  if [[ "$has_changes" == "true" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+#######################################
+# 升级单个打包文件
+#######################################
+__radp_upgrade_single_packaging() {
+  local target_dir="$1"
+  local project_name="$2"
+  local pkg_file="$3"
+  local dry_run="$4"
+  local force="$5"
+  local show_diff="$6"
+
+  local file_path="$target_dir/packaging/$pkg_file"
+  local relative_path="packaging/$pkg_file"
+  local checksum_dir="$target_dir/.radp-cli/checksums/packaging"
+  local checksum_file="$checksum_dir/${pkg_file//\//_}"
+
+  # 生成新内容
+  local new_content
+  new_content=$(__radp_packaging_generate_content "$project_name" "$pkg_file")
+
+  if [[ -z "$new_content" ]]; then
+    return 1
+  fi
+
+  # 文件不存在，创建
+  if [[ ! -f "$file_path" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] $relative_path"
+    else
+      mkdir -p "$(dirname "$file_path")"
+      echo "$new_content" >"$file_path"
+      # 保存 checksum
+      mkdir -p "$checksum_dir"
+      echo -n "$new_content" | shasum -a 256 | cut -d' ' -f1 >"$checksum_file"
+      echo "  [CREATE] $relative_path"
+    fi
+    return 0
+  fi
+
+  # 对于 spec 文件，需要保留 Version 和 %changelog
+  if [[ "$pkg_file" == *".spec" ]]; then
+    new_content=$(__radp_packaging_merge_spec "$file_path" "$new_content")
+  fi
+
+  local current_content
+  current_content=$(cat "$file_path")
+
+  # 检查是否需要更新
+  if [[ "$current_content" == "$new_content" ]]; then
+    echo "  [OK]   $relative_path (up to date)"
+    return 1
+  fi
+
+  # 检查用户是否修改过文件
+  local should_update=false
+  if [[ "$force" == "true" ]]; then
+    should_update=true
+  elif [[ -f "$checksum_file" ]]; then
+    local saved_checksum current_checksum
+    saved_checksum=$(cat "$checksum_file")
+    current_checksum=$(echo -n "$current_content" | shasum -a 256 | cut -d' ' -f1)
+    if [[ "$saved_checksum" == "$current_checksum" ]]; then
+      should_update=true
+    else
+      echo "  [SKIP] $relative_path (user modified, use --force to override)"
+      return 1
+    fi
+  else
+    # 没有 checksum 文件
+    # 对于 spec 文件：只更新 %install 段，其他内容保持不变，可以安全更新
+    if [[ "$pkg_file" == *".spec" ]]; then
+      should_update=true
+    else
+      # 其他文件（homebrew, debian等）：可能有用户自定义，跳过
+      echo "  [SKIP] $relative_path (no checksum, use --force to override)"
+      return 1
+    fi
+  fi
+
+  if [[ "$should_update" == "true" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [UPDATE] $relative_path"
+      if [[ "$show_diff" == "true" ]]; then
+        diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
+      fi
+    else
+      echo "$new_content" >"$file_path"
+      # 更新 checksum
+      mkdir -p "$checksum_dir"
+      echo -n "$new_content" | shasum -a 256 | cut -d' ' -f1 >"$checksum_file"
+      echo "  [UPDATE] $relative_path"
+    fi
+    return 0
+  fi
+
+  return 1
+}
+
+#######################################
+# 生成打包文件内容
+#######################################
+__radp_packaging_generate_content() {
+  local project_name="$1"
+  local pkg_file="$2"
+  local today
+  today="$(date '+%a %b %d %Y')"
+
+  case "$pkg_file" in
+  *".spec")
+    radp_packaging_content_spec "$project_name" "$today"
+    ;;
+  *".rb")
+    radp_packaging_content_homebrew "$project_name"
+    ;;
+  */debian/control)
+    radp_packaging_content_debian_control "$project_name"
+    ;;
+  */debian/rules)
+    radp_packaging_content_debian_rules "$project_name"
+    ;;
+  *".install")
+    radp_packaging_content_debian_install "$project_name"
+    ;;
+  *".links")
+    radp_packaging_content_debian_links "$project_name"
+    ;;
+  *)
+    echo ""
+    return 1
+    ;;
+  esac
+}
+
+#######################################
+# 合并 spec 文件
+# 只更新 %install 段，保留其他用户自定义内容
+#######################################
+__radp_packaging_merge_spec() {
+  local current_file="$1"
+  local new_content="$2"
+
+  # 从新内容中提取 %install 段（到 %files 之前）
+  local new_install_file
+  new_install_file=$(mktemp)
+  echo "$new_content" | awk '/%install/,/%files/ { if (!/^%files/) print }' >"$new_install_file"
+
+  # 在当前文件中替换 %install 段
+  awk -v install_file="$new_install_file" '
+    BEGIN { in_install = 0 }
+    /^%install/ {
+      in_install = 1
+      while ((getline line < install_file) > 0) print line
+      close(install_file)
+      next
+    }
+    /^%files/ {
+      in_install = 0
+    }
+    !in_install { print }
+  ' "$current_file"
+
+  rm -f "$new_install_file"
+}
+
+#######################################
+# 升级 install.sh
+#######################################
+__radp_upgrade_install_sh() {
+  local target_dir="$1"
+  local project_name="$2"
+  local dry_run="$3"
+  local force="$4"
+  local show_diff="$5"
+
+  local file_path="$target_dir/install.sh"
+  local relative_path="install.sh"
+  local checksum_dir="$target_dir/.radp-cli/checksums"
+  local checksum_file="$checksum_dir/install_sh"
+
+  local project_var="${project_name//-/_}"
+  local project_upper="${project_var^^}"
+
+  # 生成新内容
+  local new_content
+  new_content=$(radp_packaging_content_install_sh "$project_name")
+
+  # 替换占位符
+  new_content=$(echo "$new_content" | sed "s/__PROJECT_NAME__/${project_name}/g")
+  new_content=$(echo "$new_content" | sed "s/__PROJECT_UPPER__/${project_upper}/g")
+  new_content=$(echo "$new_content" | sed "s/__PROJECT_VAR__/${project_var}/g")
+
+  # 文件不存在，创建
+  if [[ ! -f "$file_path" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] $relative_path"
+    else
+      echo "$new_content" >"$file_path"
+      chmod +x "$file_path"
+      # 保存 checksum
+      mkdir -p "$checksum_dir"
+      echo -n "$new_content" | shasum -a 256 | cut -d' ' -f1 >"$checksum_file"
+      echo "  [CREATE] $relative_path"
+    fi
+    return 0
+  fi
+
+  local current_content
+  current_content=$(cat "$file_path")
+
+  # 检查是否需要更新
+  if [[ "$current_content" == "$new_content" ]]; then
+    echo "  [OK]   $relative_path (up to date)"
+    return 1
+  fi
+
+  # 检查用户是否修改过文件
+  local should_update=false
+  if [[ "$force" == "true" ]]; then
+    should_update=true
+  elif [[ -f "$checksum_file" ]]; then
+    local saved_checksum current_checksum
+    saved_checksum=$(cat "$checksum_file")
+    current_checksum=$(echo -n "$current_content" | shasum -a 256 | cut -d' ' -f1)
+    if [[ "$saved_checksum" == "$current_checksum" ]]; then
+      should_update=true
+    else
+      echo "  [SKIP] $relative_path (user modified, use --force to override)"
+      return 1
+    fi
+  else
+    # 没有 checksum 文件，跳过（可能是用户自定义）
+    echo "  [SKIP] $relative_path (no checksum, use --force to override)"
+    return 1
+  fi
+
+  if [[ "$should_update" == "true" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [UPDATE] $relative_path"
+      if [[ "$show_diff" == "true" ]]; then
+        diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
+      fi
+    else
+      echo "$new_content" >"$file_path"
+      chmod +x "$file_path"
+      # 更新 checksum
+      mkdir -p "$checksum_dir"
+      echo -n "$new_content" | shasum -a 256 | cut -d' ' -f1 >"$checksum_file"
+      echo "  [UPDATE] $relative_path"
+    fi
+    return 0
+  fi
+
+  return 1
 }

@@ -568,346 +568,10 @@ __radp_cli_scaffold_install() {
   local project_var="${project_name//-/_}"
   local project_upper="${project_var^^}"
 
-  cat >"$target_dir/install.sh" <<'INSTALL_SCRIPT'
-#!/usr/bin/env bash
-set -euo pipefail
+  # Use content generator function
+  radp_packaging_content_install_sh "$project_name" >"$target_dir/install.sh"
 
-REPO_OWNER="xooooooooox"
-REPO_NAME="__PROJECT_NAME__"
-tmp_dir=""
-
-# Installation mode: auto, manual, <pkm>
-# auto: detect and use package manager if available, fallback to manual
-# manual: always use manual installation (download from GitHub)
-# homebrew/dnf/yum/apt/zypper: force specific package manager
-__PROJECT_UPPER___INSTALL_MODE="${__PROJECT_UPPER___INSTALL_MODE:-auto}"
-
-log() { printf "%s\n" "$*"; }
-err() { printf "__PROJECT_NAME__ install: %s\n" "$*" >&2; }
-die() { err "$@"; exit 1; }
-have() { command -v "$1" >/dev/null 2>&1; }
-
-# ============================================================================
-# Package Manager Detection and Installation
-# ============================================================================
-
-detect_os() {
-  local os=""
-  if [[ "${OSTYPE:-}" == darwin* ]]; then
-    os="macos"
-  elif [[ -f /etc/os-release ]]; then
-    # shellcheck disable=SC1091
-    source /etc/os-release
-    case "${ID:-}" in
-      fedora|centos|rhel|rocky|almalinux|ol) os="rhel" ;;
-      debian|ubuntu|linuxmint|pop) os="debian" ;;
-      opensuse*|sles) os="suse" ;;
-      *) os="linux" ;;
-    esac
-  else
-    os="unknown"
-  fi
-  echo "${os}"
-}
-
-detect_package_manager() {
-  local os; os="$(detect_os)"
-  if have brew; then echo "homebrew"; return 0; fi
-  case "${os}" in
-    rhel)
-      if have dnf; then echo "dnf"; return 0
-      elif have yum; then echo "yum"; return 0; fi ;;
-    debian)
-      if have apt-get; then echo "apt"; return 0; fi ;;
-    suse)
-      if have zypper; then echo "zypper"; return 0; fi ;;
-  esac
-  echo ""
-}
-
-check_repo_configured() {
-  local pkm="$1"
-  case "${pkm}" in
-    homebrew) brew tap 2>/dev/null | grep -q "xooooooooox/radp" ;;
-    dnf|yum)
-      [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:xooooooooox:radp.repo ]] || \
-      [[ -f /etc/yum.repos.d/radp.repo ]] ;;
-    apt) [[ -f /etc/apt/sources.list.d/home:xooooooooox:radp.list ]] ;;
-    zypper) zypper repos 2>/dev/null | grep -q "xooooooooox" ;;
-    *) return 1 ;;
-  esac
-}
-
-setup_repo() {
-  local pkm="$1"
-  log "Setting up repository for ${pkm}..."
-  case "${pkm}" in
-    homebrew)
-      log "Adding Homebrew tap..."
-      brew tap xooooooooox/radp ;;
-    dnf)
-      log "Enabling COPR repository..."
-      sudo dnf install -y dnf-plugins-core >/dev/null 2>&1 || true
-      sudo dnf copr enable -y xooooooooox/radp ;;
-    yum)
-      log "Enabling COPR repository..."
-      sudo yum install -y yum-plugin-copr >/dev/null 2>&1 || true
-      sudo yum copr enable -y xooooooooox/radp ;;
-    apt)
-      log "Adding OBS repository..."
-      local distro=""
-      if [[ -f /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        source /etc/os-release
-        case "${ID:-}" in
-          ubuntu) distro="xUbuntu_${VERSION_ID}" ;;
-          debian) distro="Debian_${VERSION_ID}" ;;
-          *) err "Unsupported distribution for apt: ${ID:-unknown}"; return 1 ;;
-        esac
-      fi
-      [[ -z "${distro}" ]] && { err "Cannot detect distribution for OBS repository"; return 1; }
-      echo "deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/ /" | \
-        sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list >/dev/null
-      curl -fsSL "https://download.opensuse.org/repositories/home:xooooooooox:radp/${distro}/Release.key" | \
-        gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg >/dev/null
-      sudo apt-get update >/dev/null ;;
-    zypper)
-      log "Adding OBS repository..."
-      local distro=""
-      if [[ -f /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        source /etc/os-release
-        case "${ID:-}" in
-          opensuse-tumbleweed) distro="openSUSE_Tumbleweed" ;;
-          opensuse-leap) distro="openSUSE_Leap_${VERSION_ID}" ;;
-          sles) distro="SLE_${VERSION_ID}" ;;
-          *) err "Unsupported distribution for zypper: ${ID:-unknown}"; return 1 ;;
-        esac
-      fi
-      [[ -z "${distro}" ]] && { err "Cannot detect distribution for OBS repository"; return 1; }
-      sudo zypper addrepo -f "https://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/home:xooooooooox:radp.repo" ;;
-    *) err "Unknown package manager: ${pkm}"; return 1 ;;
-  esac
-}
-
-refresh_cache() {
-  local pkm="$1"
-  log "Refreshing package cache..."
-  case "${pkm}" in
-    homebrew) brew update >/dev/null 2>&1 || true ;;
-    dnf) sudo dnf clean all >/dev/null 2>&1 || true; sudo dnf makecache >/dev/null 2>&1 || true ;;
-    yum) sudo yum clean all >/dev/null 2>&1 || true; sudo yum makecache >/dev/null 2>&1 || true ;;
-    apt) sudo apt-get update >/dev/null 2>&1 || true ;;
-    zypper) sudo zypper refresh >/dev/null 2>&1 || true ;;
-  esac
-}
-
-install_via_pkm() {
-  local pkm="$1"
-  refresh_cache "${pkm}"
-  log "Installing ${REPO_NAME} via ${pkm}..."
-  case "${pkm}" in
-    homebrew) brew install __PROJECT_NAME__ ;;
-    dnf) sudo dnf install -y __PROJECT_NAME__ ;;
-    yum) sudo yum install -y __PROJECT_NAME__ ;;
-    apt) sudo apt-get install -y __PROJECT_NAME__ ;;
-    zypper) sudo zypper install -y __PROJECT_NAME__ ;;
-    *) err "Unknown package manager: ${pkm}"; return 1 ;;
-  esac
-}
-
-# ============================================================================
-# Manual Installation
-# ============================================================================
-
-detect_fetcher() {
-  if have curl; then echo "curl"; return 0; fi
-  if have wget; then echo "wget"; return 0; fi
-  if have fetch; then echo "fetch"; return 0; fi
-  return 1
-}
-
-fetch_url() {
-  local tool="$1" url="$2" out="$3"
-  case "${tool}" in
-    curl) curl -fsSL "${url}" -o "${out}" ;;
-    wget) wget -qO "${out}" "${url}" ;;
-    fetch) fetch -qo "${out}" "${url}" ;;
-    *) return 1 ;;
-  esac
-}
-
-fetch_text() {
-  local tool="$1" url="$2"
-  case "${tool}" in
-    curl) curl -fsSL "${url}" ;;
-    wget) wget -qO- "${url}" ;;
-    fetch) fetch -qo- "${url}" ;;
-    *) return 1 ;;
-  esac
-}
-
-resolve_ref() {
-  local manual_ref="${__PROJECT_UPPER___REF:-}"
-  local manual_version="${__PROJECT_UPPER___VERSION:-}"
-  if [[ -n "${manual_ref}" ]]; then echo "${manual_ref}"; return 0; fi
-  if [[ -n "${manual_version}" ]]; then echo "${manual_version}"; return 0; fi
-  local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
-  local json
-  json="$(fetch_text "${FETCH_TOOL}" "${api_url}" || true)"
-  if [[ -z "${json}" ]]; then
-    die "Failed to fetch latest release; set __PROJECT_UPPER___VERSION or __PROJECT_UPPER___REF."
-  fi
-  local tag
-  tag="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<<"${json}")"
-  tag="${tag%%$'\n'*}"
-  if [[ -z "${tag}" ]]; then
-    die "Failed to parse latest tag; set __PROJECT_UPPER___VERSION or __PROJECT_UPPER___REF."
-  fi
-  echo "${tag}"
-}
-
-cleanup() { [[ -n "${tmp_dir:-}" ]] && rm -rf "${tmp_dir}"; }
-
-install_manual() {
-  FETCH_TOOL="$(detect_fetcher)" || die "Requires curl, wget, or fetch."
-  local install_dir="${__PROJECT_UPPER___INSTALL_DIR:-$HOME/.local/lib/${REPO_NAME}}"
-  local bin_dir="${__PROJECT_UPPER___BIN_DIR:-$HOME/.local/bin}"
-  local ref; ref="$(resolve_ref)"
-
-  if [[ -z "${install_dir}" || "${install_dir}" == "/" ]]; then
-    die "Unsafe install dir: ${install_dir}"
-  fi
-  if [[ "${__PROJECT_UPPER___ALLOW_ANY_DIR:-0}" != "1" ]]; then
-    if [[ "$(basename "${install_dir}")" != "${REPO_NAME}" ]]; then
-      die "Install dir must end with ${REPO_NAME} (set __PROJECT_UPPER___ALLOW_ANY_DIR=1 to override)."
-    fi
-  fi
-
-  local tar_url="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/${ref}.tar.gz"
-  tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t "${REPO_NAME}")"
-  local tarball="${tmp_dir}/${REPO_NAME}.tar.gz"
-  trap cleanup EXIT
-
-  log "Downloading ${tar_url}"
-  fetch_url "${FETCH_TOOL}" "${tar_url}" "${tarball}" || die "Failed to download ${tar_url}"
-
-  local tar_listing root_dir
-  tar_listing="$(tar -tzf "${tarball}")"
-  root_dir="${tar_listing%%/*}"
-  [[ -z "${root_dir}" ]] && die "Unable to read archive structure."
-
-  tar -xzf "${tarball}" -C "${tmp_dir}"
-  local src_root="${tmp_dir}/${root_dir}"
-  [[ ! -d "${src_root}/bin" || ! -d "${src_root}/src" ]] && die "Archive layout unexpected."
-
-  rm -rf "${install_dir}"
-  mkdir -p "${install_dir}"
-  cp -R "${src_root}/bin" "${install_dir}/"
-  cp -R "${src_root}/src" "${install_dir}/"
-
-  # Remove IDE support files (development only, not needed at runtime)
-  find "${install_dir}/src" -name "_ide*.sh" -delete 2>/dev/null || true
-
-  chmod 0755 "${install_dir}/bin/__PROJECT_NAME__"
-  find "${install_dir}/src" -type f -name "*.sh" -exec chmod 0755 {} \;
-
-  # Write install method marker for uninstall
-  echo "manual" >"${install_dir}/.install-method"
-  echo "${ref}" >"${install_dir}/.install-ref"
-
-  # Write actual installed version for banner display
-  local installed_version
-  if [[ "${ref}" =~ ^v[0-9]+\.[0-9]+ ]]; then
-    # ref is a version tag, use it directly
-    installed_version="${ref}"
-  else
-    # ref is branch/SHA, append to base version from source
-    local base_version
-    base_version=$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' \
-      "${install_dir}/src/main/shell/commands/version.sh" 2>/dev/null)
-    base_version="${base_version:-v0.0.0}"
-    installed_version="${base_version}+${ref}"
-  fi
-  echo "${installed_version}" >"${install_dir}/.install-version"
-
-  mkdir -p "${bin_dir}"
-  local target="${install_dir}/bin/__PROJECT_NAME__"
-  local link_path="${bin_dir}/__PROJECT_NAME__"
-  [[ -e "${link_path}" && ! -L "${link_path}" ]] && die "Refusing to overwrite existing file: ${link_path}"
-  ln -sf "${target}" "${link_path}"
-
-  log "Installed to ${install_dir}"
-  log "Ensure ${bin_dir} is in your PATH."
-  log ""
-  log "Prerequisites:"
-  log "  - radp-bash-framework must be installed and in PATH"
-  log "  See: https://github.com/xooooooooox/radp-bash-framework"
-  log ""
-  log "Run: __PROJECT_NAME__ --help"
-}
-
-# ============================================================================
-# Main
-# ============================================================================
-
-main() {
-  local mode="${__PROJECT_UPPER___INSTALL_MODE}"
-  local pkm=""
-
-  case "${mode}" in
-    manual)
-      log "Using manual installation (__PROJECT_UPPER___INSTALL_MODE=manual)"
-      install_manual
-      return 0 ;;
-    homebrew|dnf|yum|apt|zypper)
-      pkm="${mode}"
-      if ! have "${pkm}" && [[ "${pkm}" != "homebrew" ]]; then
-        die "Package manager '${pkm}' not found"
-      fi
-      if [[ "${pkm}" == "homebrew" ]] && ! have brew; then
-        die "Homebrew not found"
-      fi ;;
-    auto|"")
-      pkm="$(detect_package_manager)"
-      if [[ -z "${pkm}" ]]; then
-        log "No supported package manager detected, using manual installation"
-        install_manual
-        return 0
-      fi
-      log "Detected package manager: ${pkm}" ;;
-    *)
-      die "Unknown install mode: ${mode}. Use: auto, manual, homebrew, dnf, yum, apt, zypper" ;;
-  esac
-
-  if ! check_repo_configured "${pkm}"; then
-    log "Repository not configured for ${pkm}"
-    setup_repo "${pkm}" || {
-      err "Failed to setup repository, falling back to manual installation"
-      install_manual
-      return 0
-    }
-  fi
-
-  install_via_pkm "${pkm}" || {
-    err "Package manager installation failed, falling back to manual installation"
-    install_manual
-    return 0
-  }
-
-  log "Successfully installed ${REPO_NAME} via ${pkm}"
-  log ""
-  log "Prerequisites:"
-  log "  - radp-bash-framework must be installed and in PATH"
-  log "  See: https://github.com/xooooooooox/radp-bash-framework"
-  log ""
-  log "Run: __PROJECT_NAME__ --help"
-}
-
-main "$@"
-INSTALL_SCRIPT
-
-  # 替换占位符
+  # Replace placeholders
   sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/install.sh"
   sed -i.bak "s/__PROJECT_UPPER__/${project_upper}/g" "$target_dir/install.sh"
   sed -i.bak "s/__PROJECT_VAR__/${project_var}/g" "$target_dir/install.sh"
@@ -924,209 +588,21 @@ __radp_cli_scaffold_packaging() {
   local today
   today="$(date '+%a %b %d %Y')"
 
-  # COPR spec
-  cat >"$target_dir/packaging/copr/${project_name}.spec" <<SPEC
-Name:           ${project_name}
-Version:        0.1.0
-Release:        1%{?dist}
-Summary:        CLI tool built with radp-bash-framework
+  # COPR and OBS spec files (using shared content generator)
+  radp_packaging_content_spec "$project_name" "$today" >"$target_dir/packaging/copr/${project_name}.spec"
+  radp_packaging_content_spec "$project_name" "$today" >"$target_dir/packaging/obs/${project_name}.spec"
 
-License:        MIT
-URL:            https://github.com/xooooooooox/${project_name}
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
+  # Homebrew formula (using shared content generator)
+  radp_packaging_content_homebrew "$project_name" >"$target_dir/packaging/homebrew/${project_name}.rb"
 
-BuildArch:      noarch
-Requires:       bash
-Requires:       coreutils
-Requires:       radp-bash-framework
-
-%description
-${project_name} is a CLI tool built with radp-bash-framework.
-
-%prep
-%setup -q -n ${project_name}-%{version}
-
-%build
-
-%install
-rm -rf %{buildroot}
-mkdir -p %{buildroot}%{_libdir}/${project_name}
-cp -a bin %{buildroot}%{_libdir}/${project_name}/
-cp -a src %{buildroot}%{_libdir}/${project_name}/
-# Remove development mode marker (only used in source tree)
-rm -f %{buildroot}%{_libdir}/${project_name}/src/main/shell/config/_ide.sh
-chmod 0755 %{buildroot}%{_libdir}/${project_name}/bin/${project_name}
-find %{buildroot}%{_libdir}/${project_name}/src -type f -name "*.sh" -exec chmod 0755 {} \;
-mkdir -p %{buildroot}%{_bindir}
-ln -s %{_libdir}/${project_name}/bin/${project_name} %{buildroot}%{_bindir}/${project_name}
-
-%files
-%license LICENSE
-%doc README.md
-%{_bindir}/${project_name}
-%{_libdir}/${project_name}/
-
-%changelog
-* ${today} xooooooooox <xozoz.sos@gmail.com> - 0.1.0-1
-- Initial RPM package
-SPEC
-
-  # OBS spec (same as COPR)
-  cp "$target_dir/packaging/copr/${project_name}.spec" "$target_dir/packaging/obs/${project_name}.spec"
-
-  # Debian control
-  cat >"$target_dir/packaging/obs/debian/control" <<CONTROL
-Source: ${project_name}
-Section: utils
-Priority: optional
-Maintainer: xooooooooox <xozoz.sos@gmail.com>
-Build-Depends: debhelper-compat (= 13)
-Standards-Version: 4.6.2
-Homepage: https://github.com/xooooooooox/${project_name}
-Rules-Requires-Root: no
-
-Package: ${project_name}
-Architecture: all
-Depends: \${misc:Depends}, bash, coreutils, radp-bash-framework
-Description: CLI tool built with radp-bash-framework.
- ${project_name} is a CLI tool built with radp-bash-framework.
-CONTROL
-
-  # Debian rules
-  cat >"$target_dir/packaging/obs/debian/rules" <<'RULES'
-#!/usr/bin/make -f
-
-%:
-	dh $@
-
-override_dh_auto_configure:
-	:
-
-override_dh_auto_build:
-	:
-
-override_dh_auto_install:
-	:
-
-override_dh_fixperms:
-	dh_fixperms
-	# Remove development mode marker (only used in source tree)
-	rm -f debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/src/main/shell/config/_ide.sh
-	chmod 0755 debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/bin/__PROJECT_NAME__
-	find debian/__PROJECT_NAME__/usr/lib/__PROJECT_NAME__/src -type f -name '*.sh' -exec chmod 0755 {} \;
-RULES
-  sed -i.bak "s/__PROJECT_NAME__/${project_name}/g" "$target_dir/packaging/obs/debian/rules"
-  rm -f "$target_dir/packaging/obs/debian/rules.bak"
-
-  # Debian install
-  cat >"$target_dir/packaging/obs/debian/${project_name}.install" <<INSTALL
-bin usr/lib/${project_name}
-src usr/lib/${project_name}
-INSTALL
-
-  # Debian links
-  cat >"$target_dir/packaging/obs/debian/${project_name}.links" <<LINKS
-usr/lib/${project_name}/bin/${project_name} usr/bin/${project_name}
-LINKS
-
-  # Debian changelog
-  cat >"$target_dir/packaging/obs/debian/changelog" <<CHANGELOG
-${project_name} (0.0.0-1) unstable; urgency=medium
-
-  * Placeholder entry. The CI workflow rewrites this changelog.
-
- -- xooooooooox <xozoz.sos@gmail.com>  Thu, 01 Jan 1970 00:00:00 +0000
-CHANGELOG
-
-  # Debian copyright
-  cat >"$target_dir/packaging/obs/debian/copyright" <<COPYRIGHT
-Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: ${project_name}
-Source: https://github.com/xooooooooox/${project_name}
-
-Files: *
-Copyright: 2024-present xooooooooox
-License: MIT
-
-License: MIT
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- .
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
-COPYRIGHT
-
-  # Debian source format
+  # Debian packaging files
+  radp_packaging_content_debian_control "$project_name" >"$target_dir/packaging/obs/debian/control"
+  radp_packaging_content_debian_rules "$project_name" >"$target_dir/packaging/obs/debian/rules"
+  radp_packaging_content_debian_install "$project_name" >"$target_dir/packaging/obs/debian/${project_name}.install"
+  radp_packaging_content_debian_links "$project_name" >"$target_dir/packaging/obs/debian/${project_name}.links"
+  radp_packaging_content_debian_changelog "$project_name" >"$target_dir/packaging/obs/debian/changelog"
+  radp_packaging_content_debian_copyright "$project_name" >"$target_dir/packaging/obs/debian/copyright"
   echo "3.0 (quilt)" >"$target_dir/packaging/obs/debian/source/format"
-
-  # Homebrew formula template
-  # Convert project name to Ruby class name (capitalize first letter, remove hyphens and capitalize following letters)
-  local class_name
-  class_name="$(echo "${project_name}" | sed -r 's/(^|-)([a-z])/\U\2/g')"
-
-  cat >"$target_dir/packaging/homebrew/${project_name}.rb" <<FORMULA
-# Homebrew formula template for ${project_name}
-# The CI workflow uses this template and replaces placeholders with actual values.
-#
-# Placeholders:
-#   %%TARBALL_URL%% - GitHub archive URL for the release tag
-#   %%SHA256%%      - SHA256 checksum of the tarball
-#   %%VERSION%%     - Version number (without 'v' prefix)
-#
-# Installation:
-#   brew tap xooooooooox/radp
-#   brew install ${project_name}
-
-class ${class_name} < Formula
-  desc "CLI tool built with radp-bash-framework"
-  homepage "https://github.com/xooooooooox/${project_name}"
-  url "%%TARBALL_URL%%"
-  sha256 "%%SHA256%%"
-  version "%%VERSION%%"
-  license "MIT"
-
-  depends_on "xooooooooox/radp/radp-bash-framework"
-
-  def install
-    # Install to libexec
-    libexec.install "bin", "src"
-
-    # Remove IDE support files (development only, not needed at runtime)
-    Dir.glob(libexec/"src/**/_ide*.sh").each { |f| rm f }
-
-    # Create wrapper script that sets up paths
-    (bin/"${project_name}").write <<~EOS
-      #!/bin/bash
-      exec "#{libexec}/bin/${project_name}" "\\\$@"
-    EOS
-  end
-
-  def caveats
-    <<~EOS
-      ${project_name} requires radp-bash-framework (installed as dependency).
-
-      Quick start:
-        ${project_name} --help
-    EOS
-  end
-
-  test do
-    system "#{bin}/${project_name}", "--help"
-  end
-end
-FORMULA
 }
 
 #######################################
@@ -2777,4 +2253,1075 @@ jobs:
           fi
           echo "  Kept/Skipped: ${skipped_count} branches"
 WORKFLOW
+}
+
+#######################################
+# Packaging Content Generators
+# These functions generate the content for packaging files.
+# Used by both scaffold and upgrade.
+#######################################
+
+#######################################
+# Generate RPM spec file content
+# Arguments:
+#   1 - project_name: Project name
+#   2 - today: Date string for changelog (e.g., "Sat Jan 25 2026")
+# Outputs:
+#   Complete spec file content to stdout
+#######################################
+radp_packaging_content_spec() {
+  local project_name="$1"
+  local today="$2"
+
+  cat <<SPEC
+Name:           ${project_name}
+Version:        0.1.0
+Release:        1%{?dist}
+Summary:        CLI tool built with radp-bash-framework
+
+License:        MIT
+URL:            https://github.com/xooooooooox/${project_name}
+Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
+
+BuildArch:      noarch
+Requires:       bash
+Requires:       coreutils
+Requires:       radp-bash-framework
+
+%description
+${project_name} is a CLI tool built with radp-bash-framework.
+
+%prep
+%setup -q -n ${project_name}-%{version}
+
+%build
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}%{_libdir}/${project_name}
+cp -a bin %{buildroot}%{_libdir}/${project_name}/
+cp -a src %{buildroot}%{_libdir}/${project_name}/
+
+# Remove IDE support files (development only, not needed at runtime)
+find %{buildroot}%{_libdir}/${project_name}/src -name "_ide*.sh" -delete
+
+chmod 0755 %{buildroot}%{_libdir}/${project_name}/bin/${project_name}
+find %{buildroot}%{_libdir}/${project_name}/src -type f -name "*.sh" -exec chmod 0755 {} \;
+mkdir -p %{buildroot}%{_bindir}
+ln -s %{_libdir}/${project_name}/bin/${project_name} %{buildroot}%{_bindir}/${project_name}
+
+%files
+%license LICENSE
+%doc README.md
+%{_bindir}/${project_name}
+%{_libdir}/${project_name}/
+
+%changelog
+* ${today} xooooooooox <xozoz.sos@gmail.com> - 0.1.0-1
+- Initial RPM package
+SPEC
+}
+
+#######################################
+# Generate Homebrew formula content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete formula content to stdout
+#######################################
+radp_packaging_content_homebrew() {
+  local project_name="$1"
+
+  # Convert project name to Ruby class name (kebab-case to PascalCase)
+  local class_name=""
+  local word
+  local IFS='-'
+  for word in $project_name; do
+    class_name+="${word^}"
+  done
+
+  cat <<FORMULA
+# Homebrew formula template for ${project_name}
+# The CI workflow uses this template and replaces placeholders with actual values.
+#
+# Placeholders:
+#   %%TARBALL_URL%% - GitHub archive URL for the release tag
+#   %%SHA256%%      - SHA256 checksum of the tarball
+#   %%VERSION%%     - Version number (without 'v' prefix)
+#
+# Installation:
+#   brew tap xooooooooox/radp
+#   brew install ${project_name}
+
+class ${class_name} < Formula
+  desc "CLI tool built with radp-bash-framework"
+  homepage "https://github.com/xooooooooox/${project_name}"
+  url "%%TARBALL_URL%%"
+  sha256 "%%SHA256%%"
+  version "%%VERSION%%"
+  license "MIT"
+
+  depends_on "xooooooooox/radp/radp-bash-framework"
+
+  def install
+    # Install to libexec, excluding IDE support files
+    libexec.install "bin"
+    libexec.install "src"
+
+    # Remove IDE support files (development only, not needed at runtime)
+    Dir.glob(libexec/"src/**/_ide*.sh").each { |f| rm f }
+
+    # Create wrapper script that sets up paths
+    (bin/"${project_name}").write <<~EOS
+      #!/bin/bash
+      exec "#{libexec}/bin/${project_name}" "\$@"
+    EOS
+
+    # Install shell completions
+    bash_completion.install "completions/${project_name}.bash" => "${project_name}"
+    zsh_completion.install "completions/${project_name}.zsh" => "_${project_name}"
+  end
+
+  def caveats
+    <<~EOS
+      ${project_name} requires radp-bash-framework (installed as dependency).
+
+      For Vagrant integration, also install radp-vagrant-framework:
+        brew install radp-vagrant-framework
+
+      Shell Completions:
+        Completions are installed to: #{HOMEBREW_PREFIX}/share/zsh/site-functions/
+
+        For standard Zsh setup (recommended):
+          # Rebuild completion cache
+          rm -f ~/.zcompdump* && compinit
+          # Or restart your terminal
+
+        For Zinit users:
+          # Option 1: Add Homebrew's site-functions to fpath (before zinit init)
+          fpath=(#{HOMEBREW_PREFIX}/share/zsh/site-functions \$fpath)
+
+          # Option 2: Use zinit snippet
+          zinit ice as"completion"
+          zinit snippet #{HOMEBREW_PREFIX}/share/zsh/site-functions/_${project_name}
+
+        For Oh-My-Zsh users:
+          ln -sf #{HOMEBREW_PREFIX}/share/zsh/site-functions/_${project_name} \\
+            \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/${project_name}/_${project_name}
+
+        For Bash:
+          brew install bash-completion@2
+          # Add to ~/.bash_profile or ~/.bashrc:
+          [[ -r "#{HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]] && \\
+            source "#{HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+
+        Alternative - Dynamic completion (always up-to-date):
+          # Bash: eval "\$(${project_name} completion bash)"
+          # Zsh:  eval "\$(${project_name} completion zsh)"
+
+      Quick start:
+        ${project_name} --help
+    EOS
+  end
+
+  test do
+    # Basic test - check if help works
+    system "#{bin}/${project_name}", "--help"
+  end
+end
+FORMULA
+}
+
+#######################################
+# Generate install.sh content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete install.sh content to stdout
+# Note: Output contains placeholders that need sed replacement
+#######################################
+radp_packaging_content_install_sh() {
+  local project_name="$1"
+  local project_var="${project_name//-/_}"
+  local project_upper="${project_var^^}"
+
+  cat <<'INSTALL_SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_OWNER="xooooooooox"
+REPO_NAME="__PROJECT_NAME__"
+tmp_dir=""
+
+# Defaults (overridable by CLI args, then env vars)
+OPT_MODE="${__PROJECT_UPPER___INSTALL_MODE:-auto}"
+OPT_REF="${__PROJECT_UPPER___REF:-}"
+OPT_VERSION="${__PROJECT_UPPER___VERSION:-}"
+OPT_INSTALL_DIR="${__PROJECT_UPPER___INSTALL_DIR:-}"
+OPT_BIN_DIR="${__PROJECT_UPPER___BIN_DIR:-}"
+
+# ============================================================================
+# Logging
+# ============================================================================
+
+log() {
+  printf "%s\n" "$*"
+}
+
+err() {
+  printf "__PROJECT_NAME__ install: %s\n" "$*" >&2
+}
+
+die() {
+  err "$@"
+  exit 1
+}
+
+have() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# ============================================================================
+# Usage
+# ============================================================================
+
+usage() {
+  cat <<'EOF'
+__PROJECT_NAME__ installer
+
+Usage:
+  install.sh [OPTIONS]
+  curl -fsSL .../install.sh | bash -s -- [OPTIONS]
+
+Options:
+  --ref <ref>           Install from a git ref (branch, tag, or SHA).
+                        Implies manual installation. If a package-manager
+                        version is already installed, it is removed first.
+  --mode <mode>         Installation mode (default: auto)
+                        auto     - use package manager if available, else manual
+                        manual   - always download from GitHub
+                        homebrew - force Homebrew
+                        dnf      - force dnf
+                        yum      - force yum
+                        apt      - force apt
+                        zypper   - force zypper
+  --install-dir <dir>   Manual install location
+                        (default: $HOME/.local/lib/__PROJECT_NAME__)
+  --bin-dir <dir>       Symlink location (default: $HOME/.local/bin)
+  -h, --help            Show this help
+
+Environment variables:
+  __PROJECT_UPPER___REF            Same as --ref
+  __PROJECT_UPPER___VERSION        Pin to a release version (e.g. v0.1.3)
+  __PROJECT_UPPER___INSTALL_MODE   Same as --mode
+  __PROJECT_UPPER___INSTALL_DIR    Same as --install-dir
+  __PROJECT_UPPER___BIN_DIR        Same as --bin-dir
+
+Examples:
+  # Default: auto-detect package manager
+  bash install.sh
+
+  # Install latest from main branch (removes pkm version if present)
+  bash install.sh --ref main
+
+  # Install a specific tag via manual download
+  bash install.sh --ref v0.2.0-rc1
+
+  # Force manual mode (latest release)
+  bash install.sh --mode manual
+EOF
+}
+
+# ============================================================================
+# Argument Parsing
+# ============================================================================
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --ref)
+      [[ $# -lt 2 ]] && die "--ref requires a value"
+      OPT_REF="$2"
+      shift 2
+      ;;
+    --mode)
+      [[ $# -lt 2 ]] && die "--mode requires a value"
+      OPT_MODE="$2"
+      shift 2
+      ;;
+    --install-dir)
+      [[ $# -lt 2 ]] && die "--install-dir requires a value"
+      OPT_INSTALL_DIR="$2"
+      shift 2
+      ;;
+    --bin-dir)
+      [[ $# -lt 2 ]] && die "--bin-dir requires a value"
+      OPT_BIN_DIR="$2"
+      shift 2
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "Unknown option: $1 (use --help for usage)"
+      ;;
+    esac
+  done
+}
+
+# ============================================================================
+# Package Manager Detection and Installation
+# ============================================================================
+
+detect_os() {
+  local os=""
+  if [[ "${OSTYPE:-}" == darwin* ]]; then
+    os="macos"
+  elif [[ -f /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    source /etc/os-release
+    case "${ID:-}" in
+    fedora | centos | rhel | rocky | almalinux | ol)
+      os="rhel"
+      ;;
+    debian | ubuntu | linuxmint | pop)
+      os="debian"
+      ;;
+    opensuse* | sles)
+      os="suse"
+      ;;
+    *)
+      os="linux"
+      ;;
+    esac
+  else
+    os="unknown"
+  fi
+  echo "${os}"
+}
+
+detect_package_manager() {
+  local os
+  os="$(detect_os)"
+
+  if have brew; then
+    echo "homebrew"
+    return 0
+  fi
+
+  case "${os}" in
+  rhel)
+    if have dnf; then
+      echo "dnf"
+      return 0
+    elif have yum; then
+      echo "yum"
+      return 0
+    fi
+    ;;
+  debian)
+    if have apt-get; then
+      echo "apt"
+      return 0
+    fi
+    ;;
+  suse)
+    if have zypper; then
+      echo "zypper"
+      return 0
+    fi
+    ;;
+  esac
+
+  echo ""
+}
+
+detect_pkm_installed() {
+  if have brew && brew list --formula __PROJECT_NAME__ &>/dev/null; then
+    echo "homebrew"
+    return 0
+  fi
+
+  if have rpm && rpm -q __PROJECT_NAME__ &>/dev/null; then
+    if have dnf; then
+      echo "dnf"
+    elif have yum; then
+      echo "yum"
+    else
+      echo "rpm"
+    fi
+    return 0
+  fi
+
+  if have dpkg && dpkg -s __PROJECT_NAME__ &>/dev/null; then
+    echo "apt"
+    return 0
+  fi
+
+  if have zypper && zypper se -i __PROJECT_NAME__ &>/dev/null; then
+    echo "zypper"
+    return 0
+  fi
+
+  echo ""
+}
+
+uninstall_pkm() {
+  local pkm="$1"
+
+  log "Removing package-manager version (${pkm}) to avoid conflicts..."
+
+  case "${pkm}" in
+  homebrew)
+    brew uninstall __PROJECT_NAME__ || return 1
+    ;;
+  dnf)
+    sudo dnf remove -y __PROJECT_NAME__ || return 1
+    ;;
+  yum)
+    sudo yum remove -y __PROJECT_NAME__ || return 1
+    ;;
+  rpm)
+    sudo rpm -e __PROJECT_NAME__ || return 1
+    ;;
+  apt)
+    sudo apt-get remove -y __PROJECT_NAME__ || return 1
+    ;;
+  zypper)
+    sudo zypper remove -y __PROJECT_NAME__ || return 1
+    ;;
+  *)
+    err "Don't know how to uninstall via: ${pkm}"
+    return 1
+    ;;
+  esac
+
+  log "Package-manager version removed"
+}
+
+check_repo_configured() {
+  local pkm="$1"
+
+  case "${pkm}" in
+  homebrew)
+    if brew tap 2>/dev/null | grep -q "xooooooooox/radp"; then
+      return 0
+    fi
+    return 1
+    ;;
+  dnf | yum)
+    if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:xooooooooox:radp.repo ]] ||
+      [[ -f /etc/yum.repos.d/radp.repo ]]; then
+      return 0
+    fi
+    return 1
+    ;;
+  apt)
+    if [[ -f /etc/apt/sources.list.d/home:xooooooooox:radp.list ]]; then
+      return 0
+    fi
+    return 1
+    ;;
+  zypper)
+    if zypper repos 2>/dev/null | grep -q "xooooooooox"; then
+      return 0
+    fi
+    return 1
+    ;;
+  esac
+
+  return 1
+}
+
+setup_repo() {
+  local pkm="$1"
+
+  log "Setting up repository for ${pkm}..."
+
+  case "${pkm}" in
+  homebrew)
+    log "Adding Homebrew tap..."
+    brew tap xooooooooox/radp
+    ;;
+  dnf)
+    log "Enabling COPR repository..."
+    sudo dnf install -y dnf-plugins-core >/dev/null 2>&1 || true
+    sudo dnf copr enable -y xooooooooox/radp
+    ;;
+  yum)
+    log "Enabling COPR repository..."
+    sudo yum install -y yum-plugin-copr >/dev/null 2>&1 || true
+    sudo yum copr enable -y xooooooooox/radp
+    ;;
+  apt)
+    log "Adding OBS repository..."
+    local distro=""
+    if [[ -f /etc/os-release ]]; then
+      # shellcheck disable=SC1091
+      source /etc/os-release
+      case "${ID:-}" in
+      ubuntu)
+        distro="xUbuntu_${VERSION_ID}"
+        ;;
+      debian)
+        distro="Debian_${VERSION_ID}"
+        ;;
+      *)
+        err "Unsupported distribution for apt: ${ID:-unknown}"
+        return 1
+        ;;
+      esac
+    fi
+    if [[ -z "${distro}" ]]; then
+      err "Cannot detect distribution for OBS repository"
+      return 1
+    fi
+    echo "deb http://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/ /" |
+      sudo tee /etc/apt/sources.list.d/home:xooooooooox:radp.list >/dev/null
+    curl -fsSL "https://download.opensuse.org/repositories/home:xooooooooox:radp/${distro}/Release.key" |
+      gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_xooooooooox_radp.gpg >/dev/null
+    sudo apt-get update >/dev/null
+    ;;
+  zypper)
+    log "Adding OBS repository..."
+    local distro=""
+    if [[ -f /etc/os-release ]]; then
+      # shellcheck disable=SC1091
+      source /etc/os-release
+      case "${ID:-}" in
+      opensuse-tumbleweed)
+        distro="openSUSE_Tumbleweed"
+        ;;
+      opensuse-leap)
+        distro="openSUSE_Leap_${VERSION_ID}"
+        ;;
+      sles)
+        distro="SLE_${VERSION_ID}"
+        ;;
+      *)
+        err "Unsupported distribution for zypper: ${ID:-unknown}"
+        return 1
+        ;;
+      esac
+    fi
+    if [[ -z "${distro}" ]]; then
+      err "Cannot detect distribution for OBS repository"
+      return 1
+    fi
+    sudo zypper addrepo -f "https://download.opensuse.org/repositories/home:/xooooooooox:/radp/${distro}/home:xooooooooox:radp.repo"
+    ;;
+  *)
+    err "Unknown package manager: ${pkm}"
+    return 1
+    ;;
+  esac
+}
+
+refresh_cache() {
+  local pkm="$1"
+
+  log "Refreshing package cache..."
+
+  case "${pkm}" in
+  homebrew)
+    brew update >/dev/null 2>&1 || true
+    ;;
+  dnf)
+    sudo dnf clean all >/dev/null 2>&1 || true
+    sudo dnf makecache >/dev/null 2>&1 || true
+    ;;
+  yum)
+    sudo yum clean all >/dev/null 2>&1 || true
+    sudo yum makecache >/dev/null 2>&1 || true
+    ;;
+  apt)
+    sudo apt-get update >/dev/null 2>&1 || true
+    ;;
+  zypper)
+    sudo zypper refresh >/dev/null 2>&1 || true
+    ;;
+  esac
+}
+
+install_via_pkm() {
+  local pkm="$1"
+
+  refresh_cache "${pkm}"
+
+  log "Installing ${REPO_NAME} via ${pkm}..."
+
+  case "${pkm}" in
+  homebrew)
+    brew install __PROJECT_NAME__
+    ;;
+  dnf)
+    sudo dnf install -y __PROJECT_NAME__
+    ;;
+  yum)
+    sudo yum install -y __PROJECT_NAME__
+    ;;
+  apt)
+    sudo apt-get install -y __PROJECT_NAME__
+    ;;
+  zypper)
+    sudo zypper install -y __PROJECT_NAME__
+    ;;
+  *)
+    err "Unknown package manager: ${pkm}"
+    return 1
+    ;;
+  esac
+}
+
+# ============================================================================
+# Manual Installation
+# ============================================================================
+
+detect_fetcher() {
+  if have curl; then
+    echo "curl"
+    return 0
+  fi
+  if have wget; then
+    echo "wget"
+    return 0
+  fi
+  if have fetch; then
+    echo "fetch"
+    return 0
+  fi
+  return 1
+}
+
+fetch_url() {
+  local tool="$1"
+  local url="$2"
+  local out="$3"
+
+  case "${tool}" in
+  curl)
+    curl -fsSL "${url}" -o "${out}"
+    ;;
+  wget)
+    wget -qO "${out}" "${url}"
+    ;;
+  fetch)
+    fetch -qo "${out}" "${url}"
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+fetch_text() {
+  local tool="$1"
+  local url="$2"
+
+  case "${tool}" in
+  curl)
+    curl -fsSL "${url}"
+    ;;
+  wget)
+    wget -qO- "${url}"
+    ;;
+  fetch)
+    fetch -qo- "${url}"
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+resolve_ref() {
+  if [[ -n "${OPT_REF}" ]]; then
+    echo "${OPT_REF}"
+    return 0
+  fi
+
+  if [[ -n "${OPT_VERSION}" ]]; then
+    echo "${OPT_VERSION}"
+    return 0
+  fi
+
+  local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
+  local json
+  json="$(fetch_text "${FETCH_TOOL}" "${api_url}" || true)"
+  if [[ -z "${json}" ]]; then
+    die "Failed to fetch latest release; use --ref <branch|tag> to specify."
+  fi
+
+  local tag
+  tag="$(sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<<"${json}")"
+  tag="${tag%%$'\n'*}"
+  if [[ -z "${tag}" ]]; then
+    die "Failed to parse latest tag; use --ref <branch|tag> to specify."
+  fi
+  echo "${tag}"
+}
+
+cleanup() {
+  if [[ -n "${tmp_dir:-}" ]]; then
+    rm -rf "${tmp_dir}"
+  fi
+}
+
+install_manual() {
+  FETCH_TOOL="$(detect_fetcher)" || die "Requires curl, wget, or fetch."
+
+  local install_dir="${OPT_INSTALL_DIR:-$HOME/.local/lib/${REPO_NAME}}"
+  local bin_dir="${OPT_BIN_DIR:-$HOME/.local/bin}"
+  local ref
+  ref="$(resolve_ref)"
+
+  if [[ -z "${install_dir}" || "${install_dir}" == "/" ]]; then
+    die "Unsafe install dir: ${install_dir}"
+  fi
+  if [[ "${__PROJECT_UPPER___ALLOW_ANY_DIR:-0}" != "1" ]]; then
+    if [[ "$(basename "${install_dir}")" != "${REPO_NAME}" ]]; then
+      die "Install dir must end with ${REPO_NAME} (set __PROJECT_UPPER___ALLOW_ANY_DIR=1 to override)."
+    fi
+  fi
+
+  local tar_url="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/${ref}.tar.gz"
+  tmp_dir="$(mktemp -d 2>/dev/null || mktemp -d -t "${REPO_NAME}")"
+  local tarball="${tmp_dir}/${REPO_NAME}.tar.gz"
+  trap cleanup EXIT
+
+  log "Downloading ${tar_url}"
+  if ! fetch_url "${FETCH_TOOL}" "${tar_url}" "${tarball}"; then
+    die "Failed to download ${tar_url}"
+  fi
+
+  local tar_listing
+  tar_listing="$(tar -tzf "${tarball}")"
+  local root_dir="${tar_listing%%/*}"
+  if [[ -z "${root_dir}" ]]; then
+    die "Unable to read archive structure."
+  fi
+
+  tar -xzf "${tarball}" -C "${tmp_dir}"
+  local src_root="${tmp_dir}/${root_dir}"
+  if [[ ! -d "${src_root}/bin" || ! -d "${src_root}/src" ]]; then
+    die "Archive layout unexpected; missing bin/ or src/."
+  fi
+
+  rm -rf "${install_dir}"
+  mkdir -p "${install_dir}"
+  cp -R "${src_root}/bin" "${install_dir}/"
+  cp -R "${src_root}/src" "${install_dir}/"
+
+  # Remove IDE support files (development only, not needed at runtime)
+  find "${install_dir}/src" -name "_ide*.sh" -delete 2>/dev/null || true
+
+  chmod 0755 "${install_dir}/bin/__PROJECT_NAME__"
+  find "${install_dir}/src" -type f -name "*.sh" -exec chmod 0755 {} \;
+
+  # Write install method marker for uninstall
+  echo "manual" >"${install_dir}/.install-method"
+  echo "${ref}" >"${install_dir}/.install-ref"
+
+  # Write actual installed version for banner display
+  local installed_version
+  if [[ "${ref}" =~ ^v[0-9]+\.[0-9]+ ]]; then
+    installed_version="${ref}"
+  else
+    local base_version
+    base_version=$(grep -oE 'version:[[:space:]]*v[0-9]+\.[0-9]+\.[0-9]+' \
+      "${install_dir}/src/main/shell/config/config.yaml" 2>/dev/null \
+      | head -1 | sed 's/.*version:[[:space:]]*//' || echo "v0.0.0")
+    installed_version="${base_version}+${ref}"
+  fi
+  echo "${installed_version}" >"${install_dir}/.install-version"
+
+  mkdir -p "${bin_dir}"
+  local target="${install_dir}/bin/__PROJECT_NAME__"
+  local link_path="${bin_dir}/__PROJECT_NAME__"
+  if [[ -e "${link_path}" && ! -L "${link_path}" ]]; then
+    die "Refusing to overwrite existing file: ${link_path}"
+  fi
+  ln -sf "${target}" "${link_path}"
+
+  log ""
+  log "Installed ${REPO_NAME} (ref: ${ref}) to ${install_dir}"
+  log "Symlinked to ${link_path}"
+  log "Ensure ${bin_dir} is in your PATH."
+}
+
+print_post_install() {
+  local bin_dir="${OPT_BIN_DIR:-$HOME/.local/bin}"
+
+  log ""
+  log "Installation complete!"
+  log ""
+  log "Prerequisites:"
+  log "  - radp-bash-framework must be installed and in PATH"
+  log "  See: https://github.com/xooooooooox/radp-bash-framework"
+
+  if [[ ":$PATH:" != *":${bin_dir}:"* ]]; then
+    log ""
+    log "Note: ${bin_dir} is not in your PATH."
+    log "Add it to your shell profile:"
+    log "  export PATH=\"${bin_dir}:\$PATH\""
+  fi
+
+  log ""
+  log "Run: hash -r && __PROJECT_NAME__ --help"
+}
+
+# ============================================================================
+# Main
+# ============================================================================
+
+main() {
+  parse_args "$@"
+
+  local mode="${OPT_MODE}"
+
+  # --ref implies manual installation with pkm conflict resolution
+  if [[ -n "${OPT_REF}" ]]; then
+    log "Installing from ref: ${OPT_REF}"
+
+    local existing_pkm
+    existing_pkm="$(detect_pkm_installed)"
+    if [[ -n "${existing_pkm}" ]]; then
+      log "Detected existing package-manager installation (${existing_pkm})"
+      uninstall_pkm "${existing_pkm}" || die "Failed to remove package-manager version"
+    fi
+
+    install_manual
+    print_post_install
+    return 0
+  fi
+
+  local pkm=""
+
+  case "${mode}" in
+  manual)
+    log "Using manual installation (--mode manual)"
+    install_manual
+    print_post_install
+    return 0
+    ;;
+  homebrew | dnf | yum | apt | zypper)
+    pkm="${mode}"
+    if ! have "${pkm}" && [[ "${pkm}" != "homebrew" ]]; then
+      die "Package manager '${pkm}' not found"
+    fi
+    if [[ "${pkm}" == "homebrew" ]] && ! have brew; then
+      die "Homebrew not found"
+    fi
+    ;;
+  auto | "")
+    pkm="$(detect_package_manager)"
+    if [[ -z "${pkm}" ]]; then
+      log "No supported package manager detected, using manual installation"
+      install_manual
+      print_post_install
+      return 0
+    fi
+    log "Detected package manager: ${pkm}"
+    ;;
+  *)
+    die "Unknown install mode: ${mode}. Use: auto, manual, homebrew, dnf, yum, apt, zypper"
+    ;;
+  esac
+
+  # Check for existing manual installation and remove it
+  local manual_install_dir="${OPT_INSTALL_DIR:-$HOME/.local/lib/${REPO_NAME}}"
+  if [[ -f "${manual_install_dir}/.install-method" ]] &&
+    [[ "$(cat "${manual_install_dir}/.install-method")" == "manual" ]]; then
+    log "Detected existing manual installation at ${manual_install_dir}"
+    log "Removing manual installation to avoid conflicts..."
+    local manual_bin_dir="${OPT_BIN_DIR:-$HOME/.local/bin}"
+    local manual_link="${manual_bin_dir}/__PROJECT_NAME__"
+    if [[ -L "${manual_link}" ]]; then
+      rm -f "${manual_link}"
+    fi
+    rm -rf "${manual_install_dir}"
+    log "Manual installation removed"
+  fi
+
+  if ! check_repo_configured "${pkm}"; then
+    log "Repository not configured for ${pkm}"
+    setup_repo "${pkm}" || {
+      err "Failed to setup repository, falling back to manual installation"
+      install_manual
+      print_post_install
+      return 0
+    }
+  fi
+
+  install_via_pkm "${pkm}" || {
+    err "Package manager installation failed, falling back to manual installation"
+    install_manual
+    print_post_install
+    return 0
+  }
+
+  log "Successfully installed ${REPO_NAME} via ${pkm}"
+  print_post_install
+}
+
+main "$@"
+INSTALL_SCRIPT
+
+  # Note: Caller must replace placeholders:
+  # - __PROJECT_NAME__ -> project_name
+  # - __PROJECT_UPPER__ -> PROJECT_NAME (uppercase)
+  # - __PROJECT_VAR__ -> project_var
+}
+
+#######################################
+# Generate Debian control file content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete debian/control content to stdout
+#######################################
+radp_packaging_content_debian_control() {
+  local project_name="$1"
+
+  cat <<CONTROL
+Source: ${project_name}
+Section: utils
+Priority: optional
+Maintainer: xooooooooox <xozoz.sos@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/xooooooooox/${project_name}
+Rules-Requires-Root: no
+
+Package: ${project_name}
+Architecture: all
+Depends: \${misc:Depends}, bash, coreutils, radp-bash-framework
+Description: CLI tool built with radp-bash-framework.
+ ${project_name} is a CLI tool built with radp-bash-framework.
+CONTROL
+}
+
+#######################################
+# Generate Debian rules file content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete debian/rules content to stdout
+#######################################
+radp_packaging_content_debian_rules() {
+  local project_name="$1"
+
+  cat <<RULES
+#!/usr/bin/make -f
+
+%:
+	dh \$@
+
+override_dh_auto_configure:
+	:
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_install:
+	:
+
+override_dh_fixperms:
+	dh_fixperms
+	# Remove IDE support files (development only, not needed at runtime)
+	find debian/${project_name}/usr/lib/${project_name}/src -name "_ide*.sh" -delete 2>/dev/null || true
+	chmod 0755 debian/${project_name}/usr/lib/${project_name}/bin/${project_name}
+	find debian/${project_name}/usr/lib/${project_name}/src -type f -name '*.sh' -exec chmod 0755 {} \;
+RULES
+}
+
+#######################################
+# Generate Debian install file content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete debian/<project>.install content to stdout
+#######################################
+radp_packaging_content_debian_install() {
+  local project_name="$1"
+
+  cat <<INSTALL
+bin usr/lib/${project_name}
+src usr/lib/${project_name}
+INSTALL
+}
+
+#######################################
+# Generate Debian links file content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete debian/<project>.links content to stdout
+#######################################
+radp_packaging_content_debian_links() {
+  local project_name="$1"
+
+  cat <<LINKS
+usr/lib/${project_name}/bin/${project_name} usr/bin/${project_name}
+LINKS
+}
+
+#######################################
+# Generate Debian changelog file content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete debian/changelog content to stdout
+#######################################
+radp_packaging_content_debian_changelog() {
+  local project_name="$1"
+
+  cat <<CHANGELOG
+${project_name} (0.0.0-1) unstable; urgency=medium
+
+  * Placeholder entry. The CI workflow rewrites this changelog.
+
+ -- xooooooooox <xozoz.sos@gmail.com>  Thu, 01 Jan 1970 00:00:00 +0000
+CHANGELOG
+}
+
+#######################################
+# Generate Debian copyright file content
+# Arguments:
+#   1 - project_name: Project name
+# Outputs:
+#   Complete debian/copyright content to stdout
+#######################################
+radp_packaging_content_debian_copyright() {
+  local project_name="$1"
+
+  cat <<COPYRIGHT
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: ${project_name}
+Source: https://github.com/xooooooooox/${project_name}
+
+Files: *
+Copyright: 2024-present xooooooooox
+License: MIT
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+COPYRIGHT
 }
