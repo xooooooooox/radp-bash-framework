@@ -776,10 +776,21 @@ __radp_upgrade_packaging() {
   local checksum_dir="$target_dir/.radp-cli/checksums/packaging"
   local has_changes=false
 
-  # 如果 packaging 目录不存在，跳过
+  # 如果 packaging 目录不存在
   if [[ ! -d "$packaging_dir" ]]; then
-    echo "  [SKIP] packaging/ (directory not found)"
-    return 1
+    if [[ "$force" == "true" ]]; then
+      # --force: 创建 packaging 目录
+      if [[ "$dry_run" == "true" ]]; then
+        echo "  [CREATE] packaging/ (will be created with --force)"
+      else
+        mkdir -p "$packaging_dir"
+        echo "  [CREATE] packaging/"
+      fi
+      has_changes=true
+    else
+      echo "  [SKIP] packaging/ (directory not found, use --force to create)"
+      return 1
+    fi
   fi
 
   # 定义打包文件列表

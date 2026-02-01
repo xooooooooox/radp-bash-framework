@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.5
+## v0.7.6
 
 ### feat
 
@@ -22,6 +22,9 @@
 - Fix CLI project bash completion not working when installed via package manager on Linux
   - Add completion files to scaffold packaging templates (spec, debian install)
   - Completions now installed to system directories for auto-loading
+- Fix `radp-bf upgrade --force` not creating packaging directory when it doesn't exist
+  - Now creates `packaging/` and all packaging files when `--force` is used
+  - Without `--force`, shows hint message to use `--force` to create
 
 ### refactor
 
