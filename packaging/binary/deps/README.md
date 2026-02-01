@@ -4,11 +4,11 @@ This directory contains information about bundled dependencies for the portable 
 
 ## Dependencies
 
-| Dependency     | Version | Description                          |
-|----------------|---------|--------------------------------------|
-| **bash**       | 5.2.21  | Bash shell (static binary for Linux) |
-| **gnu-getopt** | 2.39    | GNU getopt from util-linux           |
-| **yq**         | v4.44.1 | YAML processor                       |
+| Dependency     | Version         | Description                          |
+|----------------|-----------------|--------------------------------------|
+| **bash**       | 5.2.015-1.2.3-2 | Bash shell (static binary for Linux) |
+| **gnu-getopt** | 2.39            | GNU getopt from util-linux           |
+| **yq**         | v4.44.1         | YAML processor                       |
 
 ## Sources
 

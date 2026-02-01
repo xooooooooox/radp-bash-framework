@@ -18,7 +18,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Dependency versions (use RADP_* prefix to avoid conflict with bash built-ins)
-RADP_BASH_VERSION="${RADP_BASH_VERSION:-5.2.21}"
+# bash-static releases: https://github.com/robxu9/bash-static/releases
+RADP_BASH_VERSION="${RADP_BASH_VERSION:-5.2.015-1.2.3-2}"
 RADP_YQ_VERSION="${RADP_YQ_VERSION:-v4.44.1}"
 RADP_UTIL_LINUX_VERSION="${RADP_UTIL_LINUX_VERSION:-2.39}"
 
