@@ -17,10 +17,10 @@ set -euo pipefail
 #######################################
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Dependency versions
-BASH_VERSION="${BASH_VERSION:-5.2.21}"
-YQ_VERSION="${YQ_VERSION:-v4.44.1}"
-UTIL_LINUX_VERSION="${UTIL_LINUX_VERSION:-2.39}"
+# Dependency versions (use RADP_* prefix to avoid conflict with bash built-ins)
+RADP_BASH_VERSION="${RADP_BASH_VERSION:-5.2.21}"
+RADP_YQ_VERSION="${RADP_YQ_VERSION:-v4.44.1}"
+RADP_UTIL_LINUX_VERSION="${RADP_UTIL_LINUX_VERSION:-2.39}"
 
 # Download URLs
 BASH_STATIC_BASE="https://github.com/robxu9/bash-static/releases/download"
@@ -222,8 +222,8 @@ BASH_WRAPPER
   fi
 
   # For Linux, download static bash
-  local url="${BASH_STATIC_BASE}/${BASH_VERSION}/bash-${os}-${bash_arch}"
-  local checksum_name="bash-${os}-${bash_arch}-${BASH_VERSION}"
+  local url="${BASH_STATIC_BASE}/${RADP_BASH_VERSION}/bash-${os}-${bash_arch}"
+  local checksum_name="bash-${os}-${bash_arch}-${RADP_BASH_VERSION}"
   local expected_checksum
   expected_checksum=$(get_expected_checksum "$checksum_name")
 
@@ -256,8 +256,8 @@ download_yq() {
   local yq_name
   yq_name=$(get_platform_info "$platform" "yq_name")
 
-  local url="${YQ_BASE}/${YQ_VERSION}/${yq_name}"
-  local checksum_name="${yq_name}-${YQ_VERSION}"
+  local url="${YQ_BASE}/${RADP_YQ_VERSION}/${yq_name}"
+  local checksum_name="${yq_name}-${RADP_YQ_VERSION}"
   local expected_checksum
   expected_checksum=$(get_expected_checksum "$checksum_name")
 
