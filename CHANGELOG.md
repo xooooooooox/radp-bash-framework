@@ -2,6 +2,27 @@
 
 ## v0.7.5
 
+### feat
+
+- Add portable single-file executable build support
+  - Standard version (~100KB): requires system bash 4.3+, gnu-getopt, yq
+  - Full version (~20MB): bundled bash, gnu-getopt, yq - zero external dependencies
+  - Supported platforms: linux-amd64, linux-arm64, darwin-amd64, darwin-arm64
+  - Cache-based extraction to `~/.cache/radp-bf/` for fast subsequent runs
+- Add `radp-bf self-update` command for portable installations
+  - Check for updates: `radp-bf self-update --check`
+  - Update to latest: `radp-bf self-update`
+  - Force update: `radp-bf self-update --force`
+  - Switch to full version: `radp-bf self-update --full`
+- Add GitHub workflow for building portable binaries on release
+- Skip dependency checks when using bundled deps (RADP_BF_BUNDLED_DEPS)
+
+### fix
+
+- Fix CLI project bash completion not working when installed via package manager on Linux
+  - Add completion files to scaffold packaging templates (spec, debian install)
+  - Completions now installed to system directories for auto-loading
+
 ### refactor
 
 - Refactor `radp-bf` CLI to standard command-based structure
@@ -17,27 +38,6 @@
     - `packaging/copr/radp-bash-framework.spec` - Fedora/RHEL RPM
     - `packaging/obs/radp-bash-framework.spec` - openSUSE/Debian packages
     - `packaging/binary/build-portable.sh` - portable binary build
-
-### fix
-
-- fix CLI project bash completion not work when installed via pkm on linux.
-
-## v0.7.2
-
-### feat
-
-- Add portable single-file executable build support
-  - Standard version (~100KB): requires system bash 4.3+, gnu-getopt, yq
-  - Full version (~20MB): bundled bash, gnu-getopt, yq - zero external dependencies
-  - Supported platforms: linux-amd64, linux-arm64, darwin-amd64, darwin-arm64
-  - Cache-based extraction to `~/.cache/radp-bf/` for fast subsequent runs
-- Add `radp-bf self-update` command for portable installations
-  - Check for updates: `radp-bf self-update --check`
-  - Update to latest: `radp-bf self-update`
-  - Force update: `radp-bf self-update --force`
-  - Switch to full version: `radp-bf self-update --full`
-- Add GitHub workflow for building portable binaries on release
-- Skip dependency checks when using bundled deps (RADP_BF_BUNDLED_DEPS)
 
 ## v0.6.32
 
