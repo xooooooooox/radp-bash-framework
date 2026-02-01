@@ -29,40 +29,67 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux Ubuntu (primary)
+          # Linux Ubuntu - standard
           - os: ubuntu-latest
             platform: linux-amd64
-            container: null
+            variant: standard
             suffix: ""
           - os: ubuntu-latest
             platform: linux-arm64
-            container: null
+            variant: standard
+            suffix: ""
+          # Linux Ubuntu - full
+          - os: ubuntu-latest
+            platform: linux-amd64
+            variant: full
+            suffix: ""
+          - os: ubuntu-latest
+            platform: linux-arm64
+            variant: full
             suffix: ""
           # Linux CentOS Stream 9
           - os: ubuntu-latest
             platform: linux-amd64
             container: quay.io/centos/centos:stream9
-            suffix: "-el9"
+            variant: standard
+            suffix: "el9"
+          - os: ubuntu-latest
+            platform: linux-amd64
+            container: quay.io/centos/centos:stream9
+            variant: full
+            suffix: "el9"
           # Linux CentOS 7
           - os: ubuntu-latest
             platform: linux-amd64
             container: centos:7
-            suffix: "-el7"
-          # macOS
-          - os: macos-latest
+            variant: standard
+            suffix: "el7"
+          - os: ubuntu-latest
+            platform: linux-amd64
+            container: centos:7
+            variant: full
+            suffix: "el7"
+          # macOS Intel
+          - os: macos-13
             platform: darwin-amd64
-            container: null
+            variant: standard
+            suffix: ""
+          - os: macos-13
+            platform: darwin-amd64
+            variant: full
+            suffix: ""
+          # macOS Apple Silicon
+          - os: macos-14
+            platform: darwin-arm64
+            variant: standard
             suffix: ""
           - os: macos-14
             platform: darwin-arm64
-            container: null
+            variant: full
             suffix: ""
-        variant:
-          - standard
-          - full
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
+    container: ${{ matrix.container || '' }}
 
     steps:
       - name: Fix CentOS 7 yum repos (EOL)
@@ -91,7 +118,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup build environment (Ubuntu ARM64)
-        if: matrix.platform == 'linux-arm64' && matrix.container == null
+        if: matrix.platform == 'linux-arm64' && !matrix.container
         run: |
           # For ARM64 builds on x86_64, we just build the package
           # The actual ARM64 testing would require QEMU or native ARM runner
@@ -148,7 +175,7 @@ jobs:
           /opt/homebrew/bin/bash --version || /usr/local/bin/bash --version
 
       - name: Test portable binary (non-container)
-        if: matrix.container == null && matrix.variant == 'standard'
+        if: ${{ !matrix.container && matrix.variant == 'standard' }}
         shell: bash
         run: |
           binary_name="radp-bf-portable-${{ matrix.platform }}"
@@ -160,7 +187,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: portable-${{ matrix.variant }}-${{ matrix.platform }}${{ matrix.suffix }}
+          name: portable-${{ matrix.variant }}-${{ matrix.platform }}${{ matrix.suffix && format('-{0}', matrix.suffix) || '' }}
           path: dist/radp-bf-portable*
           if-no-files-found: error
           retention-days: 7
