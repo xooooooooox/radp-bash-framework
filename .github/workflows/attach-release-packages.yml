@@ -6,6 +6,7 @@ on:
       - Build COPR package
       - Build OBS package
       - Update Homebrew Tap
+      - Build Portable Binary
     types:
       - completed
   workflow_dispatch:
@@ -700,6 +701,50 @@ jobs:
           fi
           mkdir -p release-assets/homebrew
           curl -L --fail --show-error -o release-assets/homebrew/homebrew-radp-bash-framework.rb "${TAP_FORMULA_URL}"
+
+      - name: Download portable binaries
+        if: >-
+          ${{
+            steps.release.outputs.should_upload == 'true' &&
+            (github.event_name != 'workflow_run' ||
+            github.event.workflow_run.name == 'Build Portable Binary')
+          }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets/portable
+
+          # List of expected portable binaries
+          platforms=(
+            "linux-amd64"
+            "linux-arm64"
+            "linux-amd64-el9"
+            "linux-amd64-el7"
+            "darwin-amd64"
+            "darwin-arm64"
+          )
+
+          # Download from GitHub release (if already uploaded by build-portable workflow)
+          for platform in "${platforms[@]}"; do
+            for variant in "" "-full"; do
+              filename="radp-bf-portable${variant}-${platform}"
+              url="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/${filename}"
+
+              echo "Checking for: $filename"
+              if curl -fsSL --head "$url" >/dev/null 2>&1; then
+                echo "Downloading: $filename"
+                curl -fsSL -o "release-assets/portable/${filename}" "$url" || true
+              fi
+            done
+          done
+
+          # List downloaded files
+          echo "Downloaded portable binaries:"
+          ls -la release-assets/portable/ 2>/dev/null || echo "No portable binaries downloaded"
 
       - name: Upload assets to release
         if: steps.release.outputs.should_upload == 'true'

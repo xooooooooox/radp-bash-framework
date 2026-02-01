@@ -24,12 +24,14 @@ src/main/shell/framework/bootstrap/context/cache
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+### Build outputs ###
+/dist/
 
 ### VS Code ###
 .vscode/

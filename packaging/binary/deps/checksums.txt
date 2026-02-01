@@ -1,0 +1,22 @@
+# SHA256 checksums for bundled dependencies
+# Format: <name> <sha256sum>
+#
+# These checksums are used by bundle-deps.sh to verify downloaded binaries.
+# Update this file when dependency versions change.
+#
+# To generate checksums:
+#   sha256sum <file>
+#   shasum -a 256 <file>  # macOS
+
+# bash-static 5.2.21 (from robxu9/bash-static)
+# bash-linux-x86_64-5.2.21 <checksum-to-be-filled>
+# bash-linux-aarch64-5.2.21 <checksum-to-be-filled>
+
+# yq v4.44.1 (from mikefarah/yq)
+# yq_linux_amd64-v4.44.1 <checksum-to-be-filled>
+# yq_linux_arm64-v4.44.1 <checksum-to-be-filled>
+# yq_darwin_amd64-v4.44.1 <checksum-to-be-filled>
+# yq_darwin_arm64-v4.44.1 <checksum-to-be-filled>
+
+# Note: Checksums will be populated during CI builds or manual verification.
+# The build process will warn if checksums are not available but will continue.

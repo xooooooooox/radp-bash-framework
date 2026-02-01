@@ -19,6 +19,7 @@ Commands:
   path <name>           Print framework path (init|launcher|root)
   resolve-root <path>   Resolve project root from script path (for entry scripts)
   completion <shell>    Generate shell completion script (bash|zsh)
+  self-update [opts]    Update radp-bf to the latest version (portable only)
   version               Show version
   help                  Show this help
 
@@ -27,6 +28,11 @@ Upgrade options:
   --force               Overwrite user-modified files
   --diff                Show file differences
   Components: entry, ide, gitignore, all (default: all)
+
+Self-update options:
+  --check               Only check for updates, don't download
+  --force               Force update even if already at latest version
+  --full                Download full version with bundled dependencies
 
 Path names:
   init       Path to init.sh (framework initializer)
@@ -42,6 +48,8 @@ Examples:
   radp-bf --debug upgrade .           # Upgrade with debug output
   radp-bf completion bash             # Generate bash completion
   radp-bf completion zsh              # Generate zsh completion
+  radp-bf self-update                 # Update to latest version
+  radp-bf self-update --check         # Check for updates
   source "$(radp-bf path init)" "$@"
   export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
   source "$(radp-bf path launcher)" "$@"
@@ -173,6 +181,11 @@ __radp_bf_main() {
   completion)
     shift
     radp_cli_bf_completion_generate "${1:-}"
+    return $?
+    ;;
+  self-update)
+    shift
+    radp_cli_self_update "$@"
     return $?
     ;;
   *)

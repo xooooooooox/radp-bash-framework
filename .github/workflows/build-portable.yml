@@ -1,0 +1,233 @@
+name: Build Portable Binary
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., v0.6.32)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux Ubuntu (primary)
+          - os: ubuntu-latest
+            platform: linux-amd64
+            container: null
+            suffix: ""
+          - os: ubuntu-latest
+            platform: linux-arm64
+            container: null
+            suffix: ""
+          # Linux CentOS Stream 9
+          - os: ubuntu-latest
+            platform: linux-amd64
+            container: quay.io/centos/centos:stream9
+            suffix: "-el9"
+          # Linux CentOS 7
+          - os: ubuntu-latest
+            platform: linux-amd64
+            container: centos:7
+            suffix: "-el7"
+          # macOS
+          - os: macos-latest
+            platform: darwin-amd64
+            container: null
+            suffix: ""
+          - os: macos-14
+            platform: darwin-arm64
+            container: null
+            suffix: ""
+        variant:
+          - standard
+          - full
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+
+    steps:
+      - name: Fix CentOS 7 yum repos (EOL)
+        if: matrix.container == 'centos:7'
+        run: |
+          sed -i -r \
+            -e 's|^mirrorlist=|#mirrorlist=|g' \
+            -e 's|^#?baseurl=http://mirror.centos.org/centos|baseurl=https://vault.centos.org/centos|g' \
+            -e 's|^#?baseurl=http://mirror.centos.org/altarch|baseurl=https://vault.centos.org/altarch|g' \
+            /etc/yum.repos.d/CentOS-*.repo
+          yum clean all && yum makecache
+
+      - name: Install dependencies (CentOS 7)
+        if: matrix.container == 'centos:7'
+        run: |
+          yum install -y git curl tar gzip
+
+      - name: Install dependencies (CentOS Stream 9)
+        if: matrix.container == 'quay.io/centos/centos:stream9'
+        run: |
+          dnf install -y git curl tar gzip
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup build environment (Ubuntu ARM64)
+        if: matrix.platform == 'linux-arm64' && matrix.container == null
+        run: |
+          # For ARM64 builds on x86_64, we just build the package
+          # The actual ARM64 testing would require QEMU or native ARM runner
+          echo "Building for linux-arm64 (cross-build)"
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            version="${{ github.event.inputs.version }}"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            # Read from constants.sh
+            version=$(grep -E '^declare -gr gr_fw_version=' \
+              src/main/shell/framework/bootstrap/context/vars/constants/constants.sh | \
+              sed 's/.*=//' | tr -d '"' | tr -d "'")
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building version: $version"
+
+      - name: Build standard portable
+        if: matrix.variant == 'standard'
+        shell: bash
+        run: |
+          chmod +x packaging/binary/build-portable.sh
+          ./packaging/binary/build-portable.sh \
+            --platform "${{ matrix.platform }}" \
+            ${{ matrix.suffix != '' && format('--suffix {0}', matrix.suffix) || '' }}
+
+      - name: Build full portable
+        if: matrix.variant == 'full'
+        shell: bash
+        run: |
+          chmod +x packaging/binary/build-portable.sh packaging/binary/bundle-deps.sh
+          ./packaging/binary/build-portable.sh \
+            --platform "${{ matrix.platform }}" \
+            --with-deps \
+            ${{ matrix.suffix != '' && format('--suffix {0}', matrix.suffix) || '' }}
+
+      - name: List artifacts
+        shell: bash
+        run: |
+          echo "Built artifacts:"
+          ls -la dist/
+
+      - name: Test portable binary (non-container)
+        if: matrix.container == null && matrix.variant == 'standard'
+        shell: bash
+        run: |
+          binary_name="radp-bf-portable-${{ matrix.platform }}"
+          echo "Testing $binary_name..."
+          chmod +x "dist/$binary_name"
+          "dist/$binary_name" --help
+          "dist/$binary_name" version
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-${{ matrix.variant }}-${{ matrix.platform }}${{ matrix.suffix }}
+          path: dist/radp-bf-portable*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f -name 'radp-bf-portable*' -exec cp {} release-assets/ \;
+          echo "Release assets:"
+          ls -la release-assets/
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+
+          # Create release if it doesn't exist
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "$tag" \
+              --generate-notes
+          fi
+
+          # Upload all assets
+          mapfile -t assets < <(find release-assets -type f | sort)
+          if [[ ${#assets[@]} -gt 0 ]]; then
+            gh release upload "$tag" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+            echo "Uploaded ${#assets[@]} portable binaries to release $tag"
+          fi
+
+  # Test job for portable binaries
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-22.04
+            image: ubuntu:22.04
+            artifact: portable-standard-linux-amd64
+          - name: alpine
+            image: alpine:latest
+            artifact: portable-full-linux-amd64
+          - name: centos-stream-9
+            image: quay.io/centos/centos:stream9
+            artifact: portable-standard-linux-amd64-el9
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist
+
+      - name: Test in container
+        run: |
+          # Find the binary
+          binary=$(find dist -type f -name 'radp-bf-portable*' | head -1)
+          chmod +x "$binary"
+
+          echo "Testing in ${{ matrix.image }}..."
+          docker run --rm \
+            -v "$(pwd)/dist:/dist" \
+            ${{ matrix.image }} \
+            sh -c '
+              binary=$(find /dist -type f -name "radp-bf-portable*" | head -1)
+              chmod +x "$binary"
+              echo "=== Testing version ==="
+              "$binary" version
+              echo "=== Testing help ==="
+              "$binary" --help
+            '

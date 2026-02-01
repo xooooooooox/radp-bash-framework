@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.7.0
+
+### feat
+
+- Add portable single-file executable build support
+  - Standard version (~100KB): requires system bash 4.3+, gnu-getopt, yq
+  - Full version (~20MB): bundled bash, gnu-getopt, yq - zero external dependencies
+  - Supported platforms: linux-amd64, linux-arm64, darwin-amd64, darwin-arm64
+  - CentOS/RHEL variants: el7, el9
+  - Cache-based extraction to `~/.cache/radp-bf/` for fast subsequent runs
+- Add `radp-bf self-update` command for portable installations
+  - Check for updates: `radp-bf self-update --check`
+  - Update to latest: `radp-bf self-update`
+  - Force update: `radp-bf self-update --force`
+  - Switch to full version: `radp-bf self-update --full`
+- Add GitHub workflow for building portable binaries on release
+- Skip dependency checks when using bundled deps (RADP_BF_BUNDLED_DEPS)
+
 ## v0.6.32
 
 ### feat

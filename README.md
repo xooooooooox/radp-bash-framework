@@ -47,6 +47,24 @@ comprehensive toolkit.
 
 ## Installation
 
+### Portable Binary (Single File)
+
+Download and run - no installation required:
+
+```shell
+# Standard version (~100KB) - macOS Apple Silicon
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-darwin-arm64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# Full version (~20MB, zero dependencies) - macOS Apple Silicon
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-full-darwin-arm64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+```
+
+Available platforms: `linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`
+
 ### Homebrew (macOS)
 
 ```shell
@@ -60,7 +78,7 @@ brew install radp-bash-framework
 curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
 ```
 
-See [Installation Guide](docs/installation.md) for more options (RPM, OBS, manual install, upgrade).
+See [Installation Guide](docs/installation.md) for more options (RPM, OBS, portable, manual install, upgrade).
 
 ## Quick Start
 
@@ -190,6 +208,7 @@ radp-bf new <name> [dir]      # Create new CLI project
 radp-bf upgrade [dir] [opts]  # Upgrade existing project scaffold
 radp-bf path <name>           # Print framework paths (init|launcher|root)
 radp-bf completion <shell>    # Generate shell completion (bash|zsh)
+radp-bf self-update           # Update to latest version (portable only)
 radp-bf version               # Show framework version
 ```
 

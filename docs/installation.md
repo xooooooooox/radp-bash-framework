@@ -41,6 +41,72 @@ Environment variables (`RADP_BF_REF`, `RADP_BF_VERSION`, `RADP_BF_INSTALL_MODE`,
 When `--ref` is used and a package-manager version is already installed, the script automatically removes it first to
 avoid conflicts.
 
+### Portable Binary
+
+Download a single executable file - no installation required:
+
+**Standard Version** (~100KB) - Requires system bash 4.3+, gnu-getopt, yq:
+
+```shell
+# macOS Apple Silicon
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-darwin-arm64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# macOS Intel
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-darwin-amd64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# Linux x86_64
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-linux-amd64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# Linux ARM64
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-linux-arm64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+```
+
+**Full Version** (~20MB) - Zero external dependencies, includes bundled bash, gnu-getopt, yq:
+
+```shell
+# macOS Apple Silicon
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-full-darwin-arm64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# macOS Intel
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-full-darwin-amd64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# Linux x86_64
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-full-linux-amd64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+
+# Linux ARM64
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-full-linux-arm64
+chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
+```
+
+**CentOS/RHEL Variants:**
+
+```shell
+# CentOS Stream 9 / RHEL 9
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-linux-amd64-el9
+
+# CentOS 7 / RHEL 7
+curl -fsSL -o radp-bf \
+  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-linux-amd64-el7
+```
+
+The portable binary extracts to `~/.cache/radp-bf/` on first run and uses this cache for subsequent runs.
+
 ## Package Manager Install
 
 ### RPM (Fedora/RHEL/CentOS via COPR)
@@ -151,6 +217,24 @@ source "$(radp-bf path init)"
 Add to `~/.bashrc` for automatic loading on shell startup.
 
 ## Upgrade
+
+### Portable Binary (self-update)
+
+The portable version supports self-update:
+
+```shell
+# Check for updates
+radp-bf self-update --check
+
+# Update to latest version
+radp-bf self-update
+
+# Force update (even if already at latest)
+radp-bf self-update --force
+
+# Update to full version (with bundled dependencies)
+radp-bf self-update --full
+```
 
 ### Homebrew
 

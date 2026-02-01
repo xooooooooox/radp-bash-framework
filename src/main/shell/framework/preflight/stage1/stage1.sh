@@ -19,6 +19,7 @@ __BASH_INSTALL_VERSION="${RADP_BASH_INSTALL_VERSION:-5.2.21}"
 # Globals:
 #   gw_fw_requirements_bash_reexec - Set if bash was installed and re-exec needed
 #   gw_fw_requirements_bash_bin - Set to the bash binary path
+#   RADP_BF_BUNDLED_DEPS - If set, use bundled bash (skip check/install)
 # Arguments:
 #   @ - command line arguments
 # Returns:
@@ -26,6 +27,13 @@ __BASH_INSTALL_VERSION="${RADP_BASH_INSTALL_VERSION:-5.2.21}"
 #   1 - Failed
 #######################################
 __stage1_main() {
+  # If bundled deps are available, use bundled bash
+  if [ -n "${RADP_BF_BUNDLED_DEPS:-}" ] && [ -x "${RADP_BF_BUNDLED_DEPS}/bash" ]; then
+    gw_fw_requirements_bash_bin="${RADP_BF_BUNDLED_DEPS}/bash"
+    export gw_fw_requirements_bash_bin
+    return 0
+  fi
+
   # Check if bash meets requirements
   if __stage1_bash_check "$__BASH_REQUIRED_VERSION"; then
     # Bash is OK, record the binary path

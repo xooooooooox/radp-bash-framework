@@ -14,6 +14,13 @@ readonly __STAGE2_DIR
 # shellcheck source=./lib.sh
 source "$__STAGE2_DIR/lib.sh"
 
+# Check if bundled dependencies are available (portable full version)
+# If so, skip all dependency checks and installations
+if [[ -n "${RADP_BF_BUNDLED_DEPS:-}" ]]; then
+  __stage2_log_info "Using bundled dependencies from portable package"
+  exit 0
+fi
+
 # Define requirements: name:check_func:install_func
 declare -a __REQUIREMENTS=(
   "gnu-getopt:__check_gnu_getopt:__install_gnu_getopt"
