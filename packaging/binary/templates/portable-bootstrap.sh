@@ -49,7 +49,7 @@ extract_archive() {
   }
 
   # Mark as extracted
-  echo "$VERSION" > "$CACHE_DIR/.extracted"
+  echo "$VERSION" >"$CACHE_DIR/.extracted"
 
   log_info "Extracted to $CACHE_DIR"
 }
@@ -63,10 +63,10 @@ needs_extraction() {
     local cached_version
     cached_version=$(cat "$CACHE_DIR/.extracted" 2>/dev/null || echo "")
     if [ "$cached_version" = "$VERSION" ]; then
-      return 1  # No extraction needed
+      return 1 # No extraction needed
     fi
   fi
-  return 0  # Extraction needed
+  return 0 # Extraction needed
 }
 
 #######################################
@@ -96,6 +96,29 @@ setup_bundled_deps() {
 }
 
 #######################################
+# Check if bash version is 4.3+
+#######################################
+check_bash_version() {
+  local bash_path="$1"
+  local version_output
+  local major minor
+
+  version_output=$("$bash_path" -c 'echo "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"' 2>/dev/null) || return 1
+
+  major="${version_output%%.*}"
+  minor="${version_output#*.}"
+
+  # Require bash 4.3+
+  if [ "$major" -gt 4 ] 2>/dev/null; then
+    return 0
+  elif [ "$major" -eq 4 ] && [ "$minor" -ge 3 ] 2>/dev/null; then
+    return 0
+  fi
+
+  return 1
+}
+
+#######################################
 # Find suitable bash
 #######################################
 find_bash() {
@@ -111,13 +134,15 @@ find_bash() {
     /usr/local/bin/bash \
     /usr/bin/bash \
     /bin/bash; do
-    if [ -x "$bash_path" ]; then
+    if [ -x "$bash_path" ] && check_bash_version "$bash_path"; then
       echo "$bash_path"
       return 0
     fi
   done
 
-  log_error "bash not found"
+  log_error "bash 4.3+ not found. Please install bash 4.3 or later."
+  log_error "  macOS: brew install bash"
+  log_error "  Linux: apt install bash / dnf install bash"
   exit 1
 }
 
@@ -126,13 +151,13 @@ find_bash() {
 #######################################
 handle_self_update() {
   case "${1:-}" in
-    self-update)
-      # Pass to radp-bf which has the self-update implementation
-      return 1
-      ;;
-    *)
-      return 1
-      ;;
+  self-update)
+    # Pass to radp-bf which has the self-update implementation
+    return 1
+    ;;
+  *)
+    return 1
+    ;;
   esac
 }
 

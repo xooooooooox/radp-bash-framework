@@ -130,6 +130,14 @@ jobs:
           echo "Built artifacts:"
           ls -la dist/
 
+      - name: Install bash 4.3+ (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          # macOS runners have bash 3.2 by default, install bash 5.x via Homebrew
+          brew install bash
+          echo "Installed bash version:"
+          /opt/homebrew/bin/bash --version || /usr/local/bin/bash --version
+
       - name: Test portable binary (non-container)
         if: matrix.container == null && matrix.variant == 'standard'
         shell: bash
