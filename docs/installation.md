@@ -93,18 +93,6 @@ curl -fsSL -o radp-bf \
 chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
 ```
 
-**CentOS/RHEL Variants:**
-
-```shell
-# CentOS Stream 9 / RHEL 9
-curl -fsSL -o radp-bf \
-  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-linux-amd64-el9
-
-# CentOS 7 / RHEL 7
-curl -fsSL -o radp-bf \
-  https://github.com/xooooooooox/radp-bash-framework/releases/latest/download/radp-bf-portable-linux-amd64-el7
-```
-
 The portable binary extracts to `~/.cache/radp-bf/` on first run and uses this cache for subsequent runs.
 
 ## Package Manager Install

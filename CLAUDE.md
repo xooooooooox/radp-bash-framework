@@ -255,9 +255,12 @@ The framework and scaffolded projects include GitHub Actions workflows:
 | `update-spec-version.yml`     | After tag creation         | Update spec Version field         |
 | `build-copr-package.yml`      | After spec update          | Trigger COPR build                |
 | `build-obs-package.yml`       | After spec update          | Sync to OBS and build             |
+| `build-portable.yml`          | Tag push or after tag      | Build portable binaries           |
 | `update-homebrew-tap.yml`     | Tag push                   | Update Homebrew formula           |
 | `attach-release-packages.yml` | After package builds       | Upload packages to release        |
 | `cleanup-branches.yml`        | Weekly schedule or manual  | Delete stale workflow branches    |
+
+Note: `build-portable.yml` is framework-specific and not included in scaffolded CLI projects.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#release-process) for detailed release process.
 

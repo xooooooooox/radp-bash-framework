@@ -8,7 +8,6 @@
   - Standard version (~100KB): requires system bash 4.3+, gnu-getopt, yq
   - Full version (~20MB): bundled bash, gnu-getopt, yq - zero external dependencies
   - Supported platforms: linux-amd64, linux-arm64, darwin-amd64, darwin-arm64
-  - CentOS/RHEL variants: el7, el9
   - Cache-based extraction to `~/.cache/radp-bf/` for fast subsequent runs
 - Add `radp-bf self-update` command for portable installations
   - Check for updates: `radp-bf self-update --check`
