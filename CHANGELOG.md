@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.7.4
+
+### refactor
+
+- Refactor `radp-bf` CLI to standard command-based structure
+
 ## v0.7.3
 
 ### refactor
