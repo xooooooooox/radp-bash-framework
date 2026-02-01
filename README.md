@@ -47,6 +47,19 @@ comprehensive toolkit.
 
 ## Installation
 
+### Homebrew (macOS)
+
+```shell
+brew tap xooooooooox/radp
+brew install radp-bash-framework
+```
+
+### Script (curl)
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
+```
+
 ### Portable Binary (Single File)
 
 Download and run - no installation required:
@@ -64,19 +77,6 @@ chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
 ```
 
 Available platforms: `linux-amd64`, `linux-arm64`, `darwin-amd64`, `darwin-arm64`
-
-### Homebrew (macOS)
-
-```shell
-brew tap xooooooooox/radp
-brew install radp-bash-framework
-```
-
-### Script (curl)
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-```
 
 See [Installation Guide](docs/installation.md) for more options (RPM, OBS, portable, manual install, upgrade).
 

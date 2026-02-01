@@ -47,6 +47,19 @@
 
 ## 安装
 
+### Homebrew (macOS)
+
+```shell
+brew tap xooooooooox/radp
+brew install radp-bash-framework
+```
+
+### 脚本安装 (curl)
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
+```
+
 ### 便携式二进制（单文件）
 
 下载即用，无需安装：
@@ -64,19 +77,6 @@ chmod +x radp-bf && sudo mv radp-bf /usr/local/bin/
 ```
 
 支持平台：`linux-amd64`、`linux-arm64`、`darwin-amd64`、`darwin-arm64`
-
-### Homebrew (macOS)
-
-```shell
-brew tap xooooooooox/radp
-brew install radp-bash-framework
-```
-
-### 脚本安装 (curl)
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/xooooooooox/radp-bash-framework/main/install.sh | bash
-```
 
 更多安装方式（RPM、OBS、便携式、手动安装、升级）请参阅 [安装指南](docs/installation.md)。
 
