@@ -1,4 +1,6 @@
-src/main/shell/bin usr/lib/radp-bash-framework
-src/main/shell/framework usr/lib/radp-bash-framework
+bin usr/lib/radp-bash-framework
+src/main/shell/commands usr/lib/radp-bash-framework/src/main/shell
+src/main/shell/config usr/lib/radp-bash-framework/src/main/shell
+src/main/shell/framework usr/lib/radp-bash-framework/src/main/shell
 completions/radp-bf usr/share/bash-completion/completions
 completions/_radp-bf usr/share/zsh/vendor-completions

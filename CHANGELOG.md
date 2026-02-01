@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.7.3
+
+### refactor
+
+- Refactor `radp-bf` CLI to standard command-based structure
+  - Move command logic from case statements to individual command files in `commands/`
+  - New structure: `src/main/shell/commands/{new,upgrade,path,resolve-root,completion,self-update,version}.sh`
+  - Add `src/main/shell/config/config.yaml` for radp-bf specific configuration
+  - Add `src/main/shell/config/_ide.sh` for IDE completion support
+  - Use standard CLI dispatch: `radp_cli_set_commands_dir` + `radp_app_run`
+  - Maintain fast path for `path` and `resolve-root` commands (handled before framework loading)
+  - All commands, arguments, options, and output formats remain backward compatible
+  - Update packaging scripts to include new `commands/` and `config/` directories:
+    - `install.sh` - manual installation
+    - `packaging/copr/radp-bash-framework.spec` - Fedora/RHEL RPM
+    - `packaging/obs/radp-bash-framework.spec` - openSUSE/Debian packages
+    - `packaging/binary/build-portable.sh` - portable binary build
+
 ## v0.7.2
 
 ### feat

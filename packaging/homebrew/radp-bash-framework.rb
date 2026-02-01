@@ -19,8 +19,9 @@ class RadpBashFramework < Formula
   license "MIT"
 
   def install
-    # Install framework to libexec
-    libexec.install Dir["src/main/shell/*"]
+    # Install framework with standard CLI project structure
+    libexec.install "bin"
+    (libexec/"src/main/shell").install Dir["src/main/shell/*"]
 
     # Create bin wrapper for radp-bf CLI
     (bin/"radp-bf").write <<~EOS

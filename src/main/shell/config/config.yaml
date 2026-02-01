@@ -1,0 +1,10 @@
+# radp-bf CLI configuration
+# This configuration is used by the radp-bf command-line tool itself
+
+radp:
+  fw:
+    # Default quiet mode for radp-bf (no banner, no logs to console)
+    banner-mode: "off"
+    log:
+      console-enabled: false
+      file-enabled: false

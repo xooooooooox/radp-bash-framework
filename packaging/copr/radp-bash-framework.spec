@@ -33,14 +33,16 @@ radp-bash-framework is a modular Bash framework with structured context.
 %install
 rm -rf %{buildroot}
 
-# install framework "root" that keeps bin/ and framework/ as siblings
-mkdir -p %{buildroot}%{_libdir}/radp-bash-framework
-cp -a src/main/shell/bin %{buildroot}%{_libdir}/radp-bash-framework/
-cp -a src/main/shell/framework %{buildroot}%{_libdir}/radp-bash-framework/
+# install framework with standard CLI project structure
+mkdir -p %{buildroot}%{_libdir}/radp-bash-framework/src/main/shell
+cp -a bin %{buildroot}%{_libdir}/radp-bash-framework/
+cp -a src/main/shell/commands %{buildroot}%{_libdir}/radp-bash-framework/src/main/shell/
+cp -a src/main/shell/config %{buildroot}%{_libdir}/radp-bash-framework/src/main/shell/
+cp -a src/main/shell/framework %{buildroot}%{_libdir}/radp-bash-framework/src/main/shell/
 
 # ensure executables
 chmod 0755 %{buildroot}%{_libdir}/radp-bash-framework/bin/radp-bf
-find %{buildroot}%{_libdir}/radp-bash-framework/framework -type f -name "*.sh" -exec chmod 0755 {} \;
+find %{buildroot}%{_libdir}/radp-bash-framework/src/main/shell/framework -type f -name "*.sh" -exec chmod 0755 {} \;
 
 # user-facing commands
 mkdir -p %{buildroot}%{_bindir}

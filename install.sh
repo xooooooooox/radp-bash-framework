@@ -578,18 +578,20 @@ install_manual() {
 
   tar -xzf "${tarball}" -C "${tmp_dir}"
   local src_root="${tmp_dir}/${root_dir}"
-  if [[ ! -d "${src_root}/src/main/shell/bin" || ! -d "${src_root}/src/main/shell/framework" ]]; then
-    die "Archive layout unexpected; missing src/main/shell."
+  if [[ ! -d "${src_root}/bin" || ! -d "${src_root}/src/main/shell/framework" ]]; then
+    die "Archive layout unexpected; missing bin/ or src/main/shell/."
   fi
 
   rm -rf "${install_dir}"
-  mkdir -p "${install_dir}"
-  cp -R "${src_root}/src/main/shell/bin" "${install_dir}/"
-  cp -R "${src_root}/src/main/shell/framework" "${install_dir}/"
+  mkdir -p "${install_dir}/src/main/shell"
+  cp -R "${src_root}/bin" "${install_dir}/"
+  cp -R "${src_root}/src/main/shell/commands" "${install_dir}/src/main/shell/"
+  cp -R "${src_root}/src/main/shell/config" "${install_dir}/src/main/shell/"
+  cp -R "${src_root}/src/main/shell/framework" "${install_dir}/src/main/shell/"
   cp -R "${src_root}/completions" "${install_dir}/"
 
   chmod 0755 "${install_dir}/bin/radp-bf"
-  find "${install_dir}/framework" -type f -name "*.sh" -exec chmod 0755 {} \;
+  find "${install_dir}/src/main/shell/framework" -type f -name "*.sh" -exec chmod 0755 {} \;
 
   # Write install method marker for uninstall.sh
   echo "manual" >"${install_dir}/.install-method"
@@ -604,7 +606,7 @@ install_manual() {
     # ref is branch/SHA, append to base version from source
     local base_version
     base_version=$(sed -n 's/^declare -gr gr_fw_version=//p' \
-      "${install_dir}/framework/bootstrap/context/vars/constants/constants.sh" 2>/dev/null \
+      "${install_dir}/src/main/shell/framework/bootstrap/context/vars/constants/constants.sh" 2>/dev/null \
       | head -n 1)
     [[ -z "$base_version" ]] && base_version="v0.0.0"
     installed_version="${base_version}+${ref}"

@@ -1,5 +1,7 @@
 config-local.yaml
 src/main/shell/framework/bootstrap/context/cache
+src/main/shell/config/_idecomp.sh
+src/main/shell/config/config.sh
 .claude
 
 ### IntelliJ IDEA ###

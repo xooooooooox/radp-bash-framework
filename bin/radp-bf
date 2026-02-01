@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#######################################
+# radp-bf - radp-bash-framework CLI
+# Fast path 命令在框架加载前处理（性能优化）
+# 其他命令通过 launcher.sh 处理
+#######################################
+
+__radp_bf_resolve_root() {
+  local src="$1"
+  if [[ "${src}" != /* ]]; then
+    src="$(cd -P -- "$(dirname -- "${src}")" && pwd)/$(basename -- "${src}")"
+  fi
+  local dir
+  while [[ -L "${src}" ]]; do
+    dir="$(cd -P -- "$(dirname -- "${src}")" && pwd)"
+    src="$(readlink "${src}")"
+    [[ "${src}" != /* ]] && src="${dir}/${src}"
+  done
+  local bin_dir
+  bin_dir="$(cd -P -- "$(dirname -- "${src}")" && pwd)"
+  dirname "$bin_dir"
+}
+
+__radp_bf_path_fast() {
+  local name="${1:-}"
+  local fw_root
+  fw_root="$(__radp_bf_resolve_root "${BASH_SOURCE[0]}")/src/main/shell/framework"
+
+  case "$name" in
+    init)     echo "${fw_root}/init.sh" ;;
+    launcher) echo "${fw_root}/launcher.sh" ;;
+    root)     echo "${fw_root}" ;;
+    "")
+      echo "radp-bf path: name required" >&2
+      echo "Available: init, launcher, root" >&2
+      return 1
+      ;;
+    *)
+      echo "radp-bf path: unknown name '$name'" >&2
+      echo "Available: init, launcher, root" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Fast path 处理
+case "${1:-}" in
+  path)
+    __radp_bf_path_fast "${2:-}"
+    exit $?
+    ;;
+  resolve-root)
+    if [[ -z "${2:-}" ]]; then
+      echo "radp-bf resolve-root: script path required" >&2
+      exit 1
+    fi
+    __radp_bf_resolve_root "$2"
+    exit $?
+    ;;
+esac
+
+# 使用 launcher.sh 处理其他命令
+export RADP_APP_ROOT="$(__radp_bf_resolve_root "${BASH_SOURCE[0]}")"
+export RADP_APP_NAME="radp-bf"
+
+# radp-bf 默认静默模式
+export GX_RADP_FW_LOG_CONSOLE_ENABLED="${GX_RADP_FW_LOG_CONSOLE_ENABLED:-false}"
+export GX_RADP_FW_LOG_FILE_ENABLED="${GX_RADP_FW_LOG_FILE_ENABLED:-false}"
+export GX_RADP_FW_BANNER_MODE="${GX_RADP_FW_BANNER_MODE:-off}"
+
+# shellcheck source=../src/main/shell/framework/launcher.sh
+source "$RADP_APP_ROOT/src/main/shell/framework/launcher.sh" "$@"

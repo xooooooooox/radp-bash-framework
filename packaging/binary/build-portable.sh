@@ -115,17 +115,25 @@ create_archive_content() {
 
   log_info "Creating archive content in $build_dir"
 
-  # Create directory structure
+  # Create directory structure (standard CLI project layout)
   mkdir -p "$build_dir/bin"
-  mkdir -p "$build_dir/framework"
+  mkdir -p "$build_dir/src/main/shell/commands"
+  mkdir -p "$build_dir/src/main/shell/config"
+  mkdir -p "$build_dir/src/main/shell/framework"
   mkdir -p "$build_dir/completions"
 
   # Copy bin/radp-bf
-  cp "$PROJECT_ROOT/src/main/shell/bin/radp-bf" "$build_dir/bin/"
+  cp "$PROJECT_ROOT/bin/radp-bf" "$build_dir/bin/"
   chmod +x "$build_dir/bin/radp-bf"
 
+  # Copy commands directory
+  cp -r "$PROJECT_ROOT/src/main/shell/commands/"* "$build_dir/src/main/shell/commands/"
+
+  # Copy config directory
+  cp -r "$PROJECT_ROOT/src/main/shell/config/"* "$build_dir/src/main/shell/config/"
+
   # Copy framework directory
-  cp -r "$PROJECT_ROOT/src/main/shell/framework/"* "$build_dir/framework/"
+  cp -r "$PROJECT_ROOT/src/main/shell/framework/"* "$build_dir/src/main/shell/framework/"
 
   # Copy completions
   cp -r "$PROJECT_ROOT/completions/"* "$build_dir/completions/"

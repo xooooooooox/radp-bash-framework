@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# @cmd
+# @desc Generate shell completion script for radp-bf
+# @arg shell! Shell type: bash or zsh
+# @example completion bash
+# @example completion zsh
+# @example completion bash >> ~/.bashrc
+# @example completion zsh > ~/.zfunc/_radp-bf
+
+cmd_completion() {
+  local shell="${1:-}"
+
+  if [[ -z "$shell" ]]; then
+    radp_log_error "Shell type required (bash or zsh)"
+    return 1
+  fi
+
+  radp_cli_bf_completion_generate "$shell"
+}

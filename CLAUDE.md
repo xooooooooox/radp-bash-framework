@@ -17,8 +17,8 @@ bats src/test/shell/<file>.bats        # Run specific test file
 ### Framework Entry
 ```bash
 source src/main/shell/framework/init.sh              # Source framework directly
-source "$(./src/main/shell/bin/radp-bf path init)"    # Via CLI wrapper
-source "$(radp-bf path launcher)" "$@"                # App launcher (thin entry script)
+source "$(./bin/radp-bf path init)"                   # Via CLI wrapper
+source "$(radp-bf path launcher)" "$@"               # App launcher (thin entry script)
 ```
 
 ### CLI Commands
