@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v0.7.1
+
+### fix
+
+- fix workflow build-portable.yml
+
+### test
+
+- test workflow build-portable.yml
+- test workflow build-portable.yml
+- test workflow build-portable.yml
+- test workflow build-portable.yml
+- test workflow build-portable.yml
+- test workflow build-portable.yml
+- fix workflow build-portable.yml
+
 ## v0.7.2
 
 ### feat
