@@ -29,52 +29,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux Ubuntu - standard
+          # Linux x86_64 - standard
           - os: ubuntu-latest
             platform: linux-amd64
             variant: standard
             suffix: ""
+          # Linux x86_64 - full
           - os: ubuntu-latest
+            platform: linux-amd64
+            variant: full
+            suffix: ""
+          # Linux ARM64 - standard (using ARM64 runner)
+          - os: ubuntu-24.04-arm
             platform: linux-arm64
             variant: standard
             suffix: ""
-          # Linux Ubuntu - full
-          - os: ubuntu-latest
-            platform: linux-amd64
-            variant: full
-            suffix: ""
-          - os: ubuntu-latest
+          # Linux ARM64 - full (using ARM64 runner)
+          - os: ubuntu-24.04-arm
             platform: linux-arm64
             variant: full
             suffix: ""
-          # Linux CentOS Stream 9
-          - os: ubuntu-latest
-            platform: linux-amd64
-            container: quay.io/centos/centos:stream9
-            variant: standard
-            suffix: "el9"
-          - os: ubuntu-latest
-            platform: linux-amd64
-            container: quay.io/centos/centos:stream9
-            variant: full
-            suffix: "el9"
-          # Linux CentOS 7
-          - os: ubuntu-latest
-            platform: linux-amd64
-            container: centos:7
-            variant: standard
-            suffix: "el7"
-          - os: ubuntu-latest
-            platform: linux-amd64
-            container: centos:7
-            variant: full
-            suffix: "el7"
           # macOS Intel
-          - os: macos-13
+          - os: macos-15
             platform: darwin-amd64
             variant: standard
             suffix: ""
-          - os: macos-13
+          - os: macos-15
             platform: darwin-amd64
             variant: full
             suffix: ""
@@ -89,40 +69,12 @@ jobs:
             suffix: ""
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container || '' }}
 
     steps:
-      - name: Fix CentOS 7 yum repos (EOL)
-        if: matrix.container == 'centos:7'
-        run: |
-          sed -i -r \
-            -e 's|^mirrorlist=|#mirrorlist=|g' \
-            -e 's|^#?baseurl=http://mirror.centos.org/centos|baseurl=https://vault.centos.org/centos|g' \
-            -e 's|^#?baseurl=http://mirror.centos.org/altarch|baseurl=https://vault.centos.org/altarch|g' \
-            /etc/yum.repos.d/CentOS-*.repo
-          yum clean all && yum makecache
-
-      - name: Install dependencies (CentOS 7)
-        if: matrix.container == 'centos:7'
-        run: |
-          yum install -y git curl tar gzip
-
-      - name: Install dependencies (CentOS Stream 9)
-        if: matrix.container == 'quay.io/centos/centos:stream9'
-        run: |
-          dnf install -y git curl tar gzip
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Setup build environment (Ubuntu ARM64)
-        if: matrix.platform == 'linux-arm64' && !matrix.container
-        run: |
-          # For ARM64 builds on x86_64, we just build the package
-          # The actual ARM64 testing would require QEMU or native ARM runner
-          echo "Building for linux-arm64 (cross-build)"
 
       - name: Determine version
         id: version
@@ -174,8 +126,8 @@ jobs:
           echo "Installed bash version:"
           /opt/homebrew/bin/bash --version || /usr/local/bin/bash --version
 
-      - name: Test portable binary (non-container)
-        if: ${{ !matrix.container && matrix.variant == 'standard' }}
+      - name: Test portable binary
+        if: matrix.variant == 'standard'
         shell: bash
         run: |
           binary_name="radp-bf-portable-${{ matrix.platform }}"
@@ -246,9 +198,9 @@ jobs:
           - name: alpine
             image: alpine:latest
             artifact: portable-full-linux-amd64
-          - name: centos-stream-9
-            image: quay.io/centos/centos:stream9
-            artifact: portable-standard-linux-amd64-el9
+          - name: debian
+            image: debian:12
+            artifact: portable-standard-linux-amd64
 
     steps:
       - name: Download artifact
