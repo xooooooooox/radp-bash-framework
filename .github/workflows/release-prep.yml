@@ -265,10 +265,10 @@ jobs:
           mkdir -p "${completions_dir}"
 
           # Generate bash completion
-          ./src/main/shell/bin/radp-bf completion bash > "${completions_dir}/radp-bf"
+          ./bin/radp-bf completion bash > "${completions_dir}/radp-bf"
 
           # Generate zsh completion
-          ./src/main/shell/bin/radp-bf completion zsh > "${completions_dir}/_radp-bf"
+          ./bin/radp-bf completion zsh > "${completions_dir}/_radp-bf"
 
           echo "Regenerated completion files in ${completions_dir}"
 
