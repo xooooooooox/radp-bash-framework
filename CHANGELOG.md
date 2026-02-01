@@ -5,12 +5,6 @@
 ### refactor
 
 - Refactor `radp-bf` CLI to standard command-based structure
-
-## v0.7.3
-
-### refactor
-
-- Refactor `radp-bf` CLI to standard command-based structure
   - Move command logic from case statements to individual command files in `commands/`
   - New structure: `src/main/shell/commands/{new,upgrade,path,resolve-root,completion,self-update,version}.sh`
   - Add `src/main/shell/config/config.yaml` for radp-bf specific configuration
