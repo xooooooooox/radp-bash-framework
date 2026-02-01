@@ -57,7 +57,7 @@ _radp_bf() {
         cword=$COMP_CWORD
     fi
 
-    local commands="new upgrade path resolve-root version help completion"
+    local commands="new upgrade path resolve-root version help completion self-update"
     local global_opts="-v --verbose --debug -h --help"
 
     # Handle command-specific completions
@@ -131,6 +131,15 @@ _radp_bf() {
             # No arguments
             return
             ;;
+        self-update)
+            local selfupdate_opts="--check --force --full --standard"
+            case "$cur" in
+                -*)
+                    COMPREPLY=($(compgen -W "$selfupdate_opts" -- "$cur"))
+                    ;;
+            esac
+            return
+            ;;
     esac
 
     # Top-level completion (no command selected yet)
@@ -201,6 +210,15 @@ _radp_bf_help() {
     _arguments -s '(-h --help)'{-h,--help}'[Show help]'
 }
 
+_radp_bf_self_update() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[Show help]' \
+        '--check[Check for updates without installing]' \
+        '--force[Force update even if already at latest]' \
+        '--full[Update to full version with bundled deps]' \
+        '--standard[Update to standard version]'
+}
+
 # Main completion function
 _radp_bf() {
     local -a commands=(
@@ -211,6 +229,7 @@ _radp_bf() {
         'version:Show framework version'
         'help:Show help'
         'completion:Generate shell completion script'
+        'self-update:Update radp-bf (portable only)'
     )
 
     local context state state_descr line

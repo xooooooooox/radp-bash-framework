@@ -15,7 +15,7 @@ _radp_bf() {
         cword=$COMP_CWORD
     fi
 
-    local commands="new upgrade path resolve-root version help completion"
+    local commands="new upgrade path resolve-root version help completion self-update"
     local global_opts="-v --verbose --debug -h --help"
 
     # Handle command-specific completions
@@ -87,6 +87,15 @@ _radp_bf() {
             ;;
         version|help)
             # No arguments
+            return
+            ;;
+        self-update)
+            local selfupdate_opts="--check --force --full --standard"
+            case "$cur" in
+                -*)
+                    COMPREPLY=($(compgen -W "$selfupdate_opts" -- "$cur"))
+                    ;;
+            esac
             return
             ;;
     esac
