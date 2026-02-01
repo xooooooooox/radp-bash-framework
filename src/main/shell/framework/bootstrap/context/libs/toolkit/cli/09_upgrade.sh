@@ -802,6 +802,9 @@ __radp_upgrade_packaging() {
     "obs/debian/rules"
     "obs/debian/${project_name}.install"
     "obs/debian/${project_name}.links"
+    "obs/debian/changelog"
+    "obs/debian/copyright"
+    "obs/debian/source/format"
   )
 
   local pkg_file
@@ -948,6 +951,15 @@ __radp_packaging_generate_content() {
     ;;
   *".links")
     radp_packaging_content_debian_links "$project_name"
+    ;;
+  */debian/changelog)
+    radp_packaging_content_debian_changelog "$project_name"
+    ;;
+  */debian/copyright)
+    radp_packaging_content_debian_copyright "$project_name"
+    ;;
+  */debian/source/format)
+    echo "3.0 (quilt)"
     ;;
   *)
     echo ""

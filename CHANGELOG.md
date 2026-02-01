@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.6
+## v0.7.7
 
 ### feat
 
@@ -25,6 +25,9 @@
 - Fix `radp-bf upgrade --force` not creating packaging directory when it doesn't exist
   - Now creates `packaging/` and all packaging files when `--force` is used
   - Without `--force`, shows hint message to use `--force` to create
+- Fix `radp-bf upgrade` missing debian packaging files
+  - Add `obs/debian/changelog`, `obs/debian/copyright`, `obs/debian/source/format` to upgrade list
+  - Now creates all debian files that scaffold creates
 
 ### refactor
 
