@@ -57,9 +57,9 @@ __install_yq() {
   __stage2_log_info "Downloading yq v$version..."
 
   # Create temp directory
-  local tmpdir
+  local tmpdir=""
   tmpdir=$(__stage2_make_temp_dir "yq_install") || return 1
-  trap 'rm -rf "$tmpdir"' RETURN
+  trap 'rm -rf "${tmpdir:-}"' RETURN
 
   local binpath="$tmpdir/$filename"
   if ! __stage2_download "$url" "$binpath" "quiet"; then
