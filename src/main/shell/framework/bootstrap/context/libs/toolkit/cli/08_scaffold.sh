@@ -2310,11 +2310,19 @@ find %{buildroot}%{_libdir}/${project_name}/src -type f -name "*.sh" -exec chmod
 mkdir -p %{buildroot}%{_bindir}
 ln -s %{_libdir}/${project_name}/bin/${project_name} %{buildroot}%{_bindir}/${project_name}
 
+# install shell completions
+mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
+mkdir -p %{buildroot}%{_datadir}/zsh/site-functions
+cp -a completions/${project_name}.bash %{buildroot}%{_datadir}/bash-completion/completions/${project_name}
+cp -a completions/${project_name}.zsh %{buildroot}%{_datadir}/zsh/site-functions/_${project_name}
+
 %files
 %license LICENSE
 %doc README.md
 %{_bindir}/${project_name}
 %{_libdir}/${project_name}/
+%{_datadir}/bash-completion/completions/${project_name}
+%{_datadir}/zsh/site-functions/_${project_name}
 
 %changelog
 * ${today} xooooooooox <xozoz.sos@gmail.com> - 0.1.0-1
@@ -3405,6 +3413,8 @@ radp_packaging_content_debian_install() {
   cat <<INSTALL
 bin usr/lib/${project_name}
 src usr/lib/${project_name}
+completions/${project_name}.bash usr/share/bash-completion/completions/${project_name}
+completions/${project_name}.zsh usr/share/zsh/vendor-completions/_${project_name}
 INSTALL
 }
 

@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.4
+## v0.7.5
 
 ### refactor
 
@@ -17,6 +17,10 @@
     - `packaging/copr/radp-bash-framework.spec` - Fedora/RHEL RPM
     - `packaging/obs/radp-bash-framework.spec` - openSUSE/Debian packages
     - `packaging/binary/build-portable.sh` - portable binary build
+
+### fix
+
+- fix CLI project bash completion not work when installed via pkm on linux.
 
 ## v0.7.2
 
