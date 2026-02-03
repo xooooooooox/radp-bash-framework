@@ -232,10 +232,11 @@ radp-bf completion zsh > ~/.zfunc/_radp-bf
 ## Documentation
 
 - [Installation Guide](docs/installation.md) - All installation methods and upgrade instructions
-- [CLI Development Guide](docs/cli-development.md) - Complete guide to building CLI applications
-- [Command Annotations](docs/annotations.md) - `@cmd`, `@arg`, `@option`, `@example` reference
+- [Getting Started](docs/getting-started.md) - Create your first CLI project
+- [CLI Development Guide](docs/user-guide/cli-development.md) - Complete guide to building CLI applications
+- [Command Annotations](docs/user-guide/annotations.md) - `@cmd`, `@arg`, `@option`, `@example` reference
 - [Configuration](docs/configuration.md) - YAML config system and environment variables
-- [API Reference](docs/api.md) - Toolkit functions and IDE integration
+- [API Reference](docs/reference/api.md) - Toolkit functions and IDE integration
 
 ## Toolkit API
 
@@ -249,7 +250,12 @@ The framework provides utility functions organized by domain:
 | `radp_exec_*` | `exec`, `exec_sudo`, `set_dry_run`, `is_dry_run`     | Dry-run mode support  |
 | `radp_cli_*`  | `discover`, `dispatch`, `help`                       | CLI infrastructure    |
 
-See [API Reference](docs/api.md) for complete documentation.
+See [API Reference](docs/reference/api.md) for complete documentation.
+
+## Related Projects
+
+- [radp-vagrant-framework](https://github.com/xooooooooox/radp-vagrant-framework) - YAML-driven Vagrant framework
+- [homelabctl](https://github.com/xooooooooox/homelabctl) - Homelab infrastructure CLI
 
 ## Contributing
 

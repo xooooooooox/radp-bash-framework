@@ -9,12 +9,14 @@ radp-bash-framework is a modular Bash framework providing structured context, co
 ## Commands
 
 ### Testing
+
 ```bash
 bats src/test/shell                    # Run all tests
 bats src/test/shell/<file>.bats        # Run specific test file
 ```
 
 ### Framework Entry
+
 ```bash
 source src/main/shell/framework/init.sh              # Source framework directly
 source "$(./bin/radp-bf path init)"                   # Via CLI wrapper
@@ -22,260 +24,137 @@ source "$(radp-bf path launcher)" "$@"               # App launcher (thin entry 
 ```
 
 ### CLI Commands
+
 ```bash
 radp-bf new <name> [dir]           # Create a new CLI project
 radp-bf upgrade [dir] [opts]       # Upgrade existing project to latest scaffold
-radp-bf path init                  # Print path to init.sh (framework initializer)
-radp-bf path launcher              # Print path to launcher.sh (app launcher)
-radp-bf path root                  # Print framework root path
-radp-bf resolve-root <script>      # Resolve project root from script path
+radp-bf path init                  # Print path to init.sh
+radp-bf path launcher              # Print path to launcher.sh
 radp-bf version                    # Print version
-radp-bf help                       # Show help
-
-# Upgrade examples
-radp-bf upgrade                    # Upgrade current directory
-radp-bf upgrade ./my-cli --dry-run # Preview changes
-radp-bf upgrade --diff entry       # Show entry script diff
-radp-bf upgrade --force            # Overwrite user-modified files
 ```
 
 ### Global Options (for apps using launcher.sh)
 
-All CLI applications built on radp-bash-framework support these global options:
-
 ```bash
-myapp -q, --quiet       # Quiet mode (disable banner and console log)
-myapp -v, --verbose     # Enable verbose output (banner + info logs)
-myapp --debug           # Enable debug output (banner + debug logs)
-myapp --config          # Show configuration (core settings)
-myapp --config --json   # Show configuration in JSON format
+myapp -v, --verbose     # Enable verbose output
+myapp --debug           # Enable debug output
+myapp --config          # Show configuration
 myapp --config --all    # Show configuration with extensions
-```
-
-**Example output of `--config`:**
-```
-App:         homelabctl
-Version:     v0.1.19
-Environment: local
-
-Framework:
- Version:    v0.6.29
- Root:       /opt/homebrew/libexec/radp-bash-framework
-
-Config:
- Directory:  ~/.config/homelabctl
- File:       ~/.config/homelabctl/config.yaml (exists)
- Libs:       ~/.config/homelabctl/libs
-
-Settings:
- Banner:     off
-
-Log:
- Level:      info
- Debug:      false
- Console:    enabled
- File:       enabled
- File Path:  ~/logs/radp/homelabctl.log
-
-Log Rolling:
- Enabled:       true
- Max History:   7
- Max File Size: 10MB
- Total Size:    5GB
 ```
 
 ## Architecture
 
-### Execution Flow
 ```
 init.sh (idempotent via gw_fw_run_initialized)
   ↓
-preflight/ (two-stage dependency checking)
-  ├─ stage1/ (POSIX shell) → bash check/install
-  └─ stage2/ (Bash) → gnu-getopt, yq check/install
+preflight/ (two-stage)
+  ├─ stage1/ (POSIX) → bash check
+  └─ stage2/ (Bash) → gnu-getopt, yq
   ↓
-bootstrap/bootstrap.sh (context builder)
+bootstrap/bootstrap.sh
   ↓
-context/context.sh (injects globals, libs, config)
-  ├─ libs/logger/ (logging system)
-  ├─ libs/toolkit/ (6 domains: core, exec, io, net, os, cli)
-  ├─ vars/global_vars.sh (all variable declarations)
-  └─ config autoconfiguration (YAML → shell vars)
+context/context.sh
+  ├─ libs/logger/
+  ├─ libs/toolkit/ (core, exec, io, net, os, cli)
+  └─ config autoconfiguration
 ```
 
-### Preflight Two-Stage Design
-- **Stage 1** (POSIX shell): Checks/installs bash 4.3+. Re-execs with new bash if installed.
-- **Stage 2** (Bash): Checks/installs other dependencies using bash features for cleaner code.
-
 ### Key Directories
-- `src/main/shell/framework/` — Framework source
-- `src/main/shell/config/` — Default configuration YAMLs
-- `src/test/shell/` — BATS tests
 
-### Sourcing & Load Order
-- `__fw_source_scripts` sources all `.sh` files in a directory
-- Files sorted by numeric prefix: `1_feature.sh`, `2_other.sh`
-- Sourced files recorded in `gwxa_fw_sourced_scripts` array
+| Directory | Purpose |
+|-----------|---------|
+| `src/main/shell/framework/` | Framework source |
+| `src/main/shell/config/` | Default configuration |
+| `src/test/shell/` | BATS tests |
+| `src/main/shell/commands/` | radp-bf commands |
 
 ### Configuration Layering
-1. `framework_config.yaml` — Framework defaults
-2. User `config.yaml` — Overrides via `radp.fw.*` or `radp.extend.*`
-3. Environment variables — `GX_RADP_FW_*` or `YAML_*` prefix
-4. Final config cached in `cache/final_config.sh`
+
+1. `framework_config.yaml` - Framework defaults
+2. User `config.yaml` - Overrides via `radp.fw.*` or `radp.extend.*`
+3. Environment variables - `GX_RADP_FW_*` prefix
 
 ## Naming Conventions
 
 ### Variables
-- `gr_*` — Global readonly paths/config (e.g., `gr_fw_root_path`)
-- `gw_*` — Global writable state/flags (e.g., `gw_fw_run_initialized`)
-- `gwxa_*` — Global arrays (e.g., `gwxa_fw_sourced_scripts`)
-- Use `local` for function-scoped variables
+
+| Prefix | Scope | Example |
+|--------|-------|---------|
+| `gr_*` | Global readonly | `gr_fw_root_path` |
+| `gw_*` | Global writable | `gw_fw_run_initialized` |
+| `gwxa_*` | Global array | `gwxa_fw_sourced_scripts` |
 
 ### Functions
-- `__fw_*` — Framework private/internal (double underscore)
-- `radp_*` — Public framework functions
-- `radp_nr_*` — Functions using nameref (pass variable name, not `$value`)
-- `radp_*_is_*` — Boolean checks returning 0/1
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `radp_*` | Public API | `radp_log_info` |
+| `radp_nr_*` | Nameref (pass var name) | `radp_nr_arr_merge_unique` |
+| `radp_*_is_*` | Boolean (0/1) | `radp_os_is_pkg_installed` |
+| `__fw_*` | Internal | `__fw_bootstrap` |
 
 ## Toolkit Domains
 
-The toolkit is organized into 6 domains under `libs/toolkit/`:
-- **core** — Variables, arrays, maps, strings, version comparison
-- **exec** — Command execution with logging, retry strategies, dry-run mode
-- **io** — File operations, interactive prompts, text banners
-- **net** — Connectivity checks, interface queries, SSH operations
-- **os** — Distro detection, security (SELinux/firewall), user management
-- **cli** — Argument parsing, help generation, command dispatch
-
-### Dry-Run Mode Support
-
-The exec toolkit provides dry-run support for safe command execution preview:
-
-```bash
-# Enable dry-run mode (typically from CLI flag)
-radp_set_dry_run "${opt_dry_run:-}"
-
-# Execute command or log in dry-run mode
-radp_exec "Install nginx package" apt-get install -y nginx
-radp_exec "Set timezone to $tz" timedatectl set-timezone "$tz"
-
-# Execute with sudo (uses $gr_sudo)
-radp_exec_sudo "Enable chronyd service" systemctl enable chronyd
-
-# For complex operations that can't be wrapped
-if radp_dry_run_skip "Configure complex settings"; then
-  return 0
-fi
-# ... actual implementation ...
-```
-
-**Available functions:**
-
-| Function | Description |
-|----------|-------------|
-| `radp_set_dry_run [true\|false]` | Enable/disable dry-run mode |
-| `radp_is_dry_run` | Check if dry-run mode is enabled (returns 0/1) |
-| `radp_exec <desc> <cmd...>` | Execute command or log `[dry-run] <desc>` |
-| `radp_exec_sudo <desc> <cmd...>` | Like `radp_exec` but prepends `$gr_sudo` |
-| `radp_dry_run_skip <desc>` | Log and return 0 if dry-run, else return 1 |
-
-**Global variable:**
-- `gw_dry_run` — Writable global tracking dry-run state
+| Domain | Functions |
+|--------|-----------|
+| **core** | Variables, arrays, strings |
+| **exec** | Command execution, dry-run |
+| **io** | File operations |
+| **net** | Network utilities |
+| **os** | Distro detection |
+| **cli** | Argument parsing, dispatch |
 
 ## CLI Command Discovery
 
-Commands are auto-discovered from the `commands/` directory:
+Commands auto-discovered from `commands/` directory:
+
 ```
 commands/
-├── version.sh              # Top-level: mycli version
-├── vf/
-│   ├── init.sh             # Subcommand: mycli vf init
-│   ├── list.sh             # Subcommand: mycli vf list
-│   └── template/
-│       ├── list.sh         # Nested: mycli vf template list
-│       └── show.sh         # Nested: mycli vf template show
+├── version.sh              # mycli version
+├── db/
+│   ├── migrate.sh          # mycli db migrate
+│   └── seed.sh             # mycli db seed
 ```
 
-### Command File Requirements
-- Must contain `# @cmd` marker to be discovered
-- Function name follows path: `commands/vf/init.sh` → `cmd_vf_init()`
-- Files starting with `_` are ignored (internal use)
+- Must contain `# @cmd` marker
+- Function: `commands/db/migrate.sh` → `cmd_db_migrate()`
+- `_`-prefixed files ignored
 
-### Nested Command Groups
-- Supports arbitrary nesting depth (`vf template list`)
-- Command groups without a `.sh` file show "Missing subcommand" with correct path
-- Help is auto-generated for command groups showing available subcommands
-- Dispatch uses longest-match: `myapp vf template show --verbose` matches `vf template show`
-- `_`-prefixed files can be used as shared helpers (not discovered as commands)
+## Dry-Run Mode
 
-See [docs/annotations.md](docs/annotations.md#subcommands) for the full subcommand authoring guide.
-
-## Banner Customization
-
-Applications can customize the startup banner ASCII art (shown when `banner-mode: on`).
-The framework automatically appends version information.
-
-### Priority Order (ASCII Art)
-1. `radp_app_banner_art()` function - defined before sourcing framework
-2. `$gr_fw_user_config_path/banner.txt` - user override (e.g., `~/.config/myapp/banner.txt`)
-3. `$gr_fw_app_config_path/banner.txt` - app bundled banner (shipped with app)
-4. Framework default banner - `config/banner.txt`
-
-### Hook Function Example
 ```bash
-# Define BEFORE sourcing framework (ASCII art only)
-radp_app_banner_art() {
-  cat << 'EOF'
-    __  ___      ___
-   /  |/  /_  __/   |  ____  ____
-  / /|_/ / / / / /| | / __ \/ __ \
- / /  / / /_/ / ___ |/ /_/ / /_/ /
-/_/  /_/\__, /_/  |_/ .___/ .___/
-       /____/      /_/   /_/
-EOF
-}
+radp_set_dry_run "${opt_dry_run:-}"
+radp_exec "Install nginx" apt-get install -y nginx
+radp_exec_sudo "Enable service" systemctl enable nginx
 
-source "$(radp-bf path launcher)" "$@"
+if radp_dry_run_skip "Complex operation"; then
+  return 0
+fi
 ```
-
-The framework will automatically append:
-```
- :: my_app :: (v1.0.0)
- :: radp-bash-framework :: (v0.6.11)
-```
-
-## CI/CD Workflows
-
-The framework and scaffolded projects include GitHub Actions workflows:
-
-| Workflow                      | Trigger                    | Purpose                           |
-|-------------------------------|----------------------------|-----------------------------------|
-| `release-prep.yml`            | Manual on `main`           | Create release branch and PR      |
-| `create-version-tag.yml`      | PR merge or manual         | Validate and create git tag       |
-| `update-spec-version.yml`     | After tag creation         | Update spec Version field         |
-| `build-copr-package.yml`      | After spec update          | Trigger COPR build                |
-| `build-obs-package.yml`       | After spec update          | Sync to OBS and build             |
-| `build-portable.yml`          | Tag push or after tag      | Build portable binaries           |
-| `update-homebrew-tap.yml`     | Tag push                   | Update Homebrew formula           |
-| `attach-release-packages.yml` | After package builds       | Upload packages to release        |
-| `cleanup-branches.yml`        | Weekly schedule or manual  | Delete stale workflow branches    |
-
-Note: `build-portable.yml` is framework-specific and not included in scaffolded CLI projects.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md#release-process) for detailed release process.
 
 ## Code Style
 
-- Entry scripts (`init.sh`, `preflight/*.sh`) use POSIX-compatible syntax
+- Entry scripts (`init.sh`, `preflight/stage1/`) use POSIX syntax
 - Bootstrap and beyond use Bash features (`[[ ]]`, arrays, `mapfile`)
 - Quote variables unless intentional word splitting
-- Preserve existing ShellCheck annotations (`# shellcheck source=...`)
-- Use `radp_log_*` functions instead of ad-hoc `echo` for output
+- Use `radp_log_*` functions instead of `echo`
+- Preserve ShellCheck annotations
 
-## IDE Integration
+## CI/CD Workflows
 
-For BashSupport Pro navigation:
-- IDE code completion is handled by `libs/toolkit/ide/01_hints.sh`
-- `radp_ide_init()` generates `_idecomp.sh` with framework and user sources
-- `radp_ide_add_commands_dir()` appends user commands to the hints file
-- Working directory should be repository root for stable relative paths
+| Workflow | Purpose |
+|----------|---------|
+| `release-prep.yml` | Create release branch and PR |
+| `create-version-tag.yml` | Create git tag |
+| `build-copr-package.yml` | COPR build |
+| `build-obs-package.yml` | OBS build |
+| `update-homebrew-tap.yml` | Update Homebrew |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for release process.
+
+## See Also
+
+- [docs/developer/architecture.md](docs/developer/architecture.md) - Detailed architecture
+- [docs/developer/code-style.md](docs/developer/code-style.md) - Full code style guide
+- [docs/reference/api.md](docs/reference/api.md) - Complete API reference
+- [AGENTS.md](AGENTS.md) - Multi-agent guidelines
