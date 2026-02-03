@@ -49,6 +49,12 @@ radp_cli_scaffold_new() {
   # 生成 README
   __radp_cli_scaffold_readme "$project_name" "$target_dir"
 
+  # 生成 CLAUDE.md
+  __radp_cli_scaffold_claude "$project_name" "$target_dir"
+
+  # 生成 CONTRIBUTING.md
+  __radp_cli_scaffold_contributing "$project_name" "$target_dir"
+
   # 生成 .gitignore
   __radp_cli_scaffold_gitignore "$target_dir"
 
@@ -267,30 +273,20 @@ __radp_cli_scaffold_readme() {
 
 A CLI tool built with [radp-bash-framework](https://github.com/xooooooooox/radp-bash-framework).
 
-## Prerequisites
+## Installation
 
-radp-bash-framework must be installed:
+### Homebrew (Recommended)
 
 \`\`\`bash
 brew tap xooooooooox/radp
-brew install radp-bash-framework
+brew install radp-bash-framework  # Prerequisite
+brew install $project_name
 \`\`\`
 
-Or see: https://github.com/xooooooooox/radp-bash-framework#installation
-
-## Installation
-
-### Script (curl / wget)
+### Script
 
 \`\`\`bash
 curl -fsSL https://raw.githubusercontent.com/xooooooooox/$project_name/main/install.sh | bash
-\`\`\`
-
-### Homebrew
-
-\`\`\`bash
-brew tap xooooooooox/radp
-brew install $project_name
 \`\`\`
 
 ### RPM (COPR)
@@ -300,15 +296,7 @@ sudo dnf copr enable -y xooooooooox/radp
 sudo dnf install -y $project_name
 \`\`\`
 
-### From source
-
-\`\`\`bash
-git clone https://github.com/xooooooooox/$project_name
-cd $project_name
-./bin/$project_name --help
-\`\`\`
-
-## Usage
+## Quick Start
 
 \`\`\`bash
 # Show help
@@ -320,81 +308,34 @@ $project_name version
 # Example command
 $project_name hello World
 
-# Generate shell completion
-$project_name completion bash > ~/.local/share/bash-completion/completions/$project_name
-$project_name completion zsh > ~/.zfunc/_$project_name
-
-# Verbose mode (show banner and info logs)
+# Verbose mode
 $project_name -v hello World
-$project_name --verbose version
-
-# Debug mode (show banner and debug logs)
-$project_name --debug hello World
 \`\`\`
 
 ## Global Options
 
 | Option | Description |
 |--------|-------------|
-| \`-v\`, \`--verbose\` | Enable verbose output (banner + info logs) |
-| \`--debug\` | Enable debug output (banner + debug logs) |
+| \`-v\`, \`--verbose\` | Enable verbose output |
+| \`--debug\` | Enable debug output |
 | \`-h\`, \`--help\` | Show help |
-| \`--version\` | Show version |
-
-By default, the CLI runs in quiet mode (no banner, only error logs).
 
 ## Configuration
 
-This project uses radp-bash-framework's YAML configuration system.
-
-### Configuration Files
-
-\`\`\`
-src/main/shell/config/
-├── config.yaml          # Base configuration
-└── config-dev.yaml      # Development environment overrides
-\`\`\`
-
-### Configuration Structure
+Configuration files are in \`src/main/shell/config/\`:
 
 \`\`\`yaml
 radp:
-  env: default           # Environment name (loads config-{env}.yaml)
-
-  fw:                    # Framework settings
-    banner-mode: on
+  env: default
+  fw:
     log:
-      debug: false
       level: info
-
-  extend:                # Application-specific settings
+  extend:
     ${project_name//-/_}:
       # Your custom config here
-      # api_url: https://api.example.com
 \`\`\`
 
-### Version Management
-
-The application version is defined in \`src/main/shell/commands/version.sh\`:
-
-\`\`\`bash
-declare -gr gr_app_version="v0.0.1"
-\`\`\`
-
-This is the single source of truth for version management. The CI workflows automatically update this value during releases.
-
-### Accessing Config in Code
-
-Variables from \`radp.extend.*\` are available as \`gr_radp_extend_*\`:
-
-\`\`\`bash
-# radp.extend.${project_name//-/_}.api_url -> gr_radp_extend_${project_name//-/_}_api_url
-echo "\$gr_radp_extend_${project_name//-/_}_api_url"
-\`\`\`
-
-### Environment Variables
-
-Override any config with \`GX_*\` prefix:
+Override with environment variables using \`GX_*\` prefix:
 
 \`\`\`bash
 GX_RADP_FW_LOG_DEBUG=true $project_name hello
@@ -402,48 +343,179 @@ GX_RADP_FW_LOG_DEBUG=true $project_name hello
 
 ## Adding Commands
 
-Create new command files in \`src/main/shell/commands/\`:
+Create command files in \`src/main/shell/commands/\`:
 
 \`\`\`bash
 # src/main/shell/commands/mycommand.sh
-
 # @cmd
 # @desc My command description
 # @arg name! Required argument
-# @option -u, --uppercase Convert output to uppercase
-# @example mycommand foo
-# @example mycommand --uppercase bar
 
 cmd_mycommand() {
-    local name="\$1"
-
-    if [[ "\${opt_verbose:-}" == "true" ]]; then
-        echo "Running in verbose mode"
-    fi
-
-    echo "Hello, \$name!"
+    echo "Hello, \$1!"
 }
 \`\`\`
 
-### Subcommands
+See [radp-bash-framework CLI Development](https://github.com/xooooooooox/radp-bash-framework/blob/main/docs/user-guide/cli-development.md) for details.
 
-Create a directory for subcommand groups:
+## Related Projects
+
+- [radp-bash-framework](https://github.com/xooooooooox/radp-bash-framework) - Bash CLI framework
+- [radp-vagrant-framework](https://github.com/xooooooooox/radp-vagrant-framework) - YAML-driven Vagrant framework
+- [homelabctl](https://github.com/xooooooooox/homelabctl) - Homelab infrastructure CLI
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and release process.
+
+## License
+
+MIT
+README
+}
+
+#######################################
+# 生成 CLAUDE.md
+#######################################
+__radp_cli_scaffold_claude() {
+  local project_name="$1"
+  local target_dir="$2"
+  local project_var="${project_name//-/_}"
+
+  cat >"$target_dir/CLAUDE.md" <<CLAUDE
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+$project_name is a CLI tool built with [radp-bash-framework](https://github.com/xooooooooox/radp-bash-framework).
+
+## Commands
+
+\`\`\`bash
+./bin/$project_name --help              # Show help
+./bin/$project_name version             # Show version
+./bin/$project_name hello <name>        # Example command
+./bin/$project_name -v hello <name>     # Verbose mode
+./bin/$project_name --debug hello       # Debug mode
+\`\`\`
+
+## Architecture
 
 \`\`\`
-src/main/shell/commands/
-├── mygroup/
-│   ├── create.sh    # $project_name mygroup create
-│   └── delete.sh    # $project_name mygroup delete
-└── hello.sh         # $project_name hello
+bin/$project_name                       # Entry point (thin launcher)
+    ↓
+radp-bash-framework init.sh            # Framework initialization
+    ↓
+src/main/shell/commands/*.sh           # Command implementations
 \`\`\`
 
-## CI/CD
+### Key Directories
 
-This project includes GitHub Actions workflows for automated releases.
+| Directory | Purpose |
+|-----------|---------|
+| \`bin/\` | Entry point script |
+| \`src/main/shell/commands/\` | CLI commands |
+| \`src/main/shell/config/\` | YAML configuration |
+| \`src/main/shell/libs/\` | Custom libraries |
 
-### Workflow Chain
+## Naming Conventions
 
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| \`gr_*\` | Global readonly | \`gr_app_version\` |
+| \`gw_*\` | Global writable | \`gw_some_state\` |
+| \`radp_*\` | Framework API | \`radp_log_info\` |
+| \`cmd_*\` | Command function | \`cmd_hello\` |
+
+## Configuration
+
+\`\`\`yaml
+# src/main/shell/config/config.yaml
+radp:
+  env: default
+  extend:
+    $project_var:
+      # Custom config
 \`\`\`
+
+Access config: \`\$gr_radp_extend_${project_var}_*\`
+
+## Adding Commands
+
+1. Create \`src/main/shell/commands/mycommand.sh\`
+2. Add \`# @cmd\` annotation
+3. Implement \`cmd_mycommand()\` function
+
+See [radp-bash-framework docs](https://github.com/xooooooooox/radp-bash-framework/blob/main/docs/) for details.
+
+## See Also
+
+- [radp-bash-framework CLAUDE.md](https://github.com/xooooooooox/radp-bash-framework/blob/main/CLAUDE.md)
+- [radp-bash-framework API Reference](https://github.com/xooooooooox/radp-bash-framework/blob/main/docs/reference/api.md)
+CLAUDE
+}
+
+#######################################
+# 生成 CONTRIBUTING.md
+#######################################
+__radp_cli_scaffold_contributing() {
+  local project_name="$1"
+  local target_dir="$2"
+
+  cat >"$target_dir/CONTRIBUTING.md" <<'CONTRIBUTING'
+# Contributing
+
+## Development Setup
+
+```bash
+git clone https://github.com/xooooooooox/$project_name
+cd $project_name
+./bin/$project_name --help
+```
+
+## Project Structure
+
+```
+$project_name/
+├── bin/                          # Entry point
+├── src/main/shell/
+│   ├── commands/                 # CLI commands
+│   ├── config/                   # YAML configuration
+│   └── libs/                     # Custom libraries
+├── packaging/                    # Distribution packages
+│   ├── copr/                     # Fedora COPR
+│   ├── homebrew/                 # Homebrew formula
+│   └── obs/                      # OpenSUSE OBS
+└── .github/workflows/            # CI/CD workflows
+```
+
+## Adding Commands
+
+1. Create `src/main/shell/commands/mycommand.sh`
+2. Add annotations:
+   ```bash
+   # @cmd
+   # @desc Command description
+   # @arg name! Required argument
+   # @option -f, --flag Option description
+   ```
+3. Implement `cmd_mycommand()` function
+
+## Version Management
+
+Version is defined in `src/main/shell/commands/version.sh`:
+
+```bash
+declare -gr gr_app_version="v0.0.1"
+```
+
+CI workflows automatically update this during releases.
+
+## CI/CD Workflows
+
+```
 release-prep (manual trigger)
        │
        ▼
@@ -459,53 +531,55 @@ update-spec-version    update-homebrew-tap    (GitHub Release)
        ├──────────────┐
        ▼              ▼
 build-copr-package  build-obs-package
-\`\`\`
+```
 
 ### Release Process
 
-1. Trigger \`release-prep\` workflow with bump_type (patch/minor/major/manual)
+1. Trigger `release-prep` workflow with bump_type (patch/minor/major)
 2. Review and merge the generated PR
 3. Subsequent workflows run automatically
 
 ### Required Secrets
 
-Configure these secrets in your GitHub repository settings (\`Settings > Secrets and variables > Actions\`):
-
-#### Homebrew Tap (required for \`update-homebrew-tap\`)
+#### Homebrew Tap
 
 | Secret | Description |
 |--------|-------------|
-| \`HOMEBREW_TAP_TOKEN\` | GitHub Personal Access Token with \`repo\` scope for homebrew-radp repository |
+| `HOMEBREW_TAP_TOKEN` | GitHub PAT with `repo` scope |
 
-#### COPR (required for \`build-copr-package\`)
-
-| Secret | Description |
-|--------|-------------|
-| \`COPR_LOGIN\` | COPR API login (from <https://copr.fedorainfracloud.org/api/>) |
-| \`COPR_TOKEN\` | COPR API token |
-| \`COPR_USERNAME\` | COPR username |
-| \`COPR_PROJECT\` | COPR project name (e.g., \`radp\`) |
-
-#### OBS (required for \`build-obs-package\`)
+#### COPR
 
 | Secret | Description |
 |--------|-------------|
-| \`OBS_USERNAME\` | OBS username |
-| \`OBS_PASSWORD\` | OBS password or API token |
-| \`OBS_PROJECT\` | OBS project name |
-| \`OBS_PACKAGE\` | OBS package name |
-| \`OBS_API_URL\` | (Optional) OBS API URL, defaults to \`https://api.opensuse.org\` |
+| `COPR_LOGIN` | COPR API login |
+| `COPR_TOKEN` | COPR API token |
+| `COPR_USERNAME` | COPR username |
+| `COPR_PROJECT` | COPR project name |
+
+#### OBS
+
+| Secret | Description |
+|--------|-------------|
+| `OBS_USERNAME` | OBS username |
+| `OBS_PASSWORD` | OBS password/token |
+| `OBS_PROJECT` | OBS project name |
+| `OBS_PACKAGE` | OBS package name |
 
 ### Skipping Workflows
 
-If you don't need certain distribution channels:
-- Delete the corresponding workflow file from \`.github/workflows/\`
-- Or leave secrets unconfigured (workflow will skip with missing secrets)
+- Delete workflow file from `.github/workflows/`
+- Or leave secrets unconfigured (workflow skips)
 
-## License
+## Code Style
 
-MIT
-README
+- Follow [radp-bash-framework code style](https://github.com/xooooooooox/radp-bash-framework/blob/main/docs/developer/code-style.md)
+- Use `radp_log_*` functions for logging
+- Quote variables: `"$var"`
+CONTRIBUTING
+
+  # Replace $project_name placeholder
+  sed -i.bak "s/\$project_name/$project_name/g" "$target_dir/CONTRIBUTING.md"
+  rm -f "$target_dir/CONTRIBUTING.md.bak"
 }
 
 #######################################
