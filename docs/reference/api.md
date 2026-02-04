@@ -10,7 +10,11 @@ The framework provides utility functions organized by domain under `src/main/she
   - [Return Code Conventions](#return-code-conventions)
 - [Logging (`radp_log_*`)](#logging-radp_log_)
 - [OS Detection (`radp_os_*`)](#os-detection-radp_os_)
+- [System Security (`radp_os_*`)](#system-security-radp_os_)
+- [System Resources (`radp_os_*`)](#system-resources-radp_os_)
+- [Cron Management (`radp_os_crontab_*`)](#cron-management-radp_os_crontab_)
 - [File System (`radp_io_*`)](#file-system-radp_io_)
+- [User Prompts (`radp_io_prompt_*`)](#user-prompts-radp_io_prompt_)
 - [Network (`radp_net_*`)](#network-radp_net_)
 - [Arrays (`radp_nr_*`)](#arrays-radp_nr_)
 - [Dry-Run Mode (`radp_exec_*`)](#dry-run-mode-radp_exec_)
@@ -210,6 +214,296 @@ radp_os_install_pkgs nginx --update --dry-run
 
 ---
 
+## System Security (`radp_os_*`)
+
+**Location:** `libs/toolkit/os/02_security.sh`
+
+### radp_os_disable_selinux
+
+Disable SELinux. Sets SELinux to permissive mode temporarily and disables it in config.
+
+```bash
+radp_os_disable_selinux()
+```
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success or already disabled, `1` on failure
+
+**Note:** Only applicable on systems with SELinux (RHEL, CentOS, Fedora, etc.). On systems without SELinux, returns `0`
+immediately.
+
+**Example:**
+
+```bash
+radp_os_disable_selinux || {
+  radp_log_error "Failed to disable SELinux"
+  return 1
+}
+```
+
+### radp_os_disable_firewalld
+
+Disable firewalld. Stops and disables the firewalld service.
+
+```bash
+radp_os_disable_firewalld()
+```
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success or already disabled, `1` on failure
+
+**Note:** Only applicable on systems with firewalld (RHEL, CentOS, Fedora, etc.). On systems without firewalld, returns
+`0` immediately.
+
+**Example:**
+
+```bash
+radp_os_disable_firewalld || {
+  radp_log_error "Failed to disable firewalld"
+  return 1
+}
+```
+
+---
+
+## System Resources (`radp_os_*`)
+
+**Location:** `libs/toolkit/os/03_resource.sh`
+
+### radp_os_check_min_cpu_cores
+
+Check if system has at least the specified number of CPU cores.
+
+```bash
+radp_os_check_min_cpu_cores (min_cores)
+```
+
+**Parameters:**
+
+- `min_cores` — Minimum required CPU cores
+
+**Returns:** `0` if system meets requirement, `1` if not
+
+**Outputs:** Warning message if requirement not met
+
+**Example:**
+
+```bash
+if ! radp_os_check_min_cpu_cores 4; then
+  radp_log_error "Insufficient CPU cores for this application"
+  exit 1
+fi
+```
+
+### radp_os_check_min_ram
+
+Check if system has at least the specified amount of RAM.
+
+```bash
+radp_os_check_min_ram (min_ram)
+```
+
+**Parameters:**
+
+- `min_ram` — Minimum required RAM (supports GB, G, MB, M suffixes)
+  - Examples: `"4GB"`, `"4G"`, `"4096MB"`, `"4096M"`, `"4096"` (MB default)
+
+**Returns:** `0` if system meets requirement, `1` if not
+
+**Outputs:** Warning message if requirement not met
+
+**Example:**
+
+```bash
+radp_os_check_min_ram 4GB || {
+  radp_log_error "System requires at least 4GB RAM"
+  exit 1
+}
+
+radp_os_check_min_ram 4G
+radp_os_check_min_ram 4096M
+```
+
+### radp_os_get_total_ram_mb
+
+Get total system RAM in MB.
+
+```bash
+radp_os_get_total_ram_mb()
+```
+
+**Returns:** `0` on success, `1` if unable to determine
+
+**Outputs:** Total RAM in MB to stdout
+
+**Example:**
+
+```bash
+ram_mb=$(radp_os_get_total_ram_mb)
+echo "System has ${ram_mb}MB RAM"
+
+ram_gb=$((ram_mb / 1024))
+echo "System has ${ram_gb}GB RAM"
+```
+
+### radp_os_get_cpu_cores
+
+Get total CPU cores count.
+
+```bash
+radp_os_get_cpu_cores()
+```
+
+**Returns:** `0` on success, `1` if unable to determine
+
+**Outputs:** Number of CPU cores to stdout
+
+**Example:**
+
+```bash
+cores=$(radp_os_get_cpu_cores)
+echo "System has $cores CPU cores"
+```
+
+---
+
+## Cron Management (`radp_os_crontab_*`)
+
+**Location:** `libs/toolkit/os/07_cron.sh`
+
+### radp_os_crontab_add
+
+Add or update crontab from a file. Merges contents of a crontab file into user's crontab.
+
+```bash
+radp_os_crontab_add (user crontab_file)
+```
+
+**Parameters:**
+
+- `user` — User to update crontab for
+- `crontab_file` — Path to crontab file to merge
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+# Create a crontab file
+cat >/tmp/my-crontab <<'EOF'
+# Backup every day at 4 AM
+0 4 * * * /usr/local/bin/backup.sh
+EOF
+
+radp_os_crontab_add "root" "/tmp/my-crontab"
+```
+
+### radp_os_create_or_update_crontab
+
+Create or replace crontab from content string.
+
+```bash
+radp_os_create_or_update_crontab (user content)
+```
+
+**Parameters:**
+
+- `user` — User to update crontab for
+- `content` — Crontab content (multiline string)
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+crontab_content=$(
+  cat <<'EOF'
+# Daily backup at 4 AM
+0 4 * * * /usr/local/bin/backup.sh
+# Weekly cleanup on Saturday at 8 PM
+0 20 * * 6 /usr/local/bin/cleanup.sh
+EOF
+)
+
+radp_os_create_or_update_crontab "vagrant" "$crontab_content"
+```
+
+### radp_os_crontab_remove
+
+Remove crontab entries matching pattern.
+
+```bash
+radp_os_crontab_remove (user pattern)
+```
+
+**Parameters:**
+
+- `user` — User to update crontab for
+- `pattern` — Grep pattern to match lines to remove
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+# Remove all backup-related cron entries
+radp_os_crontab_remove "root" "backup.sh"
+
+# Remove all gitlab-related cron entries
+radp_os_crontab_remove "vagrant" "gitlab"
+```
+
+### radp_os_crontab_list
+
+List user's crontab entries.
+
+```bash
+radp_os_crontab_list ([user])
+```
+
+**Parameters:**
+
+- `user` — User to list crontab for (optional, defaults to current user)
+
+**Returns:** `0` on success, `1` on failure or no crontab
+
+**Outputs:** Crontab contents to stdout
+
+**Example:**
+
+```bash
+# List current user's crontab
+radp_os_crontab_list
+
+# List root's crontab
+radp_os_crontab_list "root"
+
+# Check if crontab has entries
+if radp_os_crontab_list "vagrant" | grep -q "backup"; then
+  echo "Backup cron is configured"
+fi
+```
+
+---
+
 ## File System (`radp_io_*`)
 
 **Location:** `libs/toolkit/io/`
@@ -311,6 +605,100 @@ radp_io_mktemp_dir ([prefix])
 tmp_dir=$(radp_io_mktemp_dir "myapp")
 # Use $tmp_dir...
 # Directory is automatically cleaned up on script exit
+```
+
+### File Content
+
+#### radp_io_append_line_unique
+
+Append a line to file if it doesn't already exist (deduplication).
+
+```bash
+radp_io_append_line_unique (file_path line)
+```
+
+**Parameters:**
+
+- `file_path` — Path to the file
+- `line` — Line content to append
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix (optional, used if file requires elevated permissions)
+
+**Returns:** `0` on success (line added or already exists), `1` on failure
+
+**Example:**
+
+```bash
+radp_io_append_line_unique "/etc/hosts" "127.0.0.1 myhost"
+radp_io_append_line_unique "$HOME/.bashrc" "export PATH=\$PATH:/opt/bin"
+```
+
+---
+
+## User Prompts (`radp_io_prompt_*`)
+
+**Location:** `libs/toolkit/io/02_prompt.sh`
+
+### radp_io_prompt_confirm
+
+Confirmation prompt (y/N style). Displays a message and waits for user confirmation.
+
+```bash
+radp_io_prompt_confirm (--msg <string >[--default <Y | N >] [--timeout <sec >] [--level <info | warn | error >])
+```
+
+**Parameters:**
+
+- `--msg <string>` — Prompt message (required)
+- `--default <Y|N>` — Default answer if user presses Enter (default: `N`)
+- `--timeout <sec>` — Timeout in seconds (default: `0`, no timeout)
+- `--level <info|warn|error>` — Log level for the prompt (default: `info`)
+
+**Returns:** `0` if user confirmed (y/Y or default Y on timeout/empty input), `1` if user declined or timeout with
+default N
+
+**Example:**
+
+```bash
+radp_io_prompt_confirm --msg "Continue?" --default Y
+radp_io_prompt_confirm --msg "Delete file?" --level warn --timeout 30
+
+if radp_io_prompt_confirm --msg "Proceed with installation? (y/N)"; then
+  echo "Installing..."
+fi
+```
+
+### radp_nr_io_prompt_input
+
+Input prompt with nameref. Prompts user for input and stores result in a variable.
+
+```bash
+radp_nr_io_prompt_input (
+  nameref --msg <string >[--default <value >] [--timeout <sec >] [--level <info | warn | error >]
+)
+```
+
+**Parameters:**
+
+- `nameref` — Variable name to store user input (required, first positional argument)
+- `--msg <string>` — Prompt message (required)
+- `--default <value>` — Default value if user presses Enter
+- `--timeout <sec>` — Timeout in seconds (default: `0`, no timeout)
+- `--level <info|warn|error>` — Log level for the prompt (default: `info`)
+
+**Returns:** `0` on success, `1` on timeout or error
+
+**Example:**
+
+```bash
+local user_name
+radp_nr_io_prompt_input user_name --msg "Enter your name:" --default "anonymous"
+echo "Hello, $user_name"
+
+local choice
+radp_nr_io_prompt_input choice --msg "Select option:" --timeout 60
 ```
 
 ---

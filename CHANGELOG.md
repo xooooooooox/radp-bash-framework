@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v0.7.9
+
+### feat
+
+- Add IO module enhancements
+  - `radp_io_append_line_unique()` - Append line to file with deduplication
+  - `radp_io_prompt_confirm()` - Y/N confirmation prompt with timeout support
+  - `radp_nr_io_prompt_input()` - Input prompt with nameref for user input
+- Add OS security module (`02_security.sh`)
+  - `radp_os_disable_selinux()` - Disable SELinux (permissive + config)
+  - `radp_os_disable_firewalld()` - Stop and disable firewalld service
+- Add OS resource module (`03_resource.sh`)
+  - `radp_os_check_min_cpu_cores()` - Check minimum CPU cores requirement
+  - `radp_os_check_min_ram()` - Check minimum RAM requirement (supports GB/MB)
+  - `radp_os_get_total_ram_mb()` - Get total system RAM in MB
+  - `radp_os_get_cpu_cores()` - Get CPU cores count
+- Add cron management module (`07_cron.sh`)
+  - `radp_os_crontab_add()` - Merge crontab file into user's crontab
+  - `radp_os_create_or_update_crontab()` - Create/replace crontab from string
+  - `radp_os_crontab_remove()` - Remove crontab entries by pattern
+  - `radp_os_crontab_list()` - List user's crontab entries
+
 ## v0.7.8
 
 ### feat
@@ -60,7 +82,8 @@
   4. `$gr_fw_banner_file` (framework default)
 - Add `workflows` component to `radp-bf upgrade` command
   - Upgrades GitHub Actions workflows to latest templates
-  - Supports 8 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package, build-obs-package, update-homebrew-tap, attach-release-packages, cleanup-branches
+  - Supports 8 workflow files: release-prep, create-version-tag, update-spec-version, build-copr-package,
+    build-obs-package, update-homebrew-tap, attach-release-packages, cleanup-branches
   - Uses checksum-based user modification detection (skips modified files unless `--force`)
   - Templates use new version scheme (`gr_app_version` in `version.sh`)
 - Add `attach-release-packages.yml` workflow to scaffold
