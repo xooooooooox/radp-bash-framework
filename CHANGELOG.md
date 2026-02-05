@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.7.13
+
+### fix
+
+- completion
+
 ## v0.7.12
 
 ### refactor
