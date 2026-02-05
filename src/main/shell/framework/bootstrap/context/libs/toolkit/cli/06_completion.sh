@@ -159,16 +159,24 @@ __radp_cli_bash_gen_cmd_completion() {
     fi
   done <<<"${meta[options]}"
 
-  # 解析参数的动态补全
+  # 解析参数的补全（静态值或动态函数）
   local -a arg_complete_funcs=()
+  local -a arg_static_values=()
   local arg_line arg_idx=0
   while IFS= read -r arg_line; do
     [[ -z "$arg_line" ]] && continue
     local -A arg_info=()
     radp_cli_parse_arg_spec "$arg_line" arg_info
-    local complete_func
-    if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
-      arg_complete_funcs[$arg_idx]="$complete_func"
+    # Check for static values first
+    local static_values
+    if static_values=$(radp_cli_get_arg_values "${arg_info[name]}" "${meta[arg_values]}" 2>/dev/null); then
+      arg_static_values[$arg_idx]="$static_values"
+    else
+      # Check for dynamic completion function
+      local complete_func
+      if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
+        arg_complete_funcs[$arg_idx]="$complete_func"
+      fi
     fi
     ((arg_idx++)) || true
   done <<<"${meta[args]}"
@@ -181,8 +189,8 @@ __radp_cli_bash_gen_cmd_completion() {
   echo "        '$cmd_path')"
 
   # 检查是否需要复杂的补全逻辑
-  if [[ ${#opt_complete_funcs[@]} -gt 0 || ${#arg_complete_funcs[@]} -gt 0 ]]; then
-    # 有动态补全：生成复杂逻辑
+  if [[ ${#opt_complete_funcs[@]} -gt 0 || ${#arg_complete_funcs[@]} -gt 0 || ${#arg_static_values[@]} -gt 0 ]]; then
+    # 有动态补全或静态值：生成复杂逻辑
 
     # 只有当有选项动态补全时才生成 case "$prev"
     if [[ ${#opt_complete_funcs[@]} -gt 0 ]]; then
@@ -204,8 +212,8 @@ __radp_cli_bash_gen_cmd_completion() {
       echo "            esac"
     fi
 
-    # 参数位置的动态补全
-    if [[ ${#arg_complete_funcs[@]} -gt 0 ]]; then
+    # 参数位置的补全（静态值或动态函数）
+    if [[ ${#arg_complete_funcs[@]} -gt 0 || ${#arg_static_values[@]} -gt 0 ]]; then
       echo "            # 计算参数位置（减去命令路径深度）"
       echo "            local arg_idx=0"
       echo "            for ((i = 1; i < cword; i++)); do"
@@ -217,6 +225,15 @@ __radp_cli_bash_gen_cmd_completion() {
       echo "            ((arg_idx -= $cmd_depth)) || true"
       echo "            # 根据参数位置补全"
       echo "            case \"\$arg_idx\" in"
+      # Generate cases for static values
+      for idx in "${!arg_static_values[@]}"; do
+        local values="${arg_static_values[$idx]}"
+        echo "                $idx)"
+        echo "                    COMPREPLY=(\$(compgen -W \"$values\" -- \"\$cur\"))"
+        echo "                    return"
+        echo "                    ;;"
+      done
+      # Generate cases for dynamic functions
       for idx in "${!arg_complete_funcs[@]}"; do
         local func="${arg_complete_funcs[$idx]}"
         echo "                $idx)"
@@ -374,6 +391,12 @@ radp_cli_completion_zsh() {
     local opt
     for opt in ${__radp_cli_global_options}; do
       case "$opt" in
+      -q)
+        global_opts_spec+="        '(-q --quiet)'{-q,--quiet}'[Enable quiet mode]' \\"$'\n'
+        ;;
+      --quiet)
+        # 已在 -q 处理
+        ;;
       -v)
         global_opts_spec+="        '(-v --verbose)'{-v,--verbose}'[Enable verbose output]' \\"$'\n'
         ;;
@@ -383,9 +406,18 @@ radp_cli_completion_zsh() {
       --debug)
         global_opts_spec+="        '--debug[Enable debug output]' \\"$'\n'
         ;;
+      --show-config)
+        global_opts_spec+="        '--show-config[Show configuration]' \\"$'\n'
+        ;;
+      --all)
+        global_opts_spec+="        '--all[Show all (with --show-config)]' \\"$'\n'
+        ;;
+      --json)
+        global_opts_spec+="        '--json[Output as JSON (with --show-config)]' \\"$'\n'
+        ;;
       *)
-        # 其他选项
-        global_opts_spec+="        '$opt' \\"$'\n'
+        # 其他选项 - 添加基本格式
+        global_opts_spec+="        '${opt}[${opt}]' \\"$'\n'
         ;;
       esac
     done
@@ -602,9 +634,11 @@ __radp_cli_zsh_gen_leaf_func() {
 
     local opt_spec=""
     if [[ -n "${opt_info[short]}" && -n "${opt_info[long]}" ]]; then
+      # Format: '(-s --long)'{-s,--long}'[desc]'
       opt_spec="'(-${opt_info[short]} --${opt_info[long]})'{-${opt_info[short]},--${opt_info[long]}}'"
     elif [[ -n "${opt_info[long]}" ]]; then
-      opt_spec="'--${opt_info[long]}'"
+      # Format: '--long[desc]' (no exclusion group needed for long-only options)
+      opt_spec="'--${opt_info[long]}"
     fi
 
     if [[ -n "$opt_spec" ]]; then
@@ -624,12 +658,11 @@ __radp_cli_zsh_gen_leaf_func() {
     fi
   done <<<"${meta[options]}"
 
-  # 生成参数补全
+  # 收集参数补全规格
+  local -a arg_specs=()
   local arg_line arg_idx=1
-  local has_args=false
   while IFS= read -r arg_line; do
     [[ -z "$arg_line" ]] && continue
-    has_args=true
     local -A arg_info=()
     radp_cli_parse_arg_spec "$arg_line" arg_info
 
@@ -640,20 +673,38 @@ __radp_cli_zsh_gen_leaf_func() {
       arg_spec="'$arg_idx"
     fi
 
-    local complete_func
-    if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
-      local wrapper_name="_${app_func}_arg_${func_suffix}_${arg_info[name]}"
-      echo "        ${arg_spec}:${arg_info[name]}:${wrapper_name}'"
+    # Check for static values first (via @arg-values)
+    local static_values
+    if static_values=$(radp_cli_get_arg_values "${arg_info[name]}" "${meta[arg_values]}" 2>/dev/null); then
+      # Use static completion: '1:name:(val1 val2 val3)'
+      arg_specs+=("${arg_spec}:${arg_info[name]}:(${static_values})'")
     else
-      echo "        ${arg_spec}:${arg_info[name]}:_files'"
+      # Check for dynamic completion function
+      local complete_func
+      if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
+        local wrapper_name="_${app_func}_arg_${func_suffix}_${arg_info[name]}"
+        arg_specs+=("${arg_spec}:${arg_info[name]}:${wrapper_name}'")
+      else
+        arg_specs+=("${arg_spec}:${arg_info[name]}:_files'")
+      fi
     fi
     ((arg_idx++)) || true
   done <<<"${meta[args]}"
 
   # 如果没有参数，添加默认文件补全
-  if [[ "$has_args" != "true" ]]; then
-    echo "        '*:file:_files'"
+  if [[ ${#arg_specs[@]} -eq 0 ]]; then
+    arg_specs+=("'*:file:_files'")
   fi
+
+  # 输出参数补全（最后一个不加 \）
+  local i
+  for ((i = 0; i < ${#arg_specs[@]}; i++)); do
+    if [[ $i -lt $((${#arg_specs[@]} - 1)) ]]; then
+      echo "        ${arg_specs[$i]} \\"
+    else
+      echo "        ${arg_specs[$i]}"
+    fi
+  done
 
   echo "}"
   echo ""

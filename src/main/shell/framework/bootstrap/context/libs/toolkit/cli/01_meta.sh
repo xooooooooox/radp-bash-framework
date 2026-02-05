@@ -37,6 +37,7 @@ radp_cli_parse_meta() {
   local -a options=()
   local -a examples=()
   local -a completes=()
+  local -a arg_values=()
   local -a metas=()
   local is_cmd=false
 
@@ -72,6 +73,10 @@ radp_cli_parse_meta() {
     @complete\ *)
       completes+=("${line#@complete }")
       ;;
+    @arg-values\ *)
+      # Format: @arg-values <name> <value1> <value2> ...
+      arg_values+=("${line#@arg-values }")
+      ;;
     @meta\ *)
       metas+=("${line#@meta }")
       ;;
@@ -86,6 +91,7 @@ radp_cli_parse_meta() {
   __meta_ref[options]="$(printf '%s\n' "${options[@]}")"
   __meta_ref[examples]="$(printf '%s\n' "${examples[@]}")"
   __meta_ref[completes]="$(printf '%s\n' "${completes[@]}")"
+  __meta_ref[arg_values]="$(printf '%s\n' "${arg_values[@]}")"
   __meta_ref[metas]="$(printf '%s\n' "${metas[@]}")"
 
   return 0
@@ -248,6 +254,36 @@ radp_cli_get_complete_func() {
       return 0
     fi
   done <<<"$completes"
+
+  return 1
+}
+
+#######################################
+# 获取参数的静态补全值
+# Arguments:
+#   1 - name: 参数名
+#   2 - arg_values: @arg-values 规格（换行分隔）
+# Outputs:
+#   空格分隔的值列表
+# Returns:
+#   0 - 找到
+#   1 - 未找到
+#######################################
+radp_cli_get_arg_values() {
+  local name="$1"
+  local arg_values="$2"
+
+  local line
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    # Format: <name> <value1> <value2> ...
+    local arg_name="${line%% *}"
+    if [[ "$arg_name" == "$name" ]]; then
+      # Return values after the name
+      echo "${line#* }"
+      return 0
+    fi
+  done <<<"$arg_values"
 
   return 1
 }
