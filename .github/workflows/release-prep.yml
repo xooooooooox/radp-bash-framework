@@ -147,6 +147,19 @@ jobs:
             raise SystemExit("Failed to update gr_fw_version in constants.sh")
           constants_path.write_text(constants_text)
 
+          version_sh_path = Path("src/main/shell/commands/version.sh")
+          if version_sh_path.exists():
+            version_sh_text = version_sh_path.read_text()
+            version_sh_text, count = re.subn(
+              r'^declare -gr gr_app_version="[^"]*"',
+              f'declare -gr gr_app_version="{version}"',
+              version_sh_text,
+              flags=re.M,
+            )
+            if count > 0:
+              version_sh_path.write_text(version_sh_text)
+              print(f"Updated gr_app_version in {version_sh_path}")
+
           for spec_path in [
             Path("packaging/copr/radp-bash-framework.spec"),
             Path("packaging/obs/radp-bash-framework.spec"),
@@ -288,6 +301,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add \
             src/main/shell/framework/bootstrap/context/vars/constants/constants.sh \
+            src/main/shell/commands/version.sh \
             completions/ \
             packaging/copr/radp-bash-framework.spec \
             packaging/obs/radp-bash-framework.spec \
@@ -312,7 +326,7 @@ jobs:
           cat > "${body_file}" <<EOF
           Release prep for ${version}.
 
-          - Update gr_fw_version
+          - Update gr_fw_version and gr_app_version
           - Sync spec versions
           - Regenerate completion files
           - Add changelog entry (please review and edit)
