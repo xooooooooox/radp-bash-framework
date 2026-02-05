@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## v0.7.10
+## v0.7.9
+
+### refactor
+
+- Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
 
 ### feat
 
@@ -12,15 +16,6 @@
   - Help and completion systems updated to include application global options
 - Add `globals` component to `upgrade` command to add `_globals.sh` to existing projects
 - Add `_globals.sh` template to `new` scaffold command
-
-### changed
-
-- Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
-
-## v0.7.9
-
-### feat
-
 - Add IO module enhancements
   - `radp_io_append_line_unique()` - Append line to file with deduplication
   - `radp_io_prompt_confirm()` - Y/N confirmation prompt with timeout support
