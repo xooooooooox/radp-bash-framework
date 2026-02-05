@@ -50,7 +50,10 @@ radp_cli_help_app() {
     echo
   fi
 
-  # 输出全局选项
+  # 输出应用级全局选项
+  radp_cli_app_global_options_help
+
+  # 输出框架全局选项
   __radp_cli_help_global_options
 
   echo "Run '$app_name <command> --help' for more information on a command."
@@ -97,8 +100,8 @@ __radp_cli_help_global_options() {
   fi
 
   # 内置选项
-  echo "  --config                Show configuration"
-  echo "  --config --all          Show configuration with extensions"
+  echo "  --show-config           Show configuration"
+  echo "  --show-config --all     Show configuration with extensions"
   echo "  -h, --help              Show help"
   echo "  --version               Show version"
   echo

@@ -191,6 +191,25 @@ cmd_hello() {
     echo "$message"
 }
 HELLO_CMD
+
+  # 应用级全局选项示例文件
+  cat >"$target_dir/src/main/shell/commands/_globals.sh" <<'GLOBALS_CMD'
+#!/usr/bin/env bash
+# Application-level global options
+# These options are available to all commands
+#
+# Usage: Define @global annotations here, similar to @option in command files
+# Variables will be available as gopt_<name> (e.g., gopt_verbose)
+#
+# Syntax examples:
+#   @global -v, --verbose Enable verbose output
+#   @global -c, --config <dir> Configuration directory
+#   @global -e, --env <name> Environment name [default: local]
+#
+# Note: These options can be placed before or after the command:
+#   mycli -c /path list
+#   mycli list -c /path
+GLOBALS_CMD
 }
 
 #######################################

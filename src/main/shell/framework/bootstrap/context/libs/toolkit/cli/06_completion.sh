@@ -55,12 +55,13 @@ BASH_COMPLETION_FUNC
   echo "    # Command completions"
   echo "    case \"\$cmd_path\" in"
 
-  # 顶级补全（包含全局选项）
-  local top_commands global_opts
+  # 顶级补全（包含全局选项和应用级全局选项）
+  local top_commands global_opts app_global_opts
   top_commands=$(radp_cli_list_commands | tr '\n' ' ')
   global_opts="${__radp_cli_global_options:-}"
+  app_global_opts="${__radp_cli_app_global_options:-}"
   echo "        '')"
-  echo "            COMPREPLY=(\$(compgen -W \"$top_commands $global_opts --help --version\" -- \"\$cur\"))"
+  echo "            COMPREPLY=(\$(compgen -W \"$top_commands $global_opts $app_global_opts --help --version\" -- \"\$cur\"))"
   echo "            ;;"
 
   # 递归生成所有命令路径的补全
@@ -136,7 +137,8 @@ __radp_cli_bash_gen_cmd_completion() {
     is_passthrough=true
   fi
 
-  local options="--help"
+  # 包含应用级全局选项（支持命令后使用）
+  local options="--help ${__radp_cli_app_global_options:-}"
   local -a opt_with_value=()
   local -A opt_complete_funcs=()
 
@@ -399,6 +401,30 @@ radp_cli_completion_zsh() {
     done
   fi
 
+  # 生成应用级全局选项的 _arguments 规格
+  local app_global_opts_spec=""
+  if [[ ${#__radp_cli_app_global_options_spec[@]} -gt 0 ]]; then
+    local spec
+    for spec in "${__radp_cli_app_global_options_spec[@]}"; do
+      local -A opt_info=()
+      radp_cli_parse_option_spec "$spec" opt_info
+      local opt_spec=""
+      if [[ -n "${opt_info[short]}" && -n "${opt_info[long]}" ]]; then
+        opt_spec="'(-${opt_info[short]} --${opt_info[long]})'{-${opt_info[short]},--${opt_info[long]}}'"
+      elif [[ -n "${opt_info[long]}" ]]; then
+        opt_spec="'--${opt_info[long]}'"
+      fi
+      if [[ -n "$opt_spec" ]]; then
+        local desc="${opt_info[desc]//\'/\'\\\'\'}"
+        if [[ "${opt_info[has_value]}" == "true" ]]; then
+          app_global_opts_spec+="        ${opt_spec}[${desc}]:${opt_info[value_name]}:' \\"$'\n'
+        else
+          app_global_opts_spec+="        ${opt_spec}[${desc}]' \\"$'\n'
+        fi
+      fi
+    done
+  fi
+
   # 递归生成所有子命令的独立函数
   local cmd
   for cmd in $(radp_cli_list_commands); do
@@ -419,6 +445,11 @@ ZSH_COMPLETION_HEADER
   # 输出全局选项
   if [[ -n "$global_opts_spec" ]]; then
     printf '%s' "$global_opts_spec"
+  fi
+
+  # 输出应用级全局选项
+  if [[ -n "$app_global_opts_spec" ]]; then
+    printf '%s' "$app_global_opts_spec"
   fi
 
   cat <<'ZSH_COMPLETION_ARGS'

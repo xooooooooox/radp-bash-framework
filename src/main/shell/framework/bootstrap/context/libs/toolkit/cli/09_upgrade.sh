@@ -3,7 +3,7 @@
 # CLI 项目升级：升级基于 radp-bash-framework 创建的 CLI 项目
 
 # 可升级的组件列表
-declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging)
+declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging globals)
 
 #######################################
 # 升级 CLI 项目
@@ -258,6 +258,9 @@ __radp_upgrade_component() {
   packaging)
     __radp_upgrade_packaging "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
     ;;
+  globals)
+    __radp_upgrade_globals "$target_dir" "$dry_run" "$force" "$show_diff"
+    ;;
   *)
     return 1
     ;;
@@ -452,6 +455,56 @@ __radp_upgrade_gitignore() {
   else
     echo "$new_content" >"$gitignore_file"
     echo "  [UPDATE] .gitignore"
+  fi
+
+  return 0
+}
+
+#######################################
+# 升级 _globals.sh（应用级全局选项）
+# 如果文件不存在则创建示例文件
+#######################################
+__radp_upgrade_globals() {
+  local target_dir="$1"
+  local dry_run="$2"
+  local force="$3"
+  local show_diff="$4"
+
+  local globals_file="$target_dir/src/main/shell/commands/_globals.sh"
+
+  # 如果文件已存在，不覆盖（保留用户自定义内容）
+  if [[ -f "$globals_file" ]]; then
+    echo "  [OK]   commands/_globals.sh (already exists)"
+    return 1
+  fi
+
+  # 生成示例文件
+  local new_content
+  new_content=$(cat <<'GLOBALS_CMD'
+#!/usr/bin/env bash
+# Application-level global options
+# These options are available to all commands
+#
+# Usage: Define @global annotations here, similar to @option in command files
+# Variables will be available as gopt_<name> (e.g., gopt_verbose)
+#
+# Syntax examples:
+#   @global -v, --verbose Enable verbose output
+#   @global -c, --config <dir> Configuration directory
+#   @global -e, --env <name> Environment name [default: local]
+#
+# Note: These options can be placed before or after the command:
+#   mycli -c /path list
+#   mycli list -c /path
+GLOBALS_CMD
+)
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "  [CREATE] commands/_globals.sh"
+  else
+    mkdir -p "$(dirname "$globals_file")"
+    echo "$new_content" >"$globals_file"
+    echo "  [CREATE] commands/_globals.sh"
   fi
 
   return 0

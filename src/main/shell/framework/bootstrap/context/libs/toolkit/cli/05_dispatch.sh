@@ -135,6 +135,9 @@ __radp_cli_execute_cmd() {
         # 透传模式：所有参数直接传递给命令函数（包括 --help）
         # 用户可通过 `<app> help <cmd>` 查看命令自身的帮助
 
+        # 在透传前提取应用级全局选项（命令后位置）
+        radp_cli_extract_app_global_options cmd_args
+
         # 加载命令文件
         # shellcheck source=/dev/null
         source "$cmd_file"
@@ -149,7 +152,9 @@ __radp_cli_execute_cmd() {
         # 直接传递所有参数给命令函数
         "cmd_$func_name" "${cmd_args[@]}"
     else
-        # 正常模式：解析参数
+        # 正常模式：先提取命令后的应用级全局选项，再解析命令选项
+        radp_cli_extract_app_global_options cmd_args
+
         if ! radp_cli_parse_args "${meta[options]}" "${meta[args]}" "${cmd_args[@]}"; then
             echo
             radp_cli_help_command "$cmd_path"
