@@ -2,12 +2,6 @@
 
 ## v0.7.10
 
-### feat
-
-- optimize redp-bf help
-
-## v0.7.9
-
 ### refactor
 
 - Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
