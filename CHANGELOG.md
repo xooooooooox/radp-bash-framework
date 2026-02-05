@@ -2,12 +2,6 @@
 
 ## v0.7.13
 
-### fix
-
-- completion
-
-## v0.7.12
-
 ### refactor
 
 - Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
