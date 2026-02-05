@@ -46,14 +46,14 @@ radp_os_load_kernel_modules() {
 
     $gr_sudo modprobe "$module" || {
       radp_log_error "Failed to load kernel module: $module"
-      ((failed++))
+      ((++failed))
       continue
     }
 
     # Verify module loaded
     if ! radp_os_is_kernel_module_loaded "$module"; then
       radp_log_error "Kernel module not loaded after modprobe: $module"
-      ((failed++))
+      ((++failed))
       continue
     fi
 

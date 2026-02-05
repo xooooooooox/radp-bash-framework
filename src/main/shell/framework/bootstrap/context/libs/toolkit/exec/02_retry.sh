@@ -49,7 +49,7 @@ radp_wait_until() {
     if eval "$condition_cmd" &>/dev/null; then
       return 0
     fi
-    ((attempt++))
+    ((++attempt))
     [[ $attempt -lt $max_attempts ]] && sleep "$interval"
   done
 
@@ -100,7 +100,7 @@ radp_retry() {
   local attempt=0
   local exit_code=1
   while [[ $attempt -lt $max_attempts ]]; do
-    ((attempt++))
+    ((attempt++)) || true
     radp_log_debug "Attempt $attempt/$max_attempts: $cmd"
     if eval "$cmd"; then
       return 0
