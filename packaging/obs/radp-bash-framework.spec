@@ -9,7 +9,7 @@
 #----------------------------------------------------------------------------------------------------------------------#
 
 Name:           radp-bash-framework
-Version:        0.7.13
+Version:        0.7.14
 Release:        1%{?dist}
 Summary:        Modular Bash framework with structured context
 
