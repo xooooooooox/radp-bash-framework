@@ -106,3 +106,46 @@ radp_os_disable_firewalld() {
 
   return 0
 }
+
+#######################################
+# Disable swap
+# Disables swap immediately and removes swap entries from fstab
+# Globals:
+#   gr_sudo - sudo command prefix
+# Returns:
+#   0 - Successfully disabled or already disabled
+#   1 - Failed to disable
+# Note:
+#   Required for Kubernetes nodes
+#######################################
+radp_os_disable_swap() {
+  # Check if swap is enabled
+  local swap_status
+  swap_status=$(swapon --show 2>/dev/null)
+
+  if [[ -z "$swap_status" ]]; then
+    radp_log_info "Swap is already disabled"
+    return 0
+  fi
+
+  radp_log_info "Disabling swap..."
+
+  # Disable swap immediately
+  $gr_sudo swapoff -a || {
+    radp_log_error "Failed to disable swap"
+    return 1
+  }
+  radp_log_info "Swap disabled"
+
+  # Comment out swap entries in /etc/fstab for persistence
+  if [[ -f /etc/fstab ]]; then
+    if grep -q '^[^#].*swap' /etc/fstab; then
+      $gr_sudo sed -i 's/^\([^#].*swap.*\)$/#\1/' /etc/fstab || {
+        radp_log_warn "Failed to comment out swap in /etc/fstab"
+      }
+      radp_log_info "Swap entries commented out in /etc/fstab"
+    fi
+  fi
+
+  return 0
+}
