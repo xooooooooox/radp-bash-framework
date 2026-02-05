@@ -386,6 +386,7 @@ radp_cli_completion_zsh() {
   __radp_cli_zsh_gen_completion_wrappers "$app_func"
 
   # 生成全局选项的 _arguments 规格（用于顶级函数）
+  # 使用 brace expansion 格式（zsh 标准格式），配合 -s 标志支持短选项补全
   local global_opts_spec=""
   if [[ -n "${__radp_cli_global_options:-}" ]]; then
     local opt
@@ -424,6 +425,7 @@ radp_cli_completion_zsh() {
   fi
 
   # 生成应用级全局选项的 _arguments 规格
+  # 使用 brace expansion 格式（zsh 标准格式）
   local app_global_opts_spec=""
   if [[ ${#__radp_cli_app_global_options_spec[@]} -gt 0 ]]; then
     local spec
@@ -454,12 +456,13 @@ radp_cli_completion_zsh() {
   done
 
   # 生成顶级入口函数
+  # 注意：必须同时使用 -C（支持子命令状态机）和 -s（支持短选项补全）
   cat <<ZSH_COMPLETION_HEADER
 _${app_func}() {
     local context state state_descr line
     typeset -A opt_args
 
-    _arguments -C \\
+    _arguments -C -s \\
         '(-h --help)'{-h,--help}'[Show help]' \\
         '--version[Show version]' \\
 ZSH_COMPLETION_HEADER
@@ -533,12 +536,13 @@ __radp_cli_zsh_gen_cmd_func() {
 
   if radp_cli_has_subcommands "$cmd_path"; then
     # 有子命令：生成带状态机的函数
+    # 注意：必须同时使用 -C（支持子命令状态机）和 -s（支持短选项补全）
     cat <<FUNC_HEADER
 ${func_name}() {
     local context state state_descr line
     typeset -A opt_args
 
-    _arguments -C \\
+    _arguments -C -s \\
         '(-h --help)'{-h,--help}'[Show help]' \\
         '1: :->command' \\
         '*:: :->args'
