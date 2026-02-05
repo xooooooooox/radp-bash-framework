@@ -25,7 +25,7 @@ declare -g gw_radp_app_config_all=false
 
 #######################################
 # 解析全局选项并过滤命令行参数
-# 处理 -q, -v, --debug, --config 等全局选项
+# 处理 -q, -v, --debug, --show-config 等全局选项
 # Globals:
 #   gwa_radp_app_filtered_args - 输出：过滤后的参数数组
 #   gw_radp_app_show_config    - 输出：是否显示配置
@@ -69,12 +69,12 @@ __radp_app_parse_global_options() {
       debug=true
       shift
       ;;
-    --config)
+    --show-config)
       show_config=true
       shift
       ;;
     --json)
-      # Only valid after --config
+      # Only valid after --show-config
       if [[ "$show_config" == "true" ]]; then
         config_json=true
       else
@@ -83,7 +83,7 @@ __radp_app_parse_global_options() {
       shift
       ;;
     --all)
-      # Only valid after --config
+      # Only valid after --show-config
       if [[ "$show_config" == "true" ]]; then
         config_all=true
       else
@@ -110,7 +110,7 @@ __radp_app_parse_global_options() {
     esac
   done
 
-  # 设置 --config 模式
+  # 设置 --show-config 模式
   if [[ "$show_config" == "true" ]]; then
     gw_radp_app_show_config=true
     export __RADP_APP_SHOW_CONFIG=true
@@ -236,7 +236,7 @@ __radp_app_configure_cli() {
   radp_cli_set_commands_dir "$commands_dir"
 
   # 设置默认全局选项（用于帮助和补全）
-  radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--config" "--all" "--json"
+  radp_cli_set_global_options "-q" "--quiet" "-v" "--verbose" "--debug" "--show-config" "--all" "--json"
 }
 
 #######################################
@@ -250,11 +250,17 @@ __radp_app_configure_cli() {
 #   命令执行的退出码
 #######################################
 __radp_app_dispatch() {
-  # Handle --config option
+  # Handle --show-config option
   if [[ "$gw_radp_app_show_config" == "true" ]]; then
     radp_app_show_config
     exit 0
   fi
+
+  # 加载应用级全局选项定义
+  radp_cli_load_app_global_options
+
+  # 解析命令前的应用级全局选项
+  radp_cli_parse_app_global_options gwa_radp_app_filtered_args
 
   if [[ ${#gwa_radp_app_filtered_args[@]} -eq 0 ]]; then
     # 无参数时显示帮助
