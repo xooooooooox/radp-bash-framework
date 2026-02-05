@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.7.10
+
+### feat
+
+- optimize redp-bf help
+
 ## v0.7.9
 
 ### refactor
