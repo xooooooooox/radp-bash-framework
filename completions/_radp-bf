@@ -12,14 +12,14 @@ _radp_bf_completion() {
 _radp_bf_new() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[Show help]' \
-        '1:name:_files'
+        '1:name:_files' \
         '2:dir:_files'
 }
 
 _radp_bf_path() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[Show help]' \
-        '1:name:_files'
+        '1:name:(init launcher root)'
 }
 
 _radp_bf_resolve_root() {
@@ -31,19 +31,19 @@ _radp_bf_resolve_root() {
 _radp_bf_self_update() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[Show help]' \
-        '--check'[Only check for updates, don'\''t download]' \
-        '--force'[Force update even if already at latest version]' \
-        '--full'[Download full version with bundled dependencies]' \
+        '--check[Only check for updates, don'\''t download]' \
+        '--force[Force update even if already at latest version]' \
+        '--full[Download full version with bundled dependencies]' \
         '*:file:_files'
 }
 
 _radp_bf_upgrade() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[Show help]' \
-        '--dry-run'[Show changes without applying]' \
-        '--force'[Overwrite user-modified files]' \
-        '--diff'[Show file differences]' \
-        '1:dir:_files'
+        '--dry-run[Show changes without applying]' \
+        '--force[Overwrite user-modified files]' \
+        '--diff[Show file differences]' \
+        '1:dir:_files' \
         '*:components~:_files'
 }
 
@@ -60,13 +60,12 @@ _radp_bf() {
     _arguments -C \
         '(-h --help)'{-h,--help}'[Show help]' \
         '--version[Show version]' \
-        '-q' \
-        '--quiet' \
+        '(-q --quiet)'{-q,--quiet}'[Enable quiet mode]' \
         '(-v --verbose)'{-v,--verbose}'[Enable verbose output]' \
         '--debug[Enable debug output]' \
-        '--show-config' \
-        '--all' \
-        '--json' \
+        '--show-config[Show configuration]' \
+        '--all[Show all (with --show-config)]' \
+        '--json[Output as JSON (with --show-config)]' \
         '1: :->command' \
         '*:: :->args'
 
