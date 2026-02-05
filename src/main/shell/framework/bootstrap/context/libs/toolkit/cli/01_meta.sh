@@ -126,11 +126,12 @@ radp_cli_parse_arg_spec() {
   fi
 
   # 检查修饰符
+  # Note: ~ and ! need to be escaped in parameter expansion patterns
   if [[ "$name" == *"!" ]]; then
-    name="${name%!}"
+    name="${name%\!}"
     required=true
   elif [[ "$name" == *"~" ]]; then
-    name="${name%~}"
+    name="${name%\~}"
     variadic=true
   fi
 

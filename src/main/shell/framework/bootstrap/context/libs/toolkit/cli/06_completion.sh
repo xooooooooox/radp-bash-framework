@@ -462,10 +462,38 @@ _${app_func}() {
     local context state state_descr line
     typeset -A opt_args
 
+    # Workaround: Handle option prefix completion explicitly
+    # Without this, -<TAB> may fall through to command completion
+    # because _arguments -C doesn't trigger option completion for
+    # incomplete option prefixes when positional args are specified
+    if [[ \$CURRENT -eq 2 && "\${words[CURRENT]}" == -* ]]; then
+        _arguments -s \\
+            '(-h --help)'{-h,--help}'[Show help]' \\
+            '--version[Show version]' \\
+ZSH_COMPLETION_HEADER
+
+  # Insert global options (framework-level) for workaround block
+  if [[ -n "$global_opts_spec" ]]; then
+    printf '%s' "$global_opts_spec"
+  fi
+  # Insert global options (app-level) for workaround block
+  if [[ -n "$app_global_opts_spec" ]]; then
+    printf '%s' "$app_global_opts_spec"
+  fi
+
+  # Close workaround block, remove trailing backslash from last option
+  cat <<'ZSH_WORKAROUND_END'
+        && return
+    fi
+
+ZSH_WORKAROUND_END
+
+  # Now output the normal _arguments -C -s block
+  cat <<ZSH_COMPLETION_MAIN
     _arguments -C -s \\
         '(-h --help)'{-h,--help}'[Show help]' \\
         '--version[Show version]' \\
-ZSH_COMPLETION_HEADER
+ZSH_COMPLETION_MAIN
 
   # 输出全局选项
   if [[ -n "$global_opts_spec" ]]; then
@@ -609,7 +637,7 @@ __radp_cli_zsh_gen_leaf_func() {
   echo "${func_name}() {"
 
   if ! radp_cli_cmd_exists "$cmd_path"; then
-    echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
+    echo "    _arguments -s '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
     echo "}"
     echo ""
     return
@@ -617,7 +645,16 @@ __radp_cli_zsh_gen_leaf_func() {
 
   local -A meta=()
   if ! radp_cli_get_cmd_meta "$cmd_path" meta 2>/dev/null; then
-    echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
+    echo "    _arguments -s '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
+    echo "}"
+    echo ""
+    return
+  fi
+
+  # passthrough 模式：不添加任何框架选项，只使用通用文件补全
+  # 这允许透传命令的原生补全不被干扰
+  if [[ "${meta[metas]}" == *passthrough* ]]; then
+    echo "    _files"
     echo "}"
     echo ""
     return
