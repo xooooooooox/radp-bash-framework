@@ -441,7 +441,17 @@ radp_cli_completion_zsh() {
       if [[ -n "$opt_spec" ]]; then
         local desc="${opt_info[desc]//\'/\'\\\'\'}"
         if [[ "${opt_info[has_value]}" == "true" ]]; then
-          app_global_opts_spec+="        ${opt_spec}[${desc}]:${opt_info[value_name]}:' \\"$'\n'
+          # Add default completion function based on value_name
+          local value_completion=""
+          case "${opt_info[value_name]}" in
+            dir)
+              value_completion="_files -/"
+              ;;
+            file)
+              value_completion="_files"
+              ;;
+          esac
+          app_global_opts_spec+="        ${opt_spec}[${desc}]:${opt_info[value_name]}:${value_completion}' \\"$'\n'
         else
           app_global_opts_spec+="        ${opt_spec}[${desc}]' \\"$'\n'
         fi
