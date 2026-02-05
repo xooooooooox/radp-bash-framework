@@ -45,19 +45,23 @@ __radp_bf_path_fast() {
   esac
 }
 
-# Fast path 处理
+# Fast path 处理（--help 和 -h 交给框架处理）
 case "${1:-}" in
   path)
-    __radp_bf_path_fast "${2:-}"
-    exit $?
+    if [[ "${2:-}" == "--help" || "${2:-}" == "-h" || -z ${2:-} ]]; then
+      : # Fall through to framework for help
+    else
+      __radp_bf_path_fast "${2:-}"
+      exit $?
+    fi
     ;;
   resolve-root)
-    if [[ -z "${2:-}" ]]; then
-      echo "radp-bf resolve-root: script path required" >&2
-      exit 1
+    if [[ "${2:-}" == "--help" || "${2:-}" == "-h" || -z "${2:-}" ]]; then
+      : # Fall through to framework for help
+    else
+      __radp_bf_resolve_root "$2"
+      exit $?
     fi
-    __radp_bf_resolve_root "$2"
-    exit $?
     ;;
 esac
 
