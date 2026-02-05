@@ -115,6 +115,133 @@ cmd_greet() {
 
 See [Command Annotations](annotations.md) for complete reference.
 
+## Application Global Options
+
+Application-level global options are options that are available to all commands in your CLI. Unlike command-specific
+options (defined with `@option`), global options are defined once and automatically available everywhere.
+
+### Defining Global Options
+
+Create a `_globals.sh` file in your `commands/` directory:
+
+```bash
+# src/main/shell/commands/_globals.sh
+
+#!/usr/bin/env bash
+# Application-level global options
+# These options are available to all commands
+
+# @global -c, --config <dir> Configuration directory
+# @global -e, --env <name> Environment name [default: local]
+# @global -v, --verbose Enable verbose output
+```
+
+### Syntax
+
+The `@global` annotation uses the same syntax as `@option`:
+
+| Annotation                              | Description               | Variable       |
+|-----------------------------------------|---------------------------|----------------|
+| `@global -v, --verbose`                 | Boolean flag              | `gopt_verbose` |
+| `@global --config <dir>`                | Option with value         | `gopt_config`  |
+| `@global -e, --env <name>`              | Short and long with value | `gopt_env`     |
+| `@global --timeout <sec> [default: 30]` | With default value        | `gopt_timeout` |
+
+### Variable Naming
+
+Global options use the `gopt_` prefix (not `opt_`):
+
+```bash
+# In any command file
+cmd_list() {
+  # Access global options
+  local config_dir="${gopt_config:-}"
+  local env="${gopt_env:-local}"
+
+  # Access command-specific options
+  local verbose="${opt_verbose:-false}"
+
+  # ...
+}
+```
+
+### Option Placement
+
+Global options can be placed before or after the command:
+
+```bash
+# Before command
+myapp -c /path/to/config list
+myapp --config /path/to/config --env prod list
+
+# After command
+myapp list -c /path/to/config
+myapp list --config /path/to/config --env prod
+
+# Mixed (both work)
+myapp -c /path list --env prod
+```
+
+### Help Display
+
+Global options appear in the help output:
+
+```
+$ myapp --help
+
+Usage: myapp <command> [options]
+
+Commands:
+  list        List available items
+  install     Install a package
+  version     Show version
+
+Global Options:
+  -c, --config <dir>    Configuration directory
+  -e, --env <name>      Environment name [default: local]
+
+Options:
+  -h, --help            Show help
+  -v, --verbose         Verbose output
+  --debug               Debug output
+```
+
+### Use Cases
+
+Common use cases for application global options:
+
+1. **Configuration directory** — Override default config location
+2. **Environment selection** — Switch between dev/staging/prod
+3. **Output format** — JSON/YAML/text output
+4. **Target selection** — Specify target host/cluster
+
+### Example
+
+```bash
+# commands/_globals.sh
+#!/usr/bin/env bash
+# @global -c, --config <dir> Configuration directory
+# @global -e, --env <name> Environment name [default: local]
+
+# commands/list.sh
+# @cmd
+# @desc List available items
+# @option -a, --all Show all items
+
+cmd_list() {
+  local show_all="${opt_all:-false}"
+
+  # Use global options
+  local config_dir="${gopt_config:-$HOME/.config/myapp}"
+  local env="${gopt_env:-local}"
+
+  echo "Config: $config_dir"
+  echo "Environment: $env"
+
+  # ... list logic using config_dir and env
+}
+```
+
 ## Subcommands
 
 Create directories for command groups:
@@ -619,13 +746,13 @@ myapp/
 
 ### Common Issues
 
-| Issue                   | Cause                     | Solution                                                  |
-|-------------------------|---------------------------|-----------------------------------------------------------|
-| Command not found       | Missing `@cmd` marker     | Add `# @cmd` to the command file                          |
-| Option not working      | Wrong variable name       | Use `opt_<long_name>` (e.g., `opt_verbose`)               |
-| Completion not updating | Cached completion script  | Regenerate: `myapp completion bash > ...`                 |
-| Config not loading      | Wrong path or syntax      | Run `myapp --config` to check paths; validate YAML syntax |
-| Library not loaded      | libs/ directory not found | Ensure `src/main/shell/libs/` exists in project root      |
+| Issue                   | Cause                     | Solution                                                       |
+|-------------------------|---------------------------|----------------------------------------------------------------|
+| Command not found       | Missing `@cmd` marker     | Add `# @cmd` to the command file                               |
+| Option not working      | Wrong variable name       | Use `opt_<long_name>` (e.g., `opt_verbose`)                    |
+| Completion not updating | Cached completion script  | Regenerate: `myapp completion bash > ...`                      |
+| Config not loading      | Wrong path or syntax      | Run `myapp --show-config` to check paths; validate YAML syntax |
+| Library not loaded      | libs/ directory not found | Ensure `src/main/shell/libs/` exists in project root           |
 
 ### Debugging Tips
 
@@ -650,14 +777,14 @@ GX_RADP_FW_LOG_DEBUG=true myapp hello
 
 ```bash
 # Show core configuration
-myapp --config
+myapp --show-config
 
 # Include extension configurations
-myapp --config --all
+myapp --show-config --all
 
 # JSON format for scripting
-myapp --config --json
-myapp --config --all --json
+myapp --show-config --json
+myapp --show-config --all --json
 ```
 
 **Check command discovery:**

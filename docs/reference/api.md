@@ -14,7 +14,13 @@ The framework provides utility functions organized by domain under `src/main/she
 - [System Resources (`radp_os_*`)](#system-resources-radp_os_)
 - [Cron Management (`radp_os_crontab_*`)](#cron-management-radp_os_crontab_)
 - [File System (`radp_io_*`)](#file-system-radp_io_)
+- [YAML Parsing (`radp_io_yaml_*`)](#yaml-parsing-lightweight)
 - [User Prompts (`radp_io_prompt_*`)](#user-prompts-radp_io_prompt_)
+- [Retry/Wait (`radp_wait_until`, `radp_retry`)](#retrywait)
+- [Sysctl Management (`radp_os_sysctl_*`)](#sysctl-management-radp_os_sysctl_)
+- [Kernel Module Management (`radp_os_*`)](#kernel-module-management-radp_os_)
+- [Service Management (`radp_os_service_*`)](#service-management-radp_os_service_)
+- [User/Group Management (`radp_os_*`)](#usergroup-management-radp_os_)
 - [Network (`radp_net_*`)](#network-radp_net_)
 - [Arrays (`radp_nr_*`)](#arrays-radp_nr_)
 - [Dry-Run Mode (`radp_exec_*`)](#dry-run-mode-radp_exec_)
@@ -635,6 +641,127 @@ radp_io_append_line_unique "/etc/hosts" "127.0.0.1 myhost"
 radp_io_append_line_unique "$HOME/.bashrc" "export PATH=\$PATH:/opt/bin"
 ```
 
+### YAML Parsing (Lightweight)
+
+**Location:** `libs/toolkit/io/05_yaml.sh`
+
+Simple YAML parsing using only grep/sed (no external dependencies like `yq`).
+
+> **Note:** For complex YAML operations (nested structures, variable references, merging),
+> use the `yq`-based functions in `autoconfigure.sh` instead.
+
+**Limitations:**
+
+- Only supports simple `key: value` pairs (no nested objects)
+- Only supports simple lists (`- item` format)
+- Does not handle multi-line values
+- Does not handle YAML anchors/aliases
+
+#### radp_io_yaml_get_value
+
+Extract a scalar value from YAML content.
+
+```bash
+radp_io_yaml_get_value (key [content])
+```
+
+**Parameters:**
+
+- `key` — The YAML key to extract (required)
+- `content` — YAML content (optional, reads from stdin if not provided)
+
+**Returns:** `0` on success
+
+**Outputs:** The value for the specified key (quotes stripped)
+
+**Example:**
+
+```bash
+# From variable
+version=$(radp_io_yaml_get_value "version" "$yaml_content")
+
+# From file via stdin
+name=$(radp_io_yaml_get_value "name" <config.yaml)
+
+# From pipe
+author=$(echo "$yaml" | radp_io_yaml_get_value "author")
+```
+
+#### radp_io_yaml_get_list
+
+Extract list items from YAML content.
+
+```bash
+radp_io_yaml_get_list
+```
+
+**Parameters:** None (reads from stdin)
+
+**Returns:** `0` on success
+
+**Outputs:** List items, one per line (leading `- ` stripped)
+
+**Example:**
+
+```bash
+# Parse list items
+echo "$yaml_list" | radp_io_yaml_get_list
+
+# Given input:
+#   - foo
+#   - bar
+# Returns:
+#   foo
+#   bar
+```
+
+#### radp_io_yaml_get_section
+
+Extract a specific section from YAML content.
+
+```bash
+radp_io_yaml_get_section (key [content])
+```
+
+**Parameters:**
+
+- `key` — The section key to extract (required)
+- `content` — YAML content (optional, reads from stdin if not provided)
+
+**Returns:** `0` on success
+
+**Outputs:** All lines belonging to the section (including nested content)
+
+**Example:**
+
+```bash
+# Extract dependencies section, then parse as list
+deps=$(radp_io_yaml_get_section "dependencies" "$yaml" | radp_io_yaml_get_list)
+```
+
+#### radp_io_yaml_has_key
+
+Check if a key exists in YAML content.
+
+```bash
+radp_io_yaml_has_key (key [content])
+```
+
+**Parameters:**
+
+- `key` — The YAML key to check (required)
+- `content` — YAML content (optional, reads from stdin if not provided)
+
+**Returns:** `0` if key exists, `1` if not found
+
+**Example:**
+
+```bash
+if radp_io_yaml_has_key "enabled" "$yaml_content"; then
+  echo "Key 'enabled' exists"
+fi
+```
+
 ---
 
 ## User Prompts (`radp_io_prompt_*`)
@@ -699,6 +826,501 @@ echo "Hello, $user_name"
 
 local choice
 radp_nr_io_prompt_input choice --msg "Select option:" --timeout 60
+```
+
+---
+
+## Retry/Wait
+
+**Location:** `libs/toolkit/exec/02_retry.sh`
+
+Functions for waiting on conditions and retrying commands with configurable attempts and intervals.
+
+### radp_wait_until
+
+Wait until a condition becomes true.
+
+```bash
+radp_wait_until (condition_cmd [--max-attempts N] [--interval N] [--message MSG])
+```
+
+**Parameters:**
+
+- `condition_cmd` — Command to check (exit 0 = success)
+- `--max-attempts N` — Maximum attempts (default: `10`)
+- `--interval N` — Sleep interval in seconds (default: `5`)
+- `--message MSG` — Progress message (optional)
+
+**Returns:** `0` if condition became true, `1` if timeout (max attempts reached)
+
+**Example:**
+
+```bash
+# Wait for Kubernetes cluster to be ready
+radp_wait_until "kubectl cluster-info" --max-attempts 5 --interval 10
+
+# Wait for network interface with custom message
+radp_wait_until "ip link show flannel.1" \
+  --max-attempts 15 \
+  --interval 10 \
+  --message "Waiting for flannel..."
+```
+
+### radp_retry
+
+Retry a command until it succeeds.
+
+```bash
+radp_retry (command [--max-attempts N] [--interval N] [--message MSG])
+```
+
+**Parameters:**
+
+- `command` — Command to execute
+- `--max-attempts N` — Maximum attempts (default: `3`)
+- `--interval N` — Sleep interval between retries (default: `2`)
+- `--message MSG` — Progress message (optional)
+
+**Returns:** Exit code of the last command execution
+
+**Example:**
+
+```bash
+# Retry curl with custom retry settings
+radp_retry "curl -fsSL https://example.com" --max-attempts 5 --interval 3
+
+# Retry with progress message
+radp_retry "wget https://example.com/file.tar.gz" \
+  --max-attempts 3 \
+  --message "Downloading file..."
+```
+
+---
+
+## Sysctl Management (`radp_os_sysctl_*`)
+
+**Location:** `libs/toolkit/os/04_sysctl.sh`
+
+Functions for managing kernel parameters via sysctl.
+
+### radp_os_sysctl_set
+
+Set a sysctl parameter temporarily (does not persist across reboots).
+
+```bash
+radp_os_sysctl_set (key value)
+```
+
+**Parameters:**
+
+- `key` — sysctl parameter name (e.g., `net.ipv4.ip_forward`)
+- `value` — Value to set
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+radp_os_sysctl_set "net.ipv4.ip_forward" "1"
+radp_os_sysctl_set "net.bridge.bridge-nf-call-iptables" "1"
+```
+
+### radp_os_sysctl_check
+
+Check if a sysctl parameter has the expected value.
+
+```bash
+radp_os_sysctl_check (key expected)
+```
+
+**Parameters:**
+
+- `key` — sysctl parameter name
+- `expected` — Expected value
+
+**Returns:** `0` if parameter matches expected value, `1` if not or error
+
+**Example:**
+
+```bash
+if radp_os_sysctl_check "net.ipv4.ip_forward" "1"; then
+  echo "IP forwarding is enabled"
+fi
+```
+
+### radp_os_sysctl_configure_persistent
+
+Configure sysctl parameters persistently. Creates a config file in `/etc/sysctl.d/` and applies settings.
+
+```bash
+radp_os_sysctl_configure_persistent (config_name key=value [key=value...])
+```
+
+**Parameters:**
+
+- `config_name` — Name for the config file (without `.conf` extension)
+- `key=value` — One or more sysctl parameters to configure
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+# Configure Kubernetes networking requirements
+radp_os_sysctl_configure_persistent "k8s" \
+  "net.bridge.bridge-nf-call-iptables=1" \
+  "net.bridge.bridge-nf-call-ip6tables=1" \
+  "net.ipv4.ip_forward=1"
+
+# Creates /etc/sysctl.d/k8s.conf and applies settings
+```
+
+---
+
+## Kernel Module Management (`radp_os_*`)
+
+**Location:** `libs/toolkit/os/08_kernel.sh`
+
+Functions for loading and configuring kernel modules.
+
+### radp_os_is_kernel_module_loaded
+
+Check if a kernel module is currently loaded.
+
+```bash
+radp_os_is_kernel_module_loaded (module)
+```
+
+**Parameters:**
+
+- `module` — Kernel module name
+
+**Returns:** `0` if module is loaded, `1` if not
+
+**Example:**
+
+```bash
+if radp_os_is_kernel_module_loaded "overlay"; then
+  echo "overlay module is loaded"
+fi
+```
+
+### radp_os_load_kernel_modules
+
+Load one or more kernel modules.
+
+```bash
+radp_os_load_kernel_modules (module [module...])
+```
+
+**Parameters:**
+
+- `module` — One or more kernel module names to load
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` if all modules loaded successfully, `1` if any failed
+
+**Example:**
+
+```bash
+# Load modules required for Kubernetes
+radp_os_load_kernel_modules "overlay" "br_netfilter"
+```
+
+### radp_os_configure_kernel_modules
+
+Configure kernel modules to load at boot. Creates a config file in `/etc/modules-load.d/`.
+
+```bash
+radp_os_configure_kernel_modules (config_name module [module...])
+```
+
+**Parameters:**
+
+- `config_name` — Name for the config file (without `.conf` extension)
+- `module` — One or more kernel module names to configure
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+# Configure modules for boot persistence
+radp_os_configure_kernel_modules "k8s" "overlay" "br_netfilter"
+# Creates /etc/modules-load.d/k8s.conf
+```
+
+### radp_os_setup_kernel_modules
+
+Configure and load kernel modules (combines `configure_kernel_modules` and `load_kernel_modules`).
+
+```bash
+radp_os_setup_kernel_modules (config_name module [module...])
+```
+
+**Parameters:**
+
+- `config_name` — Name for the config file (without `.conf` extension)
+- `module` — One or more kernel module names
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+# Configure for boot and load immediately
+radp_os_setup_kernel_modules "k8s" "overlay" "br_netfilter"
+```
+
+---
+
+## Service Management (`radp_os_service_*`)
+
+**Location:** `libs/toolkit/os/09_service.sh`
+
+Functions for managing systemd services.
+
+### radp_os_service_enable_start
+
+Enable and start a systemd service.
+
+```bash
+radp_os_service_enable_start (service_name)
+```
+
+**Parameters:**
+
+- `service_name` — Name of the service (with or without `.service` suffix)
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+radp_os_service_enable_start "docker"
+radp_os_service_enable_start "containerd.service"
+```
+
+### radp_os_service_restart
+
+Restart a systemd service.
+
+```bash
+radp_os_service_restart (service_name)
+```
+
+**Parameters:**
+
+- `service_name` — Name of the service (with or without `.service` suffix)
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+radp_os_service_restart "docker"
+```
+
+### radp_os_service_stop_disable
+
+Stop and disable a systemd service.
+
+```bash
+radp_os_service_stop_disable (service_name)
+```
+
+**Parameters:**
+
+- `service_name` — Name of the service (with or without `.service` suffix)
+
+**Returns:** `0` on success
+
+**Example:**
+
+```bash
+radp_os_service_stop_disable "firewalld"
+```
+
+### radp_os_service_configure_http_proxy
+
+Configure HTTP proxy for a systemd service. Creates a drop-in file for proxy environment variables.
+
+```bash
+radp_os_service_configure_http_proxy (service_name http_proxy [https_proxy] [no_proxy])
+```
+
+**Parameters:**
+
+- `service_name` — Name of the service (e.g., `docker`, `containerd`)
+- `http_proxy` — HTTP proxy URL (required)
+- `https_proxy` — HTTPS proxy URL (optional, defaults to `http_proxy`)
+- `no_proxy` — Comma-separated list of hosts to bypass (optional, defaults to `localhost,127.0.0.1`)
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+# Configure proxy for Docker
+radp_os_service_configure_http_proxy "docker" \
+  "http://proxy.example.com:8080" \
+  "http://proxy.example.com:8080" \
+  "localhost,127.0.0.1,10.0.0.0/8"
+
+# Creates /etc/systemd/system/docker.service.d/http-proxy.conf
+```
+
+### radp_os_service_remove_http_proxy
+
+Remove HTTP proxy configuration for a systemd service.
+
+```bash
+radp_os_service_remove_http_proxy (service_name)
+```
+
+**Parameters:**
+
+- `service_name` — Name of the service (e.g., `docker`, `containerd`)
+
+**Returns:** `0` on success
+
+**Example:**
+
+```bash
+radp_os_service_remove_http_proxy "docker"
+# Removes /etc/systemd/system/docker.service.d/http-proxy.conf
+```
+
+---
+
+## User/Group Management (`radp_os_*`)
+
+**Location:** `libs/toolkit/os/10_user.sh`
+
+Functions for managing users and groups.
+
+### radp_os_user_in_group
+
+Check if a user belongs to a specific group.
+
+```bash
+radp_os_user_in_group (user group)
+```
+
+**Parameters:**
+
+- `user` — Username to check
+- `group` — Group name to check membership in
+
+**Returns:** `0` if user is in the group, `1` if not or error
+
+**Example:**
+
+```bash
+if radp_os_user_in_group "vagrant" "docker"; then
+  echo "User can run Docker commands"
+fi
+```
+
+### radp_os_ensure_group
+
+Ensure a group exists, creating it if necessary.
+
+```bash
+radp_os_ensure_group (group)
+```
+
+**Parameters:**
+
+- `group` — Group name to ensure exists
+
+**Returns:** `0` if group exists or was created, `1` on failure
+
+**Example:**
+
+```bash
+radp_os_ensure_group "docker"
+```
+
+### radp_os_user_add_to_group
+
+Add a user to a group.
+
+```bash
+radp_os_user_add_to_group (user group)
+```
+
+**Parameters:**
+
+- `user` — Username to add
+- `group` — Group name to add user to
+
+**Returns:** `0` if user added or already in group, `1` on failure
+
+**Note:** User needs to log out and back in for group membership to take effect.
+
+**Example:**
+
+```bash
+# Add user to docker group for rootless Docker access
+radp_os_user_add_to_group "vagrant" "docker"
+```
+
+### radp_os_user_remove_from_group
+
+Remove a user from a group.
+
+```bash
+radp_os_user_remove_from_group (user group)
+```
+
+**Parameters:**
+
+- `user` — Username to remove
+- `group` — Group name to remove user from
+
+**Returns:** `0` if user removed or not in group, `1` on failure
+
+**Example:**
+
+```bash
+radp_os_user_remove_from_group "testuser" "docker"
+```
+
+### radp_os_get_current_user
+
+Get the current username.
+
+```bash
+radp_os_get_current_user()
+```
+
+**Outputs:** Current username
+
+**Example:**
+
+```bash
+current_user=$(radp_os_get_current_user)
+echo "Running as: $current_user"
 ```
 
 ---
@@ -1019,7 +1641,7 @@ The launcher automatically:
 
 - Detects dev/installed mode via `_ide.sh` marker
 - Sets config and library paths
-- Parses global options (`-v`, `--debug`, `--config`)
+- Parses global options (`-v`, `--debug`, `--show-config`)
 - Runs command dispatch
 
 #### radp_app_bootstrap (Legacy)
@@ -1148,8 +1770,8 @@ Log Rolling:
  Total Size:    5GB
 ```
 
-**Usage:** This function is typically invoked via `myapp --config` global option (handled by `launcher.sh`). Use
-`--config --all` to include extension configurations.
+**Usage:** This function is typically invoked via `myapp --show-config` global option (handled by `launcher.sh`). Use
+`--show-config --all` to include extension configurations.
 
 ### Command Discovery
 
@@ -1643,6 +2265,94 @@ Completion functions can be defined in:
 2. **User libraries** (`libs/`) — Reusable across commands, automatically loaded
 
 See [CLI Development Guide - Dynamic Completion](cli-development.md#dynamic-completion) for detailed examples.
+
+### Application Global Options
+
+Application-level global options are defined in `commands/_globals.sh` using `@global` annotations. These options are
+available to all commands and use the `gopt_` variable prefix.
+
+#### radp_cli_load_app_global_options
+
+Load application-level global options from `_globals.sh`.
+
+```bash
+radp_cli_load_app_global_options()
+```
+
+**Behavior:**
+
+- Scans `commands/_globals.sh` for `@global` annotations
+- Populates `__radp_cli_app_global_options` (space-separated list for completion)
+- Populates `__radp_cli_app_global_options_spec` (array of option specs)
+
+**Called automatically** by `launcher.sh` before command dispatch.
+
+#### radp_cli_parse_app_global_options
+
+Parse application global options from arguments (before command).
+
+```bash
+radp_cli_parse_app_global_options (args_var_name)
+```
+
+**Parameters:**
+
+- `args_var_name` — Name of array variable containing arguments (modified in place)
+
+**Behavior:**
+
+- Extracts global options from the beginning of arguments
+- Sets `gopt_<name>` variables for each found option
+- Removes parsed options from the input array
+
+**Example:**
+
+```bash
+local -a args=("-c" "/path" "list" "--verbose")
+radp_cli_parse_app_global_options args
+# gopt_config="/path"
+# args=("list" "--verbose")
+```
+
+#### radp_cli_extract_app_global_options
+
+Extract application global options from arguments (after command).
+
+```bash
+radp_cli_extract_app_global_options (args_var_name)
+```
+
+**Parameters:**
+
+- `args_var_name` — Name of array variable containing command arguments (modified in place)
+
+**Behavior:**
+
+- Scans command arguments for global options
+- Sets `gopt_<name>` variables for each found option
+- Removes extracted options from the input array
+
+**Note:** This handles the case where global options appear after the command name (e.g., `myapp list -c /path`).
+
+#### radp_cli_app_global_options_help
+
+Generate help text for application global options.
+
+```bash
+radp_cli_app_global_options_help()
+```
+
+**Returns:** `0` if global options exist, `1` if none defined
+
+**Outputs:** Formatted help text for global options section
+
+**Example output:**
+
+```
+Global Options:
+  -c, --config <dir>    Configuration directory
+  -e, --env <name>      Environment name [default: local]
+```
 
 ### Passthrough Mode
 

@@ -4,42 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-radp-bash-framework is a modular Bash framework providing structured context, configuration management, logging, and a comprehensive toolkit for shell scripting.
+radp-bash-framework is a modular Bash framework providing structured context, configuration management, logging, and a
+comprehensive toolkit for shell scripting.
 
 ## Commands
 
 ### Testing
 
 ```bash
-bats src/test/shell                    # Run all tests
-bats src/test/shell/<file>.bats        # Run specific test file
+bats src/test/shell # Run all tests
+bats src/test/shell/ <file >.bats # Run specific test file
 ```
 
 ### Framework Entry
 
 ```bash
-source src/main/shell/framework/init.sh              # Source framework directly
-source "$(./bin/radp-bf path init)"                   # Via CLI wrapper
-source "$(radp-bf path launcher)" "$@"               # App launcher (thin entry script)
+source src/main/shell/framework/init.sh # Source framework directly
+source "$(./bin/radp-bf path init)" # Via CLI wrapper
+source "$(radp-bf path launcher)" "$@" # App launcher (thin entry script)
 ```
 
 ### CLI Commands
 
 ```bash
-radp-bf new <name> [dir]           # Create a new CLI project
-radp-bf upgrade [dir] [opts]       # Upgrade existing project to latest scaffold
-radp-bf path init                  # Print path to init.sh
-radp-bf path launcher              # Print path to launcher.sh
-radp-bf version                    # Print version
+radp-bf new <name >[dir] # Create a new CLI project
+radp-bf upgrade [dir] [opts] # Upgrade existing project to latest scaffold
+radp-bf path init # Print path to init.sh
+radp-bf path launcher # Print path to launcher.sh
+radp-bf version # Print version
 ```
 
 ### Global Options (for apps using launcher.sh)
 
 ```bash
-myapp -v, --verbose     # Enable verbose output
-myapp --debug           # Enable debug output
-myapp --config          # Show configuration
-myapp --config --all    # Show configuration with extensions
+myapp -v, --verbose # Enable verbose output
+myapp --debug # Enable debug output
+myapp --show-config # Show configuration
+myapp --show-config --all # Show configuration with extensions
 ```
 
 ## Architecture
@@ -61,12 +62,12 @@ context/context.sh
 
 ### Key Directories
 
-| Directory | Purpose |
-|-----------|---------|
-| `src/main/shell/framework/` | Framework source |
-| `src/main/shell/config/` | Default configuration |
-| `src/test/shell/` | BATS tests |
-| `src/main/shell/commands/` | radp-bf commands |
+| Directory                   | Purpose               |
+|-----------------------------|-----------------------|
+| `src/main/shell/framework/` | Framework source      |
+| `src/main/shell/config/`    | Default configuration |
+| `src/test/shell/`           | BATS tests            |
+| `src/main/shell/commands/`  | radp-bf commands      |
 
 ### Configuration Layering
 
@@ -78,31 +79,31 @@ context/context.sh
 
 ### Variables
 
-| Prefix | Scope | Example |
-|--------|-------|---------|
-| `gr_*` | Global readonly | `gr_fw_root_path` |
-| `gw_*` | Global writable | `gw_fw_run_initialized` |
-| `gwxa_*` | Global array | `gwxa_fw_sourced_scripts` |
+| Prefix   | Scope           | Example                   |
+|----------|-----------------|---------------------------|
+| `gr_*`   | Global readonly | `gr_fw_root_path`         |
+| `gw_*`   | Global writable | `gw_fw_run_initialized`   |
+| `gwxa_*` | Global array    | `gwxa_fw_sourced_scripts` |
 
 ### Functions
 
-| Pattern | Meaning | Example |
-|---------|---------|---------|
-| `radp_*` | Public API | `radp_log_info` |
-| `radp_nr_*` | Nameref (pass var name) | `radp_nr_arr_merge_unique` |
-| `radp_*_is_*` | Boolean (0/1) | `radp_os_is_pkg_installed` |
-| `__fw_*` | Internal | `__fw_bootstrap` |
+| Pattern       | Meaning                 | Example                    |
+|---------------|-------------------------|----------------------------|
+| `radp_*`      | Public API              | `radp_log_info`            |
+| `radp_nr_*`   | Nameref (pass var name) | `radp_nr_arr_merge_unique` |
+| `radp_*_is_*` | Boolean (0/1)           | `radp_os_is_pkg_installed` |
+| `__fw_*`      | Internal                | `__fw_bootstrap`           |
 
 ## Toolkit Domains
 
-| Domain | Functions |
-|--------|-----------|
+| Domain   | Functions                  |
+|----------|----------------------------|
 | **core** | Variables, arrays, strings |
 | **exec** | Command execution, dry-run |
-| **io** | File operations |
-| **net** | Network utilities |
-| **os** | Distro detection |
-| **cli** | Argument parsing, dispatch |
+| **io**   | File operations            |
+| **net**  | Network utilities          |
+| **os**   | Distro detection           |
+| **cli**  | Argument parsing, dispatch |
 
 ## CLI Command Discovery
 
@@ -110,6 +111,7 @@ Commands auto-discovered from `commands/` directory:
 
 ```
 commands/
+├── _globals.sh             # Application-level global options
 ├── version.sh              # mycli version
 ├── db/
 │   ├── migrate.sh          # mycli db migrate
@@ -118,7 +120,23 @@ commands/
 
 - Must contain `# @cmd` marker
 - Function: `commands/db/migrate.sh` → `cmd_db_migrate()`
-- `_`-prefixed files ignored
+- `_`-prefixed files ignored (except `_globals.sh`)
+
+## Application Global Options
+
+Define application-level global options in `commands/_globals.sh`:
+
+```bash
+#!/usr/bin/env bash
+# @global -c, --config <dir> Configuration directory
+# @global -e, --env <name> Environment name [default: local]
+```
+
+- Uses `@global` annotation (same syntax as `@option`)
+- Variables available as `gopt_<name>` (e.g., `gopt_config`, `gopt_env`)
+- Options can be placed before or after the command:
+  - `mycli -c /path list`
+  - `mycli list -c /path`
 
 ## Dry-Run Mode
 
@@ -142,13 +160,13 @@ fi
 
 ## CI/CD Workflows
 
-| Workflow | Purpose |
-|----------|---------|
-| `release-prep.yml` | Create release branch and PR |
-| `create-version-tag.yml` | Create git tag |
-| `build-copr-package.yml` | COPR build |
-| `build-obs-package.yml` | OBS build |
-| `update-homebrew-tap.yml` | Update Homebrew |
+| Workflow                  | Purpose                      |
+|---------------------------|------------------------------|
+| `release-prep.yml`        | Create release branch and PR |
+| `create-version-tag.yml`  | Create git tag               |
+| `build-copr-package.yml`  | COPR build                   |
+| `build-obs-package.yml`   | OBS build                    |
+| `update-homebrew-tap.yml` | Update Homebrew              |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for release process.
 

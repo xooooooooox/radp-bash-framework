@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.7.10
+
+### feat
+
+- Add application-level global options support
+  - Applications can define global options in `commands/_globals.sh` using `@global` annotations
+  - Global options available as `gopt_<name>` variables (e.g., `gopt_config`, `gopt_env`)
+  - Options can be placed before or after the command (`mycli -c /path list` or `mycli list -c /path`)
+  - New CLI functions: `radp_cli_load_app_global_options()`, `radp_cli_parse_app_global_options()`, `radp_cli_extract_app_global_options()`
+  - Help and completion systems updated to include application global options
+- Add `globals` component to `upgrade` command to add `_globals.sh` to existing projects
+- Add `_globals.sh` template to `new` scaffold command
+
+### changed
+
+- Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
+
 ## v0.7.9
 
 ### feat
@@ -8,6 +25,11 @@
   - `radp_io_append_line_unique()` - Append line to file with deduplication
   - `radp_io_prompt_confirm()` - Y/N confirmation prompt with timeout support
   - `radp_nr_io_prompt_input()` - Input prompt with nameref for user input
+- Add YAML parsing module (`io/05_yaml.sh`)
+  - `radp_io_yaml_get_value()` - Extract scalar value from YAML content
+  - `radp_io_yaml_get_list()` - Extract list items from YAML content
+  - `radp_io_yaml_get_section()` - Extract specific section from YAML
+  - `radp_io_yaml_has_key()` - Check if key exists in YAML content
 - Add OS security module (`02_security.sh`)
   - `radp_os_disable_selinux()` - Disable SELinux (permissive + config)
   - `radp_os_disable_firewalld()` - Stop and disable firewalld service
@@ -16,11 +38,35 @@
   - `radp_os_check_min_ram()` - Check minimum RAM requirement (supports GB/MB)
   - `radp_os_get_total_ram_mb()` - Get total system RAM in MB
   - `radp_os_get_cpu_cores()` - Get CPU cores count
+- Add sysctl management module (`os/04_sysctl.sh`)
+  - `radp_os_sysctl_set()` - Set sysctl parameter temporarily
+  - `radp_os_sysctl_check()` - Check if sysctl parameter has expected value
+  - `radp_os_sysctl_configure_persistent()` - Configure sysctl parameters persistently
 - Add cron management module (`07_cron.sh`)
   - `radp_os_crontab_add()` - Merge crontab file into user's crontab
   - `radp_os_create_or_update_crontab()` - Create/replace crontab from string
   - `radp_os_crontab_remove()` - Remove crontab entries by pattern
   - `radp_os_crontab_list()` - List user's crontab entries
+- Add kernel module management (`os/08_kernel.sh`)
+  - `radp_os_is_kernel_module_loaded()` - Check if kernel module is loaded
+  - `radp_os_load_kernel_modules()` - Load kernel modules
+  - `radp_os_configure_kernel_modules()` - Configure modules for boot
+  - `radp_os_setup_kernel_modules()` - Configure and load kernel modules
+- Add systemd service management (`os/09_service.sh`)
+  - `radp_os_service_enable_start()` - Enable and start systemd service
+  - `radp_os_service_restart()` - Restart systemd service
+  - `radp_os_service_stop_disable()` - Stop and disable systemd service
+  - `radp_os_service_configure_http_proxy()` - Configure HTTP proxy for service
+  - `radp_os_service_remove_http_proxy()` - Remove HTTP proxy configuration
+- Add user/group management (`os/10_user.sh`)
+  - `radp_os_user_in_group()` - Check if user belongs to group
+  - `radp_os_ensure_group()` - Ensure group exists
+  - `radp_os_user_add_to_group()` - Add user to group
+  - `radp_os_user_remove_from_group()` - Remove user from group
+  - `radp_os_get_current_user()` - Get current username
+- Add retry/wait utilities (`exec/02_retry.sh`)
+  - `radp_wait_until()` - Wait until condition becomes true
+  - `radp_retry()` - Retry command until success
 
 ## v0.7.8
 
