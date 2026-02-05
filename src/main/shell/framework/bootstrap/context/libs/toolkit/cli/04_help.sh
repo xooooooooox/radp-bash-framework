@@ -280,6 +280,9 @@ radp_cli_help_command() {
     echo
   fi
 
+  # 应用级全局选项（如果有）
+  radp_cli_app_global_options_help
+
   # 内置选项
   echo "  -h, --help              Show this help message"
   echo
