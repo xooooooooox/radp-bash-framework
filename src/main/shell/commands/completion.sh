@@ -15,5 +15,5 @@ cmd_completion() {
     return 1
   fi
 
-  radp_cli_bf_completion_generate "$shell"
+  radp_cli_completion_generate "$shell"
 }

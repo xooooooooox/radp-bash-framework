@@ -131,57 +131,47 @@ __radp_cli_bash_gen_cmd_completion() {
     return
   fi
 
-  # 检查是否是透传模式 - 只生成 --help 补全
-  local is_passthrough=false
-  if [[ "${meta[metas]}" == *passthrough* ]]; then
-    is_passthrough=true
-  fi
-
   # 包含应用级全局选项（支持命令后使用）
   local options="--help ${__radp_cli_app_global_options:-}"
   local -a opt_with_value=()
   local -A opt_complete_funcs=()
 
-  # 非透传模式才解析选项
-  if [[ "$is_passthrough" != "true" ]]; then
-    local opt_line
-    while IFS= read -r opt_line; do
-      [[ -z "$opt_line" ]] && continue
-      local -A opt_info=()
-      radp_cli_parse_option_spec "$opt_line" opt_info
-      [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
-      [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
+  # 始终解析选项（用于补全，与 passthrough 模式无关）
+  local opt_line
+  while IFS= read -r opt_line; do
+    [[ -z "$opt_line" ]] && continue
+    local -A opt_info=()
+    radp_cli_parse_option_spec "$opt_line" opt_info
+    [[ -n "${opt_info[short]}" ]] && options+=" -${opt_info[short]}"
+    [[ -n "${opt_info[long]}" ]] && options+=" --${opt_info[long]}"
 
-      # 记录需要值的选项
-      if [[ "${opt_info[has_value]}" == "true" && -n "${opt_info[long]}" ]]; then
-        opt_with_value+=("${opt_info[long]}")
-        [[ -n "${opt_info[short]}" ]] && opt_with_value+=("${opt_info[short]}")
+    # 记录需要值的选项
+    if [[ "${opt_info[has_value]}" == "true" && -n "${opt_info[long]}" ]]; then
+      opt_with_value+=("${opt_info[long]}")
+      [[ -n "${opt_info[short]}" ]] && opt_with_value+=("${opt_info[short]}")
 
-        # 检查是否有动态补全函数
-        local complete_func
-        if complete_func=$(radp_cli_get_complete_func "${opt_info[long]}" "${meta[completes]}" 2>/dev/null); then
-          opt_complete_funcs["${opt_info[long]}"]="$complete_func"
-          [[ -n "${opt_info[short]}" ]] && opt_complete_funcs["${opt_info[short]}"]="$complete_func"
-        fi
-      fi
-    done <<<"${meta[options]}"
-  fi
-
-  # 解析参数的动态补全（非透传模式）
-  local -a arg_complete_funcs=()
-  if [[ "$is_passthrough" != "true" ]]; then
-    local arg_line arg_idx=0
-    while IFS= read -r arg_line; do
-      [[ -z "$arg_line" ]] && continue
-      local -A arg_info=()
-      radp_cli_parse_arg_spec "$arg_line" arg_info
+      # 检查是否有动态补全函数
       local complete_func
-      if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
-        arg_complete_funcs[$arg_idx]="$complete_func"
+      if complete_func=$(radp_cli_get_complete_func "${opt_info[long]}" "${meta[completes]}" 2>/dev/null); then
+        opt_complete_funcs["${opt_info[long]}"]="$complete_func"
+        [[ -n "${opt_info[short]}" ]] && opt_complete_funcs["${opt_info[short]}"]="$complete_func"
       fi
-      ((arg_idx++)) || true
-    done <<<"${meta[args]}"
-  fi
+    fi
+  done <<<"${meta[options]}"
+
+  # 解析参数的动态补全
+  local -a arg_complete_funcs=()
+  local arg_line arg_idx=0
+  while IFS= read -r arg_line; do
+    [[ -z "$arg_line" ]] && continue
+    local -A arg_info=()
+    radp_cli_parse_arg_spec "$arg_line" arg_info
+    local complete_func
+    if complete_func=$(radp_cli_get_complete_func "${arg_info[name]}" "${meta[completes]}" 2>/dev/null); then
+      arg_complete_funcs[$arg_idx]="$complete_func"
+    fi
+    ((arg_idx++)) || true
+  done <<<"${meta[args]}"
 
   # 计算命令路径深度（用于 arg_idx 偏移）
   local cmd_depth
@@ -592,14 +582,6 @@ __radp_cli_zsh_gen_leaf_func() {
   local -A meta=()
   if ! radp_cli_get_cmd_meta "$cmd_path" meta 2>/dev/null; then
     echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:file:_files'"
-    echo "}"
-    echo ""
-    return
-  fi
-
-  # 检查是否是透传模式
-  if [[ "${meta[metas]}" == *passthrough* ]]; then
-    echo "    _arguments '(-h --help)'{-h,--help}'[Show help]' '*:args:'"
     echo "}"
     echo ""
     return

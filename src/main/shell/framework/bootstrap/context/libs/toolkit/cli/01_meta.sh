@@ -158,9 +158,10 @@ radp_cli_parse_option_spec() {
     opt_spec="${opt_spec/\[default:*\]/}"
   fi
 
-  # 提取短选项 -x
-  if [[ "$opt_spec" =~ -([a-zA-Z]),? ]]; then
-    short="${BASH_REMATCH[1]}"
+  # 提取短选项 -x（必须是独立的，不能是 --long 的一部分）
+  # 格式: -x, 或 -x 在开头/空格后
+  if [[ "$opt_spec" =~ (^|[[:space:]])-([a-zA-Z])[,[:space:]] ]]; then
+    short="${BASH_REMATCH[2]}"
   fi
 
   # 提取长选项 --xxx

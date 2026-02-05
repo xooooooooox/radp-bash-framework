@@ -103,7 +103,7 @@ radp_cli_parse_app_global_options() {
     # 一旦遇到非选项参数（子命令），后续所有参数都保留
     if [[ "$found_command" == "true" ]]; then
       filtered_args+=("$arg")
-      ((i++))
+      ((++i))
       continue
     fi
 
@@ -121,7 +121,7 @@ radp_cli_parse_app_global_options() {
 
         if [[ "${opt_has_value[$arg]}" == "true" ]]; then
           # 需要值的选项
-          ((i++))
+          ((++i))
           if [[ $i -lt ${#__args_ref[@]} ]]; then
             declare -g "$var_name=${__args_ref[$i]}"
           fi
@@ -129,7 +129,7 @@ radp_cli_parse_app_global_options() {
           # 布尔选项
           declare -g "$var_name=true"
         fi
-        ((i++))
+        ((++i))
         continue
       fi
     fi
@@ -140,7 +140,7 @@ radp_cli_parse_app_global_options() {
     fi
 
     filtered_args+=("$arg")
-    ((i++))
+    ((++i))
   done
 
   # 更新参数数组
@@ -204,7 +204,7 @@ radp_cli_extract_app_global_options() {
 
         if [[ "${opt_has_value[$arg]}" == "true" ]]; then
           # 需要值的选项
-          ((i++))
+          ((++i))
           if [[ $i -lt ${#__cmd_args_ref[@]} ]]; then
             declare -g "$var_name=${__cmd_args_ref[$i]}"
           fi
@@ -212,13 +212,13 @@ radp_cli_extract_app_global_options() {
           # 布尔选项
           declare -g "$var_name=true"
         fi
-        ((i++))
+        ((++i))
         continue
       fi
     fi
 
     filtered_args+=("$arg")
-    ((i++))
+    ((++i))
   done
 
   # 更新参数数组
