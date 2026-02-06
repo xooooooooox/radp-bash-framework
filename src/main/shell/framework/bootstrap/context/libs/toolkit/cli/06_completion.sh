@@ -544,6 +544,30 @@ ZSH_COMPLETION_ARGS
             _describe 'command' commands
             ;;
         args)
+ZSH_COMPLETION_DISPATCH
+
+  # Export app global options from opt_args to global variables
+  # This is needed because when _arguments -C processes options and enters 'args' state,
+  # the words array gets renumbered. Subcommand functions like _radp_vf_list need access
+  # to the app global options (like -c/--config) but can't find them in the renumbered words.
+  # Solution: export opt_args values as global variables that helper functions can check.
+  if [[ ${#__radp_cli_app_global_options_spec[@]} -gt 0 ]]; then
+    local spec
+    for spec in "${__radp_cli_app_global_options_spec[@]}"; do
+      local -A opt_info=()
+      radp_cli_parse_option_spec "$spec" opt_info
+      local var_name="${opt_info[long]//-/_}"
+      # Use uppercase with app prefix for global variable name
+      local global_var="_${app_func^^}_OPT_${var_name^^}"
+      if [[ -n "${opt_info[short]}" ]]; then
+        echo "            typeset -g ${global_var}=\"\${opt_args[-${opt_info[short]}]:-\${opt_args[--${opt_info[long]}]:-}}\""
+      elif [[ -n "${opt_info[long]}" ]]; then
+        echo "            typeset -g ${global_var}=\"\${opt_args[--${opt_info[long]}]:-}\""
+      fi
+    done
+  fi
+
+  cat <<ZSH_COMPLETION_DISPATCH2
             local cmd_func="_${app_func}_\${words[1]//-/_}"
             if (( \$+functions[\$cmd_func] )); then
                 \$cmd_func
@@ -553,7 +577,7 @@ ZSH_COMPLETION_ARGS
             ;;
     esac
 }
-ZSH_COMPLETION_DISPATCH
+ZSH_COMPLETION_DISPATCH2
 
   echo
   echo "_${app_func} \"\$@\""
