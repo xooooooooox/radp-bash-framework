@@ -8,6 +8,7 @@
 /_/ |_/_/  |_/_____/_/      /_____/_/  |_/____/_/ /_/
 
 ```
+
 [![GitHub Release](https://img.shields.io/github/v/release/xooooooooox/radp-bash-framework?label=Release)](https://github.com/xooooooooox/radp-bash-framework/releases)
 [![Copr build status](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/xooooooooox/radp/package/radp-bash-framework/)
 [![OBS package build status](https://build.opensuse.org/projects/home:xooooooooox:radp/packages/radp-bash-framework/badge.svg)](https://build.opensuse.org/package/show/home:xooooooooox:radp/radp-bash-framework)
@@ -19,22 +20,39 @@
 [![COPR packages](https://img.shields.io/badge/COPR-packages-4b8bbe)](https://download.copr.fedorainfracloud.org/results/xooooooooox/radp/)
 [![OBS packages](https://img.shields.io/badge/OBS-packages-4b8bbe)](https://software.opensuse.org//download.html?project=home%3Axooooooooox%3Aradp&package=radp-bash-framework)
 
-A modular Bash framework for building CLI applications with structured bootstrapping, configuration management, and a
-comprehensive toolkit.
+A modular Bash framework with two goals: **bring engineering practices to shell scripting** (structured bootstrapping,
+configuration, logging, toolkit, code conventions) and **make it easy to build CLI applications** (scaffolding,
+annotation-driven commands, auto-discovery, shell completion).
 
 ## Features
+
+### Bash Engineering
+
+- **Two-Stage Preflight + Bootstrap** - POSIX stage-1 validates Bash version; Bash stage-2 checks dependencies (
+  `gnu-getopt`, `yq`); bootstrap wires everything together
+- **YAML Configuration** - Layered config system (framework defaults → user config → environment variables) with
+  automatic variable mapping
+- **Logging** - Multi-level structured logging (`debug`/`info`/`warn`/`error`) with configurable format and output
+- **Toolkit** - 7 domains, 40+ files, 60+ public functions: OS detection, dry-run execution, file I/O, network, YAML
+  parsing, and more
+- **IDE Support** - BashSupport Pro integration for framework function and variable completion
+
+### Code Conventions
+
+- **Variable Naming** - Scoped prefixes: `gr_*` (global readonly), `gw_*` (global writable), `gwxa_*` (global array)
+- **Function Naming** - `radp_*` (public API), `radp_nr_*` (nameref), `__fw_*` (framework-internal)
+- **POSIX vs Bash Layering** - Entry scripts and stage-1 preflight use POSIX; bootstrap and beyond use Bash features
+- **ShellCheck Integration** - Annotations preserved throughout the codebase
+- **Code Style** - 2-space indentation, quoted variables, `[[ ]]` over `[ ]` in Bash context
+
+### CLI Development
 
 - **CLI Scaffolding** - Generate complete CLI projects with `radp-bf new myapp`
 - **CLI Scaffolding Upgrade** - Upgrade existing CLI projects to latest scaffold with `radp-bf upgrade`
 - **Annotation-based Commands** - Define commands using comment metadata (`@cmd`, `@arg`, `@option`)
 - **Auto-discovery** - Commands are discovered from directory structure, supports nested subcommands
 - **Shell Completion** - Generate Bash/Zsh completion scripts automatically
-- **YAML Configuration** - Layered config system with environment variable overrides
 - **Built-in Global Options** - `--config`, `--verbose`, `--debug` available for all CLI apps
-- **Logging** - Structured logging with levels (debug/info/warn/error)
-- **OS Detection** - Cross-platform utilities for distro, architecture, package manager detection
-- **Path Utilities** - File system helpers, path resolution
-- **IDE Code Completion** - BashSupport Pro integration for framework function and variable completion
 - **Dev/Install Mode** - Automatic config path detection based on `_ide.sh` marker
 
 ## Requirements
@@ -82,6 +100,31 @@ See [Installation Guide](docs/installation.md) for more options (RPM, OBS, porta
 
 ## Quick Start
 
+### Use as a Framework
+
+Source `init.sh` to access the framework's engineering capabilities in any Bash script:
+
+```bash
+#!/usr/bin/env bash
+source "$(radp-bf path init)"
+
+# Logging
+radp_log_info "Starting task..."
+radp_log_debug "Debug details here"
+
+# OS detection
+distro=$(radp_os_get_distro_id)
+arch=$(radp_os_get_distro_arch)
+radp_log_info "Running on $distro ($arch)"
+
+# YAML configuration (from your config.yaml)
+echo "API URL: $gr_radp_extend_myapp_api_url"
+
+# Dry-run mode
+radp_set_dry_run "${DRY_RUN:-}"
+radp_exec "Install package" apt-get install -y nginx
+```
+
 ### Create a CLI Project
 
 ```shell
@@ -111,10 +154,10 @@ myapp/
 When the framework updates, upgrade your project's scaffold files:
 
 ```shell
-radp-bf upgrade                     # Upgrade current directory
-radp-bf upgrade ./myapp --dry-run   # Preview changes
-radp-bf upgrade --force             # Overwrite modified files
-radp-bf -v upgrade .                # Upgrade with verbose output
+radp-bf upgrade # Upgrade current directory
+radp-bf upgrade ./myapp --dry-run # Preview changes
+radp-bf upgrade --force # Overwrite modified files
+radp-bf -v upgrade . # Upgrade with verbose output
 ```
 
 The upgrade command tracks changes via `.radp-cli/` metadata directory and detects user modifications.
@@ -199,34 +242,57 @@ myapp completion bash >~/.local/share/bash-completion/completions/myapp
 myapp completion zsh >~/.zfunc/_myapp
 ```
 
+## Code Conventions
+
+The framework establishes naming conventions to keep shell projects consistent and readable.
+
+### Variable Naming
+
+| Prefix   | Scope           | Example                   |
+|----------|-----------------|---------------------------|
+| `gr_*`   | Global readonly | `gr_fw_root_path`         |
+| `gw_*`   | Global writable | `gw_fw_run_initialized`   |
+| `gwxa_*` | Global array    | `gwxa_fw_sourced_scripts` |
+
+### Function Naming
+
+| Pattern       | Meaning                               | Example                    |
+|---------------|---------------------------------------|----------------------------|
+| `radp_*`      | Public API                            | `radp_log_info`            |
+| `radp_nr_*`   | Nameref (caller passes variable name) | `radp_nr_arr_merge_unique` |
+| `radp_*_is_*` | Boolean predicate (returns 0/1)       | `radp_os_is_pkg_installed` |
+| `__fw_*`      | Framework-internal (not for users)    | `__fw_bootstrap`           |
+
+See [Code Style Guide](docs/developer/code-style.md) for the full specification.
+
 ## radp-bf CLI
 
 The `radp-bf` command-line tool manages framework operations:
 
 ```shell
-radp-bf new <name> [dir]      # Create new CLI project
-radp-bf upgrade [dir] [opts]  # Upgrade existing project scaffold
-radp-bf path <name>           # Print framework paths (init|launcher|root)
-radp-bf completion <shell>    # Generate shell completion (bash|zsh)
-radp-bf self-update           # Update to latest version (portable only)
-radp-bf version               # Show framework version
+radp-bf new <name >[dir] # Create new CLI project
+radp-bf upgrade [dir] [opts] # Upgrade existing project scaffold
+radp-bf path <name> # Print framework paths (init|launcher|root)
+radp-bf completion <shell> # Generate shell completion (bash|zsh)
+radp-bf self-update # Update to latest version (portable only)
+radp-bf version # Show framework version
 ```
 
 **Global options** (for any command):
 
 ```shell
-radp-bf -v upgrade .          # Verbose output (info logs)
-radp-bf --debug upgrade .     # Debug output (debug logs)
+radp-bf -v upgrade . # Verbose output (info logs)
+radp-bf --debug upgrade . # Debug output (debug logs)
 ```
 
 **Shell completion for radp-bf:**
 
 ```shell
 # Bash
-radp-bf completion bash > ~/.local/share/bash-completion/completions/radp-bf
+radp-bf completion bash >~/.local/share/bash-completion/completions/radp-bf
 
 # Zsh
-radp-bf completion zsh > ~/.zfunc/_radp-bf
+radp-bf completion zsh >~/.zfunc/_radp-bf
 ```
 
 ## Documentation
@@ -237,18 +303,21 @@ radp-bf completion zsh > ~/.zfunc/_radp-bf
 - [Command Annotations](docs/user-guide/annotations.md) - `@cmd`, `@arg`, `@option`, `@example` reference
 - [Configuration](docs/configuration.md) - YAML config system and environment variables
 - [API Reference](docs/reference/api.md) - Toolkit functions and IDE integration
+- [Code Style Guide](docs/developer/code-style.md) - Variable/function naming, POSIX vs Bash layering, ShellCheck
 
 ## Toolkit API
 
-The framework provides utility functions organized by domain:
+The framework provides 60+ public functions organized by domain:
 
-| Domain        | Functions                                            | Description           |
-|---------------|------------------------------------------------------|-----------------------|
-| `radp_log_*`  | `debug`, `info`, `warn`, `error`                     | Structured logging    |
-| `radp_os_*`   | `get_distro_id`, `get_distro_pm`, `is_pkg_installed` | OS detection          |
-| `radp_io_*`   | `get_path_abs`                                       | File system utilities |
-| `radp_exec_*` | `exec`, `exec_sudo`, `set_dry_run`, `is_dry_run`     | Dry-run mode support  |
-| `radp_cli_*`  | `discover`, `dispatch`, `help`                       | CLI infrastructure    |
+| Domain        | Key Functions                                                                                                                          | Description                                            |
+|---------------|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| `radp_log_*`  | `debug`, `info`, `warn`, `error`                                                                                                       | Structured logging                                     |
+| `radp_os_*`   | `get_distro_id`, `get_distro_pm`, `get_distro_arch`, `is_pkg_installed`, `install_pkgs`, `disable_swap`, `sysctl_configure_persistent` | OS detection, package management, system configuration |
+| `radp_io_*`   | `get_path_abs`, `download`, `extract`, `mktemp_dir`, `yaml_get_value`, `prompt_confirm`                                                | File I/O, downloads, YAML parsing                      |
+| `radp_exec_*` | `exec`, `exec_sudo`, `set_dry_run`, `is_dry_run`, `retry`, `wait_until`                                                                | Command execution with dry-run support                 |
+| `radp_net_*`  | `github_download_asset`, `github_latest_release`                                                                                       | Network and GitHub API utilities                       |
+| `radp_cli_*`  | `discover`, `dispatch`, `help`, `parse_args`, `scaffold_new`, `upgrade`                                                                | CLI infrastructure                                     |
+| `radp_core_*` | `get_fw_install_version`, `nr_arr_merge_unique`                                                                                        | Core utilities and array operations                    |
 
 See [API Reference](docs/reference/api.md) for complete documentation.
 
