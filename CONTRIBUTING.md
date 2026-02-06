@@ -61,60 +61,25 @@ preflight/
 
 ## Code Style
 
-- `init.sh` and `preflight/stage1/` use POSIX-compatible syntax
-- `preflight/stage2/` and `bootstrap/` use Bash features (`[[ ]]`, arrays, `local`)
-- Quote variables unless intentional word splitting
-- Use `radp_log_*` functions instead of ad-hoc `echo` for output
-
-### Naming Conventions
-
-**Variables:**
-
-| Prefix   | Scope           | Example                   |
-|----------|-----------------|---------------------------|
-| `gr_*`   | Global readonly | `gr_fw_root_path`         |
-| `gw_*`   | Global writable | `gw_fw_run_initialized`   |
-| `gwxa_*` | Global array    | `gwxa_fw_sourced_scripts` |
-
-**Functions:**
-
-| Pattern              | Meaning                 | Example                    |
-|----------------------|-------------------------|----------------------------|
-| `radp_*`             | Public API              | `radp_log_info`            |
-| `radp_nr_*`          | Nameref (pass var name) | `radp_nr_arr_merge_unique` |
-| `*_is_*` / `*_has_*` | Boolean (returns 0/1)   | `radp_app_is_help_request` |
-| `__fw_*`             | Private/internal        | `__fw_bootstrap`           |
+See [Code Style Guide](docs/developer/code-style.md) for naming conventions,
+formatting rules, and POSIX vs Bash layering.
 
 ## Release Process
 
 ### Workflow Chain
 
-```
-release-prep (manual trigger)
-       │
-       ▼
-   PR merged
-       │
-       ▼
-create-version-tag
-       │
-       ├──────────────────────┬──────────────────────┐
-       ▼                      ▼                      ▼
-update-spec-version    update-homebrew-tap    (GitHub Release)
-       │
-       ├──────────────┐
-       ▼              ▼
-build-copr-package  build-obs-package
-       │              │
-       └──────┬───────┘
-              ▼
-  attach-release-packages
-
-
-cleanup-branches (scheduled weekly / manual)
-       │
-       ▼
-  Delete stale workflow/v* branches (>14 days old)
+```mermaid
+flowchart TD
+    A["release-prep<br/>(manual trigger)"] --> B["PR merged"]
+    B --> C["create-version-tag"]
+    C --> D["update-spec-version"]
+    C --> E["update-homebrew-tap"]
+    C --> F["GitHub Release"]
+    D --> G["build-copr-package"]
+    D --> H["build-obs-package"]
+    G --> I["attach-release-packages"]
+    H --> I
+    J["cleanup-branches<br/>(weekly/manual)"] -.-> K["Delete stale<br/>workflow/v* branches"]
 ```
 
 ### 1. Prepare Release

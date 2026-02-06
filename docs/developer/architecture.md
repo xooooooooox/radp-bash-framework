@@ -4,20 +4,17 @@ This document describes the internal architecture of radp-bash-framework.
 
 ## Execution Flow
 
-```
-init.sh (idempotent via gw_fw_run_initialized)
-  ↓
-preflight/ (two-stage dependency checking)
-  ├─ stage1/ (POSIX shell) → bash check/install
-  └─ stage2/ (Bash) → gnu-getopt, yq check/install
-  ↓
-bootstrap/bootstrap.sh (context builder)
-  ↓
-context/context.sh (injects globals, libs, config)
-  ├─ libs/logger/ (logging system)
-  ├─ libs/toolkit/ (6 domains: core, exec, io, net, os, cli)
-  ├─ vars/global_vars.sh (all variable declarations)
-  └─ config autoconfiguration (YAML → shell vars)
+```mermaid
+flowchart TD
+    A["init.sh"] -->|idempotent| B["preflight/"]
+    B --> B1["stage1/ (POSIX)"]
+    B1 -->|"bash check"| B2["stage2/ (Bash)"]
+    B2 -->|"gnu-getopt, yq"| C["bootstrap.sh"]
+    C --> D["context.sh"]
+    D --> D1["libs/logger/"]
+    D --> D2["libs/toolkit/<br/>core, exec, io, net, os, cli"]
+    D --> D3["vars/global_vars.sh"]
+    D --> D4["config autoconfiguration"]
 ```
 
 ## Preflight Two-Stage Design
@@ -88,7 +85,7 @@ Configuration is loaded in this order (later overrides earlier):
 
 1. `framework_config.yaml` - Framework defaults
 2. User `config.yaml` - Overrides via `radp.fw.*` or `radp.extend.*`
-3. Environment variables - `GX_RADP_FW_*` or `YAML_*` prefix
+3. Environment variables - `GX_RADP_FW_*` prefix (override any config)
 4. Final config cached in `cache/final_config.sh`
 
 ## Sourcing & Load Order
@@ -120,22 +117,20 @@ commands/
 
 ### Dispatch Flow
 
-```
-myapp db migrate --dry-run 20240101
-  │
-  ├─ Parse args: ["db", "migrate", "--dry-run", "20240101"]
-  │
-  ├─ Longest match: "db" → group, "db migrate" → command (match!)
-  │
-  ├─ Remaining args: ["--dry-run", "20240101"]
-  │
-  ├─ Parse options/args from metadata:
-  │     opt_dry_run="true"
-  │     positional_args=("20240101")
-  │
-  ├─ Source: commands/db/migrate.sh
-  │
-  └─ Execute: cmd_db_migrate "20240101"
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI as radp_cli_dispatch
+    participant Parser as radp_cli_parse_args
+    participant Cmd as cmd_db_migrate()
+
+    User->>CLI: myapp db migrate --dry-run 20240101
+    CLI->>CLI: Longest match: "db migrate" → command
+    CLI->>CLI: Remaining: ["--dry-run", "20240101"]
+    CLI->>Parser: Parse options/args from metadata
+    Parser-->>CLI: opt_dry_run="true", positional=["20240101"]
+    CLI->>Cmd: Source commands/db/migrate.sh
+    CLI->>Cmd: cmd_db_migrate("20240101")
 ```
 
 ## Toolkit Domains

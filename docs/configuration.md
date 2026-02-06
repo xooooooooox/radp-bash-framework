@@ -205,6 +205,14 @@ radp:
 
 ## Configuration Priority
 
+```mermaid
+flowchart LR
+    A["framework_config.yaml<br/>(framework defaults)"] --> B["config.yaml<br/>(base config)"]
+    B --> C["config-{env}.yaml<br/>(environment config)"]
+    C --> D["GX_* env vars<br/>(runtime override)"]
+    style D fill:#f96,stroke:#333
+```
+
 1. **Framework defaults** (`framework_config.yaml`)
 2. **Base config** (`config/config.yaml`)
 3. **Environment config** (`config/config-{env}.yaml`)

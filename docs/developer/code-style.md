@@ -1,5 +1,11 @@
 # Code Style Guide
 
+> Based on the [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
+> with the following project-specific adaptations:
+> - **Line length**: 100 characters (Google: 80) — shell commands are naturally longer
+> - **Naming**: Scoped prefixes (`gr_*`, `radp_*`, `__fw_*`) instead of flat lowercase — needed for framework-scale namespace management
+> - **File extensions**: All files use `.sh` — no distinction between executables and libraries
+
 This document describes the coding conventions and style guidelines for radp-bash-framework.
 
 ## Shell Compatibility
@@ -84,6 +90,26 @@ Example:
 
 These options are available in all commands as `gopt_config`, `gopt_env`, etc.
 
+## File Header
+
+Every script and library file should begin with a shebang and a brief description:
+
+```bash
+#!/usr/bin/env bash
+# =============================================================================
+# Brief description of what this script/library does
+# =============================================================================
+```
+
+For POSIX entry scripts (`init.sh`, `preflight/stage1/`):
+
+```sh
+#!/bin/sh
+# =============================================================================
+# Brief description
+# =============================================================================
+```
+
 ## Code Formatting
 
 ### Indentation
@@ -152,6 +178,87 @@ my_function() {
 #   Writes result to stdout
 ```
 
+### Pipelines
+
+Short pipelines may be on one line. Multi-line pipelines should break at `|` with continuation
+indented by 2 spaces:
+
+```bash
+# Short — one line is fine
+command1 | command2
+
+# Long — break at pipe
+command1 \
+  | command2 \
+  | command3
+```
+
+### Loops and Control Flow
+
+Place `; then` and `; do` on the same line as `if`/`for`/`while`:
+
+```bash
+if [[ -n "$var" ]]; then
+  # ...
+fi
+
+for file in "${files[@]}"; do
+  # ...
+done
+
+while read -r line; do
+  # ...
+done < "$input"
+```
+
+### Case Statements
+
+Indent alternatives by 2 spaces. Short single-line actions may include `;;` on the same line.
+Multi-line actions should have `;;` on its own line:
+
+```bash
+case "$action" in
+  start) start_service ;;
+  stop)  stop_service ;;
+  restart)
+    stop_service
+    start_service
+    ;;
+  *)
+    radp_log_error "Unknown action: $action"
+    return 1
+    ;;
+esac
+```
+
+### Command Substitution
+
+Use `$(command)` instead of backticks:
+
+```bash
+# Correct
+local output
+output=$(my_command)
+
+# Incorrect — backticks are harder to read and nest
+local output=`my_command`
+```
+
+### Arithmetic
+
+Use `(( ))` for arithmetic and `$(( ))` for arithmetic expansion. Do not use `let`, `expr`,
+or `$[ ]`:
+
+```bash
+# Correct
+(( count++ ))
+result=$(( width * height ))
+
+# Incorrect
+let count++
+result=$(expr "$width" \* "$height")
+```
+
 ## Logging
 
 Use framework logging functions instead of `echo`:
@@ -186,6 +293,103 @@ cleanup() {
 }
 trap cleanup EXIT
 ```
+
+### STDOUT vs STDERR
+
+Error messages must go to STDERR. The framework's `radp_log_error` and `radp_log_warn` already
+do this. When writing manual error output, use `>&2`:
+
+```bash
+echo "Error: file not found" >&2
+```
+
+### PIPESTATUS
+
+When using pipelines, check individual command exit codes via `PIPESTATUS` if any stage
+can fail independently:
+
+```bash
+cmd1 | cmd2 | cmd3
+local -a statuses=("${PIPESTATUS[@]}")
+if [[ "${statuses[0]}" -ne 0 ]]; then
+  radp_log_error "cmd1 failed"
+fi
+```
+
+### Separate `local` Declaration from Assignment
+
+When assigning command output to a local variable, split the declaration and assignment. `local`
+always returns 0, which masks the real exit code:
+
+```bash
+# Correct — $? reflects the command's exit code
+local output
+output=$(my_command)
+
+# Incorrect — $? is always 0 because local succeeded
+local output=$(my_command)
+```
+
+## Practices
+
+### No `eval`
+
+Do not use `eval`. It makes input injection trivial and code hard to reason about.
+
+### Pipes to `while`
+
+A `while` loop in a pipeline runs in a subshell, so variable assignments inside it are lost.
+Use process substitution or `readarray` instead:
+
+```bash
+# Correct — variables persist after the loop
+while IFS= read -r line; do
+  (( count++ ))
+done < <(some_command)
+
+# Correct — capture all lines into an array
+readarray -t lines < <(some_command)
+
+# Incorrect — count is always 0 after the loop
+some_command | while IFS= read -r line; do
+  (( count++ ))
+done
+```
+
+### No Aliases in Scripts
+
+Use functions instead of aliases. Aliases are not expanded in non-interactive shells by default
+and are harder to compose and test.
+
+### Wildcard Expansion Safety
+
+Use `./*` instead of `*` when globbing to avoid filenames starting with `-` being interpreted
+as options:
+
+```bash
+# Correct
+rm -f ./*.tmp
+
+# Risky — a file named "-rf" would be interpreted as a flag
+rm -f *.tmp
+```
+
+### `main()` Pattern
+
+Scripts that contain multiple functions should define a `main()` function and call it at the end.
+This keeps global scope clean and makes the entry point explicit:
+
+```bash
+main() {
+  parse_args "$@"
+  do_work
+}
+
+main "$@"
+```
+
+> **Note:** This pattern applies to standalone scripts. Framework library files (sourced, not
+> executed) do not need a `main()` function.
 
 ## ShellCheck
 

@@ -63,6 +63,9 @@ The framework provides utility functions organized by domain under `src/main/she
 | `gwxa_*`           | Global arrays                | `gwxa_fw_sourced_scripts`      |
 | `gr_radp_fw_*`     | Framework config values      | `gr_radp_fw_log_level`         |
 | `gr_radp_extend_*` | User extension config        | `gr_radp_extend_myapp_api_url` |
+| `opt_*`            | Command option (auto-set)    | `opt_dry_run`                  |
+| `args_*`           | Command argument (auto-set)  | `args_name`                    |
+| `gopt_*`           | App global option (auto-set) | `gopt_config`                  |
 
 ### Return Code Conventions
 

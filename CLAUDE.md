@@ -79,11 +79,15 @@ context/context.sh
 
 ### Variables
 
-| Prefix   | Scope           | Example                   |
-|----------|-----------------|---------------------------|
-| `gr_*`   | Global readonly | `gr_fw_root_path`         |
-| `gw_*`   | Global writable | `gw_fw_run_initialized`   |
-| `gwxa_*` | Global array    | `gwxa_fw_sourced_scripts` |
+| Prefix   | Scope                    | Example                   |
+|----------|--------------------------|---------------------------|
+| `gr_*`   | Global readonly          | `gr_fw_root_path`         |
+| `gw_*`   | Global writable          | `gw_fw_run_initialized`   |
+| `gwxa_*` | Global array             | `gwxa_fw_sourced_scripts` |
+| `__fw_*` | Internal/private         | `__fw_config_cache`       |
+| `opt_*`  | Command option (auto-set)  | `opt_dry_run`           |
+| `args_*` | Command argument (auto-set) | `args_name`            |
+| `gopt_*` | App global option (auto-set) | `gopt_config`         |
 
 ### Functions
 

@@ -69,6 +69,8 @@ radp-bf upgrade entry ide
 | `gitignore` | `.gitignore`                         | Git ignore patterns                            |
 | `version`   | `src/main/shell/commands/version.sh` | Migrate version from config.yaml to version.sh |
 | `workflows` | `.github/workflows/*.yml`            | GitHub Actions CI/CD workflows (8 files)       |
+| `packaging` | `packaging/`                         | Distribution packaging (spec, homebrew, debian) |
+| `globals`   | `commands/_globals.sh`               | Application global options template            |
 
 The upgrade command detects user modifications and skips those files unless `--force` is specified.
 

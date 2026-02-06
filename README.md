@@ -254,6 +254,8 @@ The framework establishes naming conventions to keep shell projects consistent a
 | `gw_*`   | Global writable | `gw_fw_run_initialized`   |
 | `gwxa_*` | Global array    | `gwxa_fw_sourced_scripts` |
 
+CLI commands also use `opt_*`, `args_*`, and `gopt_*` variables (auto-generated from annotations).
+
 ### Function Naming
 
 | Pattern       | Meaning                               | Example                    |

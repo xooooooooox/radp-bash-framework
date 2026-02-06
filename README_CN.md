@@ -250,6 +250,8 @@ myapp completion zsh >~/.zfunc/_myapp
 | `gw_*`   | 全局可写 | `gw_fw_run_initialized`   |
 | `gwxa_*` | 全局数组 | `gwxa_fw_sourced_scripts` |
 
+CLI 命令还使用 `opt_*`、`args_*` 和 `gopt_*` 变量（由注解自动生成）。
+
 ### 函数命名
 
 | 模式            | 含义               | 示例                         |
