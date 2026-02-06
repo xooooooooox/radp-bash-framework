@@ -59,7 +59,7 @@ Create `src/main/shell/commands/greet.sh`:
 # @cmd
 # @desc Greet someone
 # @arg name!              Required argument
-# @option -l, --loud      Shout the greeting
+# @flag -l, --loud        Shout the greeting
 
 cmd_greet() {
   local name="$1"

@@ -132,7 +132,7 @@ Define application-level global options in `commands/_globals.sh`:
 # @global -e, --env <name> Environment name [default: local]
 ```
 
-- Uses `@global` annotation (same syntax as `@option`)
+- Uses `@global` annotation (same syntax as `@option`/`@flag`)
 - Variables available as `gopt_<name>` (e.g., `gopt_config`, `gopt_env`)
 - Options can be placed before or after the command:
   - `mycli -c /path list`

@@ -84,7 +84,7 @@ Commands use annotation-based metadata in `.sh` files under `commands/`.
 # @cmd
 # @desc Greet someone
 # @arg name!              Required argument
-# @option -l, --loud      Shout the greeting
+# @flag -l, --loud        Shout the greeting
 
 cmd_greet() {
   local name="$1"
@@ -107,7 +107,7 @@ cmd_greet() {
 | `@arg name`            | Optional positional argument    | `# @arg name`                   |
 | `@arg name!`           | Required positional argument    | `# @arg name!`                  |
 | `@arg items~`          | Variadic argument (multiple)    | `# @arg files~`                 |
-| `@option -s, --short`  | Boolean flag                    | `# @option -v, --verbose`       |
+| `@flag -s, --long`     | Boolean flag (no value)         | `# @flag -v, --verbose`         |
 | `@option --name <val>` | Option with value               | `# @option --config <file>`     |
 | `@example`             | Usage example                   | `# @example greet World`        |
 | `@complete`            | Dynamic completion              | `# @complete name _complete_fn` |
@@ -226,7 +226,7 @@ Common use cases for application global options:
 # commands/list.sh
 # @cmd
 # @desc List available items
-# @option -a, --all Show all items
+# @flag -a, --all Show all items
 
 cmd_list() {
   local show_all="${opt_all:-false}"

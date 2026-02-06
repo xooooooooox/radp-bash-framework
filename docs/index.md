@@ -10,7 +10,7 @@ A modular Bash framework for building CLI applications with structured bootstrap
 ## User Guide
 
 - [CLI Development Guide](./user-guide/cli-development.md) - Complete guide to building CLI applications
-- [Command Annotations](./user-guide/annotations.md) - `@cmd`, `@arg`, `@option`, `@example` reference
+- [Command Annotations](./user-guide/annotations.md) - `@cmd`, `@arg`, `@flag`, `@option`, `@example` reference
 
 ## Configuration
 

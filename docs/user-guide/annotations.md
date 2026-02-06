@@ -58,21 +58,48 @@ cmd_copy() {
 }
 ```
 
+## Flags
+
+### `@flag`
+
+Define boolean flags (switches with no value). When present, the variable is set to `"true"`; when absent, the variable is **unset**.
+
+```bash
+# @flag -v, --verbose       Enable verbose output
+# @flag -q, --quiet         Suppress output
+# @flag --dry-run            Show what would be done without executing
+```
+
+Flags are available as `opt_<name>` variables:
+
+```bash
+# @cmd
+# @desc Run with flags
+# @flag -v, --verbose     Enable verbose mode
+# @flag -n, --dry-run     Show what would be done
+
+cmd_run() {
+  if [[ "${opt_verbose:-}" == "true" ]]; then
+    echo "Verbose mode enabled"
+  fi
+
+  if [[ "${opt_dry_run:-}" == "true" ]]; then
+    echo "[DRY RUN] Would execute..."
+    return 0
+  fi
+}
+```
+
 ## Options
 
 ### `@option`
 
-Define command-line options.
+Define command-line options that take a value.
 
 ```bash
-# Boolean flags (no value)
-# @option -v, --verbose       Enable verbose output
-# @option -q, --quiet         Suppress output
-
-# Options with values
 # @option -c, --config <file>   Configuration file
 # @option -n, --count <num>     Number of iterations
-# @option -e, --env <name>      Environment name
+# @option -e, --env <name>      Environment name [default: local]
 ```
 
 Options are available as `opt_<name>` variables:
@@ -80,17 +107,15 @@ Options are available as `opt_<name>` variables:
 ```bash
 # @cmd
 # @desc Run with options
-# @option -v, --verbose     Enable verbose mode
 # @option -c, --config <file>  Config file path
+# @option -e, --env <name>     Environment name [default: development]
 
 cmd_run() {
-  if [[ "${opt_verbose:-}" == "true" ]]; then
-    echo "Verbose mode enabled"
-  fi
-
   if [[ -n "${opt_config:-}" ]]; then
     echo "Using config: $opt_config"
   fi
+
+  echo "Environment: ${opt_env}"
 }
 ```
 
@@ -174,9 +199,10 @@ cmd_vg() {
 
 **Behavior in passthrough mode:**
 
-- No `@option` or `@arg` parsing - all arguments go to the command
-- `--help` / `-h` still works (shows framework-generated help)
-- Use environment variables for wrapper-specific configuration
+- No `@flag`, `@option`, or `@arg` parsing — all arguments go to the command
+- `-h` / `--help` is **not** intercepted (use `<app> help <cmd>` instead)
+- The command function must handle its own argument parsing
+- `@flag`/`@option`/`@arg` annotations still appear in `<app> help <cmd>` output
 
 **When to use:**
 
@@ -194,7 +220,7 @@ Show usage examples in help output.
 # @cmd
 # @desc Deploy application
 # @arg env!           Target environment
-# @option -f, --force   Force deployment
+# @flag -f, --force   Force deployment
 # @example deploy staging
 # @example deploy production --force
 
@@ -212,9 +238,9 @@ cmd_deploy() {
 # @cmd
 # @desc Run database migrations
 # @arg version        Target version (optional, defaults to latest)
-# @option -n, --dry-run       Show what would be done without executing
-# @option -v, --verbose       Show detailed output
-# @option --env <name>        Target environment (default: development)
+# @flag -n, --dry-run          Show what would be done without executing
+# @flag -v, --verbose          Show detailed output
+# @option --env <name>         Target environment (default: development)
 # @example db migrate
 # @example db migrate 20240101
 # @example db migrate --dry-run --verbose
@@ -284,9 +310,9 @@ Each subcommand file is a standalone `.sh` file with `# @cmd` marker and a `cmd_
 # @cmd
 # @desc Run database migrations
 # @arg version        Target version (optional, defaults to latest)
-# @option -n, --dry-run       Show what would be done without executing
-# @option -v, --verbose       Show detailed output
-# @option --env <name>        Target environment [default: development]
+# @flag -n, --dry-run          Show what would be done without executing
+# @flag -v, --verbose          Show detailed output
+# @option --env <name>         Target environment [default: development]
 # @example db migrate
 # @example db migrate 20240101
 # @example db migrate --dry-run --verbose
