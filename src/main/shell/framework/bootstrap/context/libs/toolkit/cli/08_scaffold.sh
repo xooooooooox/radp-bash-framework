@@ -773,11 +773,13 @@ jobs:
           set -euo pipefail
           bump_type="${{ inputs.bump_type }}"
           manual_version="${{ inputs.version }}"
+
+          # Get latest version tag from git
           latest_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
 
-          # Handle initial release (no existing tags)
+          # Handle initial release (no tags)
           if [[ -z "${latest_tag}" ]]; then
-            echo "No tags found; using v0.0.0 as base for initial release."
+            echo "No version tags found; using v0.0.0 as base for initial release."
             latest_tag="v0.0.0"
           fi
 

@@ -43,10 +43,14 @@ jobs:
           set -euo pipefail
           bump_type="${{ inputs.bump_type }}"
           manual_version="${{ inputs.version }}"
+
+          # Get latest version tag from git
           latest_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+
+          # Handle initial release (no tags)
           if [[ -z "${latest_tag}" ]]; then
-            echo "No tags found; cannot compute version bump." >&2
-            exit 1
+            echo "No version tags found; using v0.0.0 as base for initial release."
+            latest_tag="v0.0.0"
           fi
           if [[ ! "${latest_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             echo "Latest tag '${latest_tag}' does not match vX.Y.Z" >&2
