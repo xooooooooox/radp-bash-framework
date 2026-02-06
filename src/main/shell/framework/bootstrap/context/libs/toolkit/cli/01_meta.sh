@@ -12,6 +12,7 @@
 #   @arg <name>~      - 剩余参数（收集所有）
 #   @option -s, --long <value>  - 选项参数
 #   @option ... [default: x]    - 带默认值
+#   @flag --long                - 布尔标志（等同于无值的 @option）
 #   @example <text>   - 使用示例
 #   @complete <name> <func>     - 动态补全函数（name 为参数名或选项长名）
 #   @meta passthrough - 透传模式：跳过参数解析，所有参数直接传递给命令函数
@@ -66,6 +67,9 @@ radp_cli_parse_meta() {
       ;;
     @option\ *)
       options+=("${line#@option }")
+      ;;
+    @flag\ *)
+      options+=("${line#@flag }")
       ;;
     @example\ *)
       examples+=("${line#@example }")
