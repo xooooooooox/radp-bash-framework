@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.18
+## v0.7.19
 
 ### refactor
 
@@ -99,6 +99,7 @@
 - Fix `radp-bf upgrade` missing debian packaging files
   - Add `obs/debian/changelog`, `obs/debian/copyright`, `obs/debian/source/format` to upgrade list
   - Now creates all debian files that scaffold creates
+- Fix @flag annotation not work
 
 ## v0.6.32
 
