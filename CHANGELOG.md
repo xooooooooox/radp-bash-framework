@@ -5,6 +5,19 @@
 ### refactor
 
 - Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
+- Refactor `radp-bf` CLI to standard command-based structure
+  - Move command logic from case statements to individual command files in `commands/`
+  - New structure: `src/main/shell/commands/{new,upgrade,path,resolve-root,completion,self-update,version}.sh`
+  - Add `src/main/shell/config/config.yaml` for radp-bf specific configuration
+  - Add `src/main/shell/config/_ide.sh` for IDE completion support
+  - Use standard CLI dispatch: `radp_cli_set_commands_dir` + `radp_app_run`
+  - Maintain fast path for `path` and `resolve-root` commands (handled before framework loading)
+  - All commands, arguments, options, and output formats remain backward compatible
+  - Update packaging scripts to include new `commands/` and `config/` directories:
+    - `install.sh` - manual installation
+    - `packaging/copr/radp-bash-framework.spec` - Fedora/RHEL RPM
+    - `packaging/obs/radp-bash-framework.spec` - openSUSE/Debian packages
+    - `packaging/binary/build-portable.sh` - portable binary build
 
 ### feat
 
@@ -16,6 +29,18 @@
   - Help and completion systems updated to include application global options
 - Add `globals` component to `upgrade` command to add `_globals.sh` to existing projects
 - Add `_globals.sh` template to `new` scaffold command
+- Add portable single-file executable build support
+  - Standard version (~100KB): requires system bash 4.3+, gnu-getopt, yq
+  - Full version (~20MB): bundled bash, gnu-getopt, yq - zero external dependencies
+  - Supported platforms: linux-amd64, linux-arm64, darwin-amd64, darwin-arm64
+  - Cache-based extraction to `~/.cache/radp-bf/` for fast subsequent runs
+- Add `radp-bf self-update` command for portable installations
+  - Check for updates: `radp-bf self-update --check`
+  - Update to latest: `radp-bf self-update`
+  - Force update: `radp-bf self-update --force`
+  - Switch to full version: `radp-bf self-update --full`
+- Add GitHub workflow for building portable binaries on release
+- Skip dependency checks when using bundled deps (RADP_BF_BUNDLED_DEPS)
 - Add IO module enhancements
   - `radp_io_append_line_unique()` - Append line to file with deduplication
   - `radp_io_prompt_confirm()` - Y/N confirmation prompt with timeout support
@@ -63,23 +88,6 @@
   - `radp_wait_until()` - Wait until condition becomes true
   - `radp_retry()` - Retry command until success
 
-## v0.7.8
-
-### feat
-
-- Add portable single-file executable build support
-  - Standard version (~100KB): requires system bash 4.3+, gnu-getopt, yq
-  - Full version (~20MB): bundled bash, gnu-getopt, yq - zero external dependencies
-  - Supported platforms: linux-amd64, linux-arm64, darwin-amd64, darwin-arm64
-  - Cache-based extraction to `~/.cache/radp-bf/` for fast subsequent runs
-- Add `radp-bf self-update` command for portable installations
-  - Check for updates: `radp-bf self-update --check`
-  - Update to latest: `radp-bf self-update`
-  - Force update: `radp-bf self-update --force`
-  - Switch to full version: `radp-bf self-update --full`
-- Add GitHub workflow for building portable binaries on release
-- Skip dependency checks when using bundled deps (RADP_BF_BUNDLED_DEPS)
-
 ### fix
 
 - Fix CLI project bash completion not working when installed via package manager on Linux
@@ -91,22 +99,6 @@
 - Fix `radp-bf upgrade` missing debian packaging files
   - Add `obs/debian/changelog`, `obs/debian/copyright`, `obs/debian/source/format` to upgrade list
   - Now creates all debian files that scaffold creates
-
-### refactor
-
-- Refactor `radp-bf` CLI to standard command-based structure
-  - Move command logic from case statements to individual command files in `commands/`
-  - New structure: `src/main/shell/commands/{new,upgrade,path,resolve-root,completion,self-update,version}.sh`
-  - Add `src/main/shell/config/config.yaml` for radp-bf specific configuration
-  - Add `src/main/shell/config/_ide.sh` for IDE completion support
-  - Use standard CLI dispatch: `radp_cli_set_commands_dir` + `radp_app_run`
-  - Maintain fast path for `path` and `resolve-root` commands (handled before framework loading)
-  - All commands, arguments, options, and output formats remain backward compatible
-  - Update packaging scripts to include new `commands/` and `config/` directories:
-    - `install.sh` - manual installation
-    - `packaging/copr/radp-bash-framework.spec` - Fedora/RHEL RPM
-    - `packaging/obs/radp-bash-framework.spec` - openSUSE/Debian packages
-    - `packaging/binary/build-portable.sh` - portable binary build
 
 ## v0.6.32
 
