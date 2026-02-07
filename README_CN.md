@@ -316,6 +316,7 @@ radp-bf completion zsh >~/.zfunc/_radp-bf
 | `radp_net_*`  | `github_download_asset`, `github_latest_release`                                                                                       | 网络和 GitHub API 工具 |
 | `radp_cli_*`  | `discover`, `dispatch`, `help`, `parse_args`, `scaffold_new`, `upgrade`                                                                | CLI 基础设施          |
 | `radp_core_*` | `get_fw_install_version`, `nr_arr_merge_unique`                                                                                        | 核心工具和数组操作         |
+| `radp_ide_*`  | `ide_init`, `ide_add_commands_dir`                                                                                                     | IDE 代码补全支持        |
 
 完整文档请参阅 [API 参考](docs/reference/api.md)。
 

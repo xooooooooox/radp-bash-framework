@@ -136,4 +136,5 @@ Tag triggers:
 | `build-obs-package.yml`       | After spec update          | Sync to OBS and build             |
 | `update-homebrew-tap.yml`     | Tag push                   | Update Homebrew formula           |
 | `attach-release-packages.yml` | After package builds       | Upload packages to release        |
+| `build-portable.yml`          | Tag push or manual         | Build portable binary executables |
 | `cleanup-branches.yml`        | Weekly schedule or manual  | Delete stale workflow branches    |

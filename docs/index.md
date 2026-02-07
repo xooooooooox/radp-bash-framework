@@ -1,6 +1,7 @@
 # radp-bash-framework Documentation
 
-A modular Bash framework for building CLI applications with structured bootstrapping, configuration management, and a comprehensive toolkit.
+A modular Bash framework for building CLI applications with structured bootstrapping, configuration management, and a
+comprehensive toolkit.
 
 ## Getting Started
 
@@ -10,7 +11,8 @@ A modular Bash framework for building CLI applications with structured bootstrap
 ## User Guide
 
 - [CLI Development Guide](./user-guide/cli-development.md) - Complete guide to building CLI applications
-- [Command Annotations](./user-guide/annotations.md) - `@cmd`, `@arg`, `@flag`, `@option`, `@example` reference
+- [Command Annotations](./user-guide/annotations.md) - `@cmd`, `@arg`, `@flag`, `@option`, `@example`, `@complete`,
+  `@meta`, `@global`, `@arg-values` reference
 
 ## Configuration
 

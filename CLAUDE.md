@@ -29,6 +29,7 @@ source "$(radp-bf path launcher)" "$@" # App launcher (thin entry script)
 ```bash
 radp-bf new <name >[dir] # Create a new CLI project
 radp-bf upgrade [dir] [opts] # Upgrade existing project to latest scaffold
+radp-bf resolve-root <script> # Resolve project root from entry script path
 radp-bf path init # Print path to init.sh
 radp-bf path launcher # Print path to launcher.sh
 radp-bf version # Print version
@@ -37,10 +38,12 @@ radp-bf version # Print version
 ### Global Options (for apps using launcher.sh)
 
 ```bash
+myapp -q, --quiet # Suppress log output (quiet mode)
 myapp -v, --verbose # Enable verbose output
 myapp --debug # Enable debug output
 myapp --show-config # Show configuration
 myapp --show-config --all # Show configuration with extensions
+myapp --show-config --json # Show configuration in JSON format
 ```
 
 ## Architecture
@@ -56,7 +59,7 @@ bootstrap/bootstrap.sh
   ↓
 context/context.sh
   ├─ libs/logger/
-  ├─ libs/toolkit/ (core, exec, io, net, os, cli)
+  ├─ libs/toolkit/ (core, exec, io, net, os, cli, ide)
   └─ config autoconfiguration
 ```
 
@@ -108,6 +111,7 @@ context/context.sh
 | **net**  | Network utilities          |
 | **os**   | Distro detection           |
 | **cli**  | Argument parsing, dispatch |
+| **ide**  | IDE code completion hints  |
 
 ## CLI Command Discovery
 
@@ -171,6 +175,7 @@ fi
 | `build-copr-package.yml`  | COPR build                   |
 | `build-obs-package.yml`   | OBS build                    |
 | `update-homebrew-tap.yml` | Update Homebrew              |
+| `build-portable.yml`     | Build portable binaries      |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for release process.
 

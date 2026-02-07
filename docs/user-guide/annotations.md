@@ -58,6 +58,38 @@ cmd_copy() {
 }
 ```
 
+### `@arg-values`
+
+Provide a static list of completion values for a named argument. Unlike `@complete` which calls a function at runtime,
+`@arg-values` embeds the values directly in the annotation.
+
+```bash
+# @arg-values <name> <value1> <value2> ...
+```
+
+- `name`: Argument name (must match a preceding `@arg` declaration)
+- `value1 value2 ...`: Space-separated list of valid values
+
+Example:
+
+```bash
+# @cmd
+# @desc Upgrade project components
+# @arg components~ Components to upgrade
+# @arg-values components entry ide gitignore version workflows packaging globals all
+
+cmd_upgrade() {
+  local -a components=("$@")
+  # ...
+}
+```
+
+When the user presses TAB:
+
+- `myapp upgrade <TAB>` → shows: `entry ide gitignore version workflows packaging globals all`
+
+**Note:** For dynamic completion values that require runtime computation, use `@complete` instead.
+
 ## Flags
 
 ### `@flag`

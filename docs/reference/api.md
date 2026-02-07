@@ -279,6 +279,32 @@ radp_os_disable_firewalld || {
 }
 ```
 
+### radp_os_disable_swap
+
+Disable swap. Disables swap immediately and removes swap entries from fstab.
+
+```bash
+radp_os_disable_swap()
+```
+
+**Globals:**
+
+- `gr_sudo` — Sudo command prefix
+
+**Returns:** `0` on success or already disabled, `1` on failure
+
+**Note:** Required for Kubernetes nodes. Disables swap via `swapoff -a` and comments out swap entries in `/etc/fstab`
+for persistence across reboots.
+
+**Example:**
+
+```bash
+radp_os_disable_swap || {
+  radp_log_error "Failed to disable swap"
+  return 1
+}
+```
+
 ---
 
 ## System Resources (`radp_os_*`)
@@ -2411,6 +2437,68 @@ radp_cli_scaffold_new (project_name [target_dir])
 ```bash
 radp_cli_scaffold_new "myapp" # Creates ./myapp/
 radp_cli_scaffold_new "myapp" "/opt" # Creates /opt/myapp/
+```
+
+### Upgrade
+
+#### radp_cli_upgrade
+
+Upgrade an existing CLI project to the latest scaffold version.
+
+```bash
+radp_cli_upgrade ([target_dir] [components...] [options])
+```
+
+**Parameters:**
+
+- `target_dir` — Project directory (default: current directory)
+- `components` — Components to upgrade: `entry`, `ide`, `gitignore`, `version`, `workflows`, `packaging`, `globals`, or
+  `all` (default: all)
+
+**Options:**
+
+- `--dry-run` — Show what would change without modifying files
+- `--force` — Force overwrite of user-modified files
+- `--diff` — Show file diffs for changes
+
+**Returns:** `0` on success, `1` on failure
+
+**Example:**
+
+```bash
+radp_cli_upgrade                       # Upgrade current directory (all components)
+radp_cli_upgrade ./myapp --dry-run     # Preview changes
+radp_cli_upgrade . workflows packaging # Upgrade specific components
+radp_cli_upgrade --force               # Overwrite modified files
+```
+
+### Self-Update
+
+#### radp_cli_self_update
+
+Update the radp-bf portable binary to the latest version.
+
+```bash
+radp_cli_self_update ([--check] [--force] [--full])
+```
+
+**Options:**
+
+- `--check` — Only check for updates, don't download
+- `--force` — Force update even if already at latest version
+- `--full` — Download full version with bundled dependencies
+
+**Returns:** `0` on success, `1` on failure or no update available
+
+**Note:** Only available for portable installations. For package manager installations, use your package manager to
+update (e.g., `brew upgrade radp-bash-framework`).
+
+**Example:**
+
+```bash
+radp_cli_self_update             # Update to latest version
+radp_cli_self_update --check     # Check for available updates
+radp_cli_self_update --full      # Update to full version with bundled deps
 ```
 
 ---

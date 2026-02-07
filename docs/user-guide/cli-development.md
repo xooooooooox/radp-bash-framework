@@ -62,15 +62,15 @@ radp-bf upgrade entry ide
 
 **Upgradable components:**
 
-| Component   | Files                                | Description                                    |
-|-------------|--------------------------------------|------------------------------------------------|
-| `entry`     | `bin/<name>`                         | Entry script                                   |
-| `ide`       | `src/main/shell/config/_ide.sh`      | IDE support file                               |
-| `gitignore` | `.gitignore`                         | Git ignore patterns                            |
-| `version`   | `src/main/shell/commands/version.sh` | Migrate version from config.yaml to version.sh |
-| `workflows` | `.github/workflows/*.yml`            | GitHub Actions CI/CD workflows (8 files)       |
+| Component   | Files                                | Description                                     |
+|-------------|--------------------------------------|-------------------------------------------------|
+| `entry`     | `bin/<name>`                         | Entry script                                    |
+| `ide`       | `src/main/shell/config/_ide.sh`      | IDE support file                                |
+| `gitignore` | `.gitignore`                         | Git ignore patterns                             |
+| `version`   | `src/main/shell/commands/version.sh` | Migrate version from config.yaml to version.sh  |
+| `workflows` | `.github/workflows/*.yml`            | GitHub Actions CI/CD workflows (8 files)        |
 | `packaging` | `packaging/`                         | Distribution packaging (spec, homebrew, debian) |
-| `globals`   | `commands/_globals.sh`               | Application global options template            |
+| `globals`   | `commands/_globals.sh`               | Application global options template             |
 
 The upgrade command detects user modifications and skips those files unless `--force` is specified.
 
@@ -113,6 +113,7 @@ cmd_greet() {
 | `@option --name <val>` | Option with value               | `# @option --config <file>`     |
 | `@example`             | Usage example                   | `# @example greet World`        |
 | `@complete`            | Dynamic completion              | `# @complete name _complete_fn` |
+| `@arg-values`          | Static completion values        | `# @arg-values name v1 v2 v3`   |
 | `@meta passthrough`    | Skip argument parsing           | `# @meta passthrough`           |
 
 See [Command Annotations](annotations.md) for complete reference.
@@ -813,16 +814,17 @@ Projects created with `radp-bf new` include GitHub Actions workflows for automat
 
 ### Included Workflows
 
-| Workflow                      | Trigger                   | Purpose                        |
-|-------------------------------|---------------------------|--------------------------------|
-| `release-prep.yml`            | Manual on `main`          | Create release branch and PR   |
-| `create-version-tag.yml`      | PR merge or manual        | Validate and create git tag    |
-| `update-spec-version.yml`     | After tag creation        | Update spec Version field      |
-| `build-copr-package.yml`      | After spec update         | Trigger COPR build             |
-| `build-obs-package.yml`       | After spec update         | Sync to OBS and build          |
-| `update-homebrew-tap.yml`     | Tag push                  | Update Homebrew formula        |
-| `attach-release-packages.yml` | After package builds      | Upload packages to release     |
-| `cleanup-branches.yml`        | Weekly schedule or manual | Delete stale workflow branches |
+| Workflow                      | Trigger                   | Purpose                           |
+|-------------------------------|---------------------------|-----------------------------------|
+| `release-prep.yml`            | Manual on `main`          | Create release branch and PR      |
+| `create-version-tag.yml`      | PR merge or manual        | Validate and create git tag       |
+| `update-spec-version.yml`     | After tag creation        | Update spec Version field         |
+| `build-copr-package.yml`      | After spec update         | Trigger COPR build                |
+| `build-obs-package.yml`       | After spec update         | Sync to OBS and build             |
+| `update-homebrew-tap.yml`     | Tag push                  | Update Homebrew formula           |
+| `attach-release-packages.yml` | After package builds      | Upload packages to release        |
+| `build-portable.yml`          | Tag push or manual        | Build portable binary executables |
+| `cleanup-branches.yml`        | Weekly schedule or manual | Delete stale workflow branches    |
 
 ### Release Process
 

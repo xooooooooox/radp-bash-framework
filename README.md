@@ -320,6 +320,7 @@ The framework provides 60+ public functions organized by domain:
 | `radp_net_*`  | `github_download_asset`, `github_latest_release`                                                                                       | Network and GitHub API utilities                       |
 | `radp_cli_*`  | `discover`, `dispatch`, `help`, `parse_args`, `scaffold_new`, `upgrade`                                                                | CLI infrastructure                                     |
 | `radp_core_*` | `get_fw_install_version`, `nr_arr_merge_unique`                                                                                        | Core utilities and array operations                    |
+| `radp_ide_*`  | `ide_init`, `ide_add_commands_dir`                                                                                                     | IDE code completion support                            |
 
 See [API Reference](docs/reference/api.md) for complete documentation.
 
