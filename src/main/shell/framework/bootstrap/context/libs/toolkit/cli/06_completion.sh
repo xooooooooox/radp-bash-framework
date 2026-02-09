@@ -35,21 +35,58 @@ _${app_func}() {
 
     local i cmd_path=""
 
-    # 构建当前命令路径
+BASH_COMPLETION_FUNC
+
+  # Collect all known command paths for smart cmd_path building
+  local all_cmds_list
+  all_cmds_list=$(__radp_cli_bash_collect_all_cmds "")
+
+  # Build list of app global options that take values (for skipping in cmd_path builder)
+  local gopts_val_list=""
+  if [[ ${#__radp_cli_app_global_options_spec[@]} -gt 0 ]]; then
+    local spec
+    for spec in "${__radp_cli_app_global_options_spec[@]}"; do
+      local -A _opt_info=()
+      radp_cli_parse_option_spec "$spec" _opt_info
+      if [[ "${_opt_info[has_value]}" == "true" ]]; then
+        [[ -n "${_opt_info[short]}" ]] && gopts_val_list+="|-${_opt_info[short]}"
+        [[ -n "${_opt_info[long]}" ]] && gopts_val_list+="|--${_opt_info[long]}"
+      fi
+    done
+    # Remove leading |
+    gopts_val_list="${gopts_val_list#|}"
+  fi
+
+  # Output the known commands list and smart cmd_path builder
+  cat <<BASH_CMD_PATH_BUILDER
+    # Known command paths (generated)
+    local _all_cmds=" ${all_cmds_list} "
+
+    # Build cmd_path: skip global option values, validate against known commands
     for ((i = 1; i < cword; i++)); do
         case "\${words[i]}" in
-            -*) continue ;;
+BASH_CMD_PATH_BUILDER
+  if [[ -n "$gopts_val_list" ]]; then
+    echo "            $gopts_val_list)"
+    echo "                ((i++)) ;;"
+  fi
+  cat <<'BASH_CMD_PATH_BUILDER2'
+            -*) ;;
             *)
-                if [[ -z "\$cmd_path" ]]; then
-                    cmd_path="\${words[i]}"
+                local _test_path
+                if [[ -z "$cmd_path" ]]; then
+                    _test_path="${words[i]}"
                 else
-                    cmd_path="\$cmd_path \${words[i]}"
+                    _test_path="$cmd_path ${words[i]}"
+                fi
+                if [[ " $_all_cmds " == *" ${_test_path// /_} "* ]]; then
+                    cmd_path="$_test_path"
                 fi
                 ;;
         esac
     done
 
-BASH_COMPLETION_FUNC
+BASH_CMD_PATH_BUILDER2
 
   # 生成命令补全逻辑
   echo "    # Command completions"
@@ -113,6 +150,37 @@ __radp_cli_bash_gen_all_completions() {
     elif radp_cli_cmd_exists "$full_path"; then
       # 没有子命令：生成补全逻辑
       __radp_cli_bash_gen_cmd_completion "$full_path"
+    fi
+  done
+}
+
+#######################################
+# Collect all known command paths (for smart cmd_path building)
+# Outputs space-separated list of command paths with spaces replaced by _
+# Arguments:
+#   1 - parent_path: parent command path (empty for top-level)
+#######################################
+__radp_cli_bash_collect_all_cmds() {
+  local parent_path="$1"
+  local cmd_list
+
+  if [[ -z "$parent_path" ]]; then
+    cmd_list=$(radp_cli_list_commands)
+  else
+    cmd_list=$(radp_cli_list_subcommands "$parent_path")
+  fi
+
+  local cmd
+  for cmd in $cmd_list; do
+    local full_path
+    if [[ -z "$parent_path" ]]; then
+      full_path="$cmd"
+    else
+      full_path="$parent_path $cmd"
+    fi
+    echo -n "${full_path// /_} "
+    if radp_cli_has_subcommands "$full_path"; then
+      __radp_cli_bash_collect_all_cmds "$full_path"
     fi
   done
 }
@@ -214,10 +282,42 @@ __radp_cli_bash_gen_cmd_completion() {
 
     # 参数位置的补全（静态值或动态函数）
     if [[ ${#arg_complete_funcs[@]} -gt 0 || ${#arg_static_values[@]} -gt 0 ]]; then
+      # Build skip list: all options (app global + command-specific) that take values
+      local -a val_opts_list=()
+      # Add app global options with values
+      if [[ ${#__radp_cli_app_global_options_spec[@]} -gt 0 ]]; then
+        local _spec
+        for _spec in "${__radp_cli_app_global_options_spec[@]}"; do
+          local -A _oi=()
+          radp_cli_parse_option_spec "$_spec" _oi
+          if [[ "${_oi[has_value]}" == "true" ]]; then
+            [[ -n "${_oi[short]}" ]] && val_opts_list+=("-${_oi[short]}")
+            [[ -n "${_oi[long]}" ]] && val_opts_list+=("--${_oi[long]}")
+          fi
+        done
+      fi
+      # Add command-specific options with values
+      local _ol
+      while IFS= read -r _ol; do
+        [[ -z "$_ol" ]] && continue
+        local -A _oi2=()
+        radp_cli_parse_option_spec "$_ol" _oi2
+        if [[ "${_oi2[has_value]}" == "true" ]]; then
+          [[ -n "${_oi2[short]}" ]] && val_opts_list+=("-${_oi2[short]}")
+          [[ -n "${_oi2[long]}" ]] && val_opts_list+=("--${_oi2[long]}")
+        fi
+      done <<<"${meta[options]}"
+      local val_opts_pattern
+      val_opts_pattern=$(IFS='|'; echo "${val_opts_list[*]}")
+
       echo "            # 计算参数位置（减去命令路径深度）"
       echo "            local arg_idx=0"
       echo "            for ((i = 1; i < cword; i++)); do"
       echo "                case \"\${words[i]}\" in"
+      if [[ -n "$val_opts_pattern" ]]; then
+        echo "                    $val_opts_pattern)"
+        echo "                        ((i++)) ;;"
+      fi
       echo "                    -*) ;;"
       echo "                    *) ((arg_idx++)) ;;"
       echo "                esac"
@@ -699,6 +799,34 @@ __radp_cli_zsh_gen_leaf_func() {
 
   echo "    _arguments -s \\"
   echo "        '(-h --help)'{-h,--help}'[Show help]' \\"
+
+  # 生成应用级全局选项（让每个命令都能补全 -c/--config 等）
+  if [[ ${#__radp_cli_app_global_options_spec[@]} -gt 0 ]]; then
+    local _agspec
+    for _agspec in "${__radp_cli_app_global_options_spec[@]}"; do
+      local -A _ag_info=()
+      radp_cli_parse_option_spec "$_agspec" _ag_info
+      local _ag_opt_spec=""
+      if [[ -n "${_ag_info[short]}" && -n "${_ag_info[long]}" ]]; then
+        _ag_opt_spec="'(-${_ag_info[short]} --${_ag_info[long]})'{-${_ag_info[short]},--${_ag_info[long]}}'"
+      elif [[ -n "${_ag_info[long]}" ]]; then
+        _ag_opt_spec="'--${_ag_info[long]}'"
+      fi
+      if [[ -n "$_ag_opt_spec" ]]; then
+        local _ag_desc="${_ag_info[desc]//\'/\'\\\'\'}"
+        if [[ "${_ag_info[has_value]}" == "true" ]]; then
+          local _ag_value_completion=""
+          case "${_ag_info[value_name]}" in
+            dir) _ag_value_completion="_files -/" ;;
+            file) _ag_value_completion="_files" ;;
+          esac
+          echo "        ${_ag_opt_spec}[${_ag_desc}]:${_ag_info[value_name]}:${_ag_value_completion}' \\"
+        else
+          echo "        ${_ag_opt_spec}[${_ag_desc}]' \\"
+        fi
+      fi
+    done
+  fi
 
   # 生成选项补全
   local opt_line
