@@ -2,21 +2,6 @@
 
 ## v0.7.21
 
-### fix
-
-- Fix Bash completion `cmd_path` builder treating positional args and option values as command segments
-  - Embed list of all known command paths at generation time
-  - Skip values of global options (e.g., `-c /path`) when building `cmd_path`
-  - Validate each word against known commands before adding to `cmd_path`
-- Fix Bash completion `arg_idx` calculation counting option values as positional args
-  - Generate per-command skip list of all options that take values (app global + command-specific)
-  - Skip option values when computing positional argument index
-- Fix Zsh completion leaf functions missing app global options
-  - Add app global options (e.g., `-c/--config`, `-e/--env`) to all leaf command functions
-  - Previously only the top-level function included these options
-
-## v0.7.20
-
 ### refactor
 
 - Rename framework global option `--config` to `--show-config` to avoid conflicts with application-level `--config` options
@@ -105,6 +90,16 @@
 
 ### fix
 
+- Fix Bash completion `cmd_path` builder treating positional args and option values as command segments
+  - Embed list of all known command paths at generation time
+  - Skip values of global options (e.g., `-c /path`) when building `cmd_path`
+  - Validate each word against known commands before adding to `cmd_path`
+- Fix Bash completion `arg_idx` calculation counting option values as positional args
+  - Generate per-command skip list of all options that take values (app global + command-specific)
+  - Skip option values when computing positional argument index
+- Fix Zsh completion leaf functions missing app global options
+  - Add app global options (e.g., `-c/--config`, `-e/--env`) to all leaf command functions
+  - Previously only the top-level function included these options
 - Fix CLI project bash completion not working when installed via package manager on Linux
   - Add completion files to scaffold packaging templates (spec, debian install)
   - Completions now installed to system directories for auto-loading
