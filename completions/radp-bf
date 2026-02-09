@@ -17,15 +17,22 @@ _radp_bf() {
 
     local i cmd_path=""
 
-    # 构建当前命令路径
+    # Known command paths (generated)
+    local _all_cmds=" completion new path resolve-root self-update upgrade version  "
+
+    # Build cmd_path: skip global option values, validate against known commands
     for ((i = 1; i < cword; i++)); do
         case "${words[i]}" in
-            -*) continue ;;
+            -*) ;;
             *)
+                local _test_path
                 if [[ -z "$cmd_path" ]]; then
-                    cmd_path="${words[i]}"
+                    _test_path="${words[i]}"
                 else
-                    cmd_path="$cmd_path ${words[i]}"
+                    _test_path="$cmd_path ${words[i]}"
+                fi
+                if [[ " $_all_cmds " == *" ${_test_path// /_} "* ]]; then
+                    cmd_path="$_test_path"
                 fi
                 ;;
         esac
