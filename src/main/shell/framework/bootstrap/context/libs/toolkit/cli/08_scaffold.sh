@@ -152,6 +152,7 @@ VERSION_CMD
 # @cmd
 # @desc Generate shell completion script
 # @arg shell! Shell type (bash or zsh)
+# @arg-values shell bash zsh
 # @example completion bash > ~/.local/share/bash-completion/completions/__APP_NAME__
 # @example completion zsh > ~/.zfunc/___APP_NAME__
 
