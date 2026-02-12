@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.21
+## v0.7.22
 
 ### refactor
 
@@ -18,6 +18,8 @@
     - `packaging/copr/radp-bash-framework.spec` - Fedora/RHEL RPM
     - `packaging/obs/radp-bash-framework.spec` - openSUSE/Debian packages
     - `packaging/binary/build-portable.sh` - portable binary build
+- Refactor `radp-bf new` and `radp-bf upgrade` to `radp-bf scaffold new/upgrade`
+- Support via `upgrade` subcmd to upgrade CLI version
 
 ### feat
 
