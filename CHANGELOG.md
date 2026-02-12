@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.23
+## v0.7.24
 
 ### refactor
 
