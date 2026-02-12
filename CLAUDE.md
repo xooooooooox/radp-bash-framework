@@ -27,8 +27,10 @@ source "$(radp-bf path launcher)" "$@" # App launcher (thin entry script)
 ### CLI Commands
 
 ```bash
-radp-bf new <name >[dir] # Create a new CLI project
-radp-bf upgrade [dir] [opts] # Upgrade existing project to latest scaffold
+radp-bf scaffold new <name> [dir] # Create a new CLI project
+radp-bf scaffold upgrade [dir] [opts] # Upgrade existing project to latest scaffold
+radp-bf upgrade # Upgrade radp-bf itself to the latest version
+radp-bf upgrade --check # Check for available updates
 radp-bf resolve-root <script> # Resolve project root from entry script path
 radp-bf path init # Print path to init.sh
 radp-bf path launcher # Print path to launcher.sh

@@ -593,7 +593,8 @@ install_manual() {
   chmod 0755 "${install_dir}/bin/radp-bf"
   find "${install_dir}/src/main/shell/framework" -type f -name "*.sh" -exec chmod 0755 {} \;
 
-  # Write install method marker for uninstall.sh
+  # Write install metadata
+  echo "${REPO_OWNER}/${REPO_NAME}" >"${install_dir}/.install-repo"
   echo "manual" >"${install_dir}/.install-method"
   echo "${ref}" >"${install_dir}/.install-ref"
 

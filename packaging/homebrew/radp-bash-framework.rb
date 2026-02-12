@@ -34,6 +34,11 @@ class RadpBashFramework < Formula
     zsh_completion.install "completions/_radp-bf"
   end
 
+  def post_install
+    (libexec/".install-repo").write("xooooooooox/radp-bash-framework\n")
+    (libexec/".install-method").write("homebrew\n")
+  end
+
   def caveats
     <<~EOS
       radp-bash-framework has been installed to:
@@ -43,7 +48,7 @@ class RadpBashFramework < Formula
 
       Quick start:
         radp-bf --help
-        radp-bf new mycli    # Create a new CLI project
+        radp-bf scaffold new mycli    # Create a new CLI project
 
       To use the framework in your scripts:
         source "$(radp-bf path init)"

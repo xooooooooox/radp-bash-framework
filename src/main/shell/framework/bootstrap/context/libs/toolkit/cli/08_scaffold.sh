@@ -211,6 +211,20 @@ HELLO_CMD
 #   mycli -c /path list
 #   mycli list -c /path
 GLOBALS_CMD
+
+  # upgrade 命令
+  cat >"$target_dir/src/main/shell/commands/upgrade.sh" <<'UPGRADE_CMD'
+#!/usr/bin/env bash
+# @cmd
+# @desc Upgrade __PROJECT_NAME__ to the latest version
+# @meta passthrough
+
+cmd_upgrade() {
+  radp_cli_upgrade_self "$@"
+}
+UPGRADE_CMD
+  sed -i.bak "s/__PROJECT_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/upgrade.sh"
+  rm -f "$target_dir/src/main/shell/commands/upgrade.sh.bak"
 }
 
 #######################################
@@ -3171,7 +3185,8 @@ install_manual() {
   chmod 0755 "${install_dir}/bin/__PROJECT_NAME__"
   find "${install_dir}/src" -type f -name "*.sh" -exec chmod 0755 {} \;
 
-  # Write install method marker for uninstall
+  # Write install metadata
+  echo "${REPO_OWNER}/${REPO_NAME}" >"${install_dir}/.install-repo"
   echo "manual" >"${install_dir}/.install-method"
   echo "${ref}" >"${install_dir}/.install-ref"
 

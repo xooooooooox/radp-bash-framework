@@ -3,7 +3,7 @@
 # CLI 项目升级：升级基于 radp-bash-framework 创建的 CLI 项目
 
 # 可升级的组件列表
-declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging globals)
+declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging globals upgrade_cmd)
 
 #######################################
 # 升级 CLI 项目
@@ -261,10 +261,70 @@ __radp_upgrade_component() {
   globals)
     __radp_upgrade_globals "$target_dir" "$dry_run" "$force" "$show_diff"
     ;;
+  upgrade_cmd)
+    __radp_upgrade_upgrade_cmd "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
+    ;;
   *)
     return 1
     ;;
   esac
+}
+
+#######################################
+# 升级 upgrade 命令（如果不存在则创建）
+#######################################
+__radp_upgrade_upgrade_cmd() {
+  local target_dir="$1"
+  local project_name="$2"
+  local dry_run="$3"
+  local force="$4"
+  local show_diff="$5"
+
+  local upgrade_file="$target_dir/src/main/shell/commands/upgrade.sh"
+
+  local new_content
+  new_content=$(cat <<UPGRADE_CMD
+#!/usr/bin/env bash
+# @cmd
+# @desc Upgrade ${project_name} to the latest version
+# @meta passthrough
+
+cmd_upgrade() {
+  radp_cli_upgrade_self "\$@"
+}
+UPGRADE_CMD
+)
+
+  if [[ ! -f "$upgrade_file" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] src/main/shell/commands/upgrade.sh"
+    else
+      mkdir -p "$(dirname "$upgrade_file")"
+      echo "$new_content" >"$upgrade_file"
+      echo "  [CREATE] src/main/shell/commands/upgrade.sh"
+    fi
+    return 0
+  fi
+
+  local current_content
+  current_content=$(cat "$upgrade_file")
+
+  if [[ "$current_content" == "$new_content" ]]; then
+    echo "  [OK]   src/main/shell/commands/upgrade.sh (up to date)"
+    return 1
+  fi
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "  [UPDATE] src/main/shell/commands/upgrade.sh"
+    if [[ "$show_diff" == "true" ]]; then
+      diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
+    fi
+  else
+    echo "$new_content" >"$upgrade_file"
+    echo "  [UPDATE] src/main/shell/commands/upgrade.sh"
+  fi
+
+  return 0
 }
 
 #######################################

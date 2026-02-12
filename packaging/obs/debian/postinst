@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+
+echo "xooooooooox/radp-bash-framework" > /usr/lib/radp-bash-framework/.install-repo
+echo "apt" > /usr/lib/radp-bash-framework/.install-method
+
+#DEBHELPER#

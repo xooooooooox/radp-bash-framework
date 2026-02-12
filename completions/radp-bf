@@ -18,7 +18,7 @@ _radp_bf() {
     local i cmd_path=""
 
     # Known command paths (generated)
-    local _all_cmds=" completion new path resolve-root self-update upgrade version  "
+    local _all_cmds=" completion path resolve-root scaffold scaffold_new scaffold_upgrade self-update upgrade version  "
 
     # Build cmd_path: skip global option values, validate against known commands
     for ((i = 1; i < cword; i++)); do
@@ -41,7 +41,7 @@ _radp_bf() {
     # Command completions
     case "$cmd_path" in
         '')
-            COMPREPLY=($(compgen -W "completion new path resolve-root self-update upgrade version  -q --quiet -v --verbose --debug --show-config --all --json  --help --version" -- "$cur"))
+            COMPREPLY=($(compgen -W "completion path resolve-root scaffold self-update upgrade version  -q --quiet -v --verbose --debug --show-config --all --json  --help --version" -- "$cur"))
             ;;
         'completion')
             # 计算参数位置（减去命令路径深度）
@@ -60,9 +60,6 @@ _radp_bf() {
                     return
                     ;;
             esac
-            COMPREPLY=($(compgen -W "--help " -- "$cur"))
-            ;;
-        'new')
             COMPREPLY=($(compgen -W "--help " -- "$cur"))
             ;;
         'path')
@@ -87,10 +84,13 @@ _radp_bf() {
         'resolve-root')
             COMPREPLY=($(compgen -W "--help " -- "$cur"))
             ;;
-        'self-update')
-            COMPREPLY=($(compgen -W "--help  --check --force --full" -- "$cur"))
+        'scaffold')
+            COMPREPLY=($(compgen -W "new upgrade --help " -- "$cur"))
             ;;
-        'upgrade')
+        'scaffold new')
+            COMPREPLY=($(compgen -W "--help " -- "$cur"))
+            ;;
+        'scaffold upgrade')
             # 计算参数位置（减去命令路径深度）
             local arg_idx=0
             for ((i = 1; i < cword; i++)); do
@@ -99,7 +99,7 @@ _radp_bf() {
                     *) ((arg_idx++)) ;;
                 esac
             done
-            ((arg_idx -= 1)) || true
+            ((arg_idx -= 2)) || true
             # 根据参数位置补全
             case "$arg_idx" in
                 1)
@@ -108,6 +108,12 @@ _radp_bf() {
                     ;;
             esac
             COMPREPLY=($(compgen -W "--help  --dry-run --force --diff" -- "$cur"))
+            ;;
+        'self-update')
+            COMPREPLY=($(compgen -W "--help  --check --force --yes -y --version" -- "$cur"))
+            ;;
+        'upgrade')
+            COMPREPLY=($(compgen -W "--help  --check --force --yes -y --version" -- "$cur"))
             ;;
         'version')
             COMPREPLY=($(compgen -W "--help " -- "$cur"))
