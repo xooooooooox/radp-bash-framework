@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v0.7.25
+## v0.7.26
 
 ### refactor
 
@@ -20,6 +20,7 @@
     - `packaging/binary/build-portable.sh` - portable binary build
 - Refactor `radp-bf new` and `radp-bf upgrade` to `radp-bf scaffold new/upgrade`
 - Support via `upgrade` subcmd to upgrade CLI version
+- Remove duplicate `resolve-root` command.
 
 ### feat
 
