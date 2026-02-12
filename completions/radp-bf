@@ -110,10 +110,10 @@ _radp_bf() {
             COMPREPLY=($(compgen -W "--help  --dry-run --force --diff" -- "$cur"))
             ;;
         'self-update')
-            COMPREPLY=($(compgen -W "--help " -- "$cur"))
+            COMPREPLY=($(compgen -W "--help  --check --force -y --yes --version" -- "$cur"))
             ;;
         'upgrade')
-            COMPREPLY=($(compgen -W "--help " -- "$cur"))
+            COMPREPLY=($(compgen -W "--help  --check --force -y --yes --version" -- "$cur"))
             ;;
         'version')
             COMPREPLY=($(compgen -W "--help " -- "$cur"))

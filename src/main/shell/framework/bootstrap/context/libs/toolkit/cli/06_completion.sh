@@ -413,8 +413,8 @@ __radp_cli_zsh_gen_cmd_wrappers() {
     return
   fi
 
-  # 跳过透传模式
-  if [[ "${meta[metas]}" == *passthrough* ]]; then
+  # 跳过没有选项和参数补全的透传模式
+  if [[ "${meta[metas]}" == *passthrough* && -z "${meta[options]}" && -z "${meta[args]}" ]]; then
     return
   fi
 
@@ -785,9 +785,8 @@ __radp_cli_zsh_gen_leaf_func() {
     return
   fi
 
-  # passthrough 模式：不添加任何框架选项，只使用通用文件补全
-  # 这允许透传命令的原生补全不被干扰
-  if [[ "${meta[metas]}" == *passthrough* ]]; then
+  # passthrough 模式：如果没有定义选项，只使用通用文件补全
+  if [[ "${meta[metas]}" == *passthrough* && -z "${meta[options]}" ]]; then
     echo "    _files"
     echo "}"
     echo ""
