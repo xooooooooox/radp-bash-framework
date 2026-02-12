@@ -584,6 +584,8 @@ __radp_cli_upgrade_ref() {
 #######################################
 __radp_cli_upgrade_homebrew() {
   local package_name="$1"
+  radp_log_info "Updating Homebrew tap..."
+  brew update >/dev/null 2>&1 || true
   radp_log_info "Upgrading via Homebrew..."
   brew upgrade "$package_name"
 }
@@ -596,9 +598,11 @@ __radp_cli_upgrade_rpm() {
 
   if command -v dnf >/dev/null 2>&1; then
     radp_log_info "Upgrading via dnf..."
+    sudo dnf clean expire-cache >/dev/null 2>&1 || true
     sudo dnf upgrade -y "$package_name"
   elif command -v yum >/dev/null 2>&1; then
     radp_log_info "Upgrading via yum..."
+    sudo yum clean expire-cache >/dev/null 2>&1 || true
     sudo yum upgrade -y "$package_name"
   elif command -v zypper >/dev/null 2>&1; then
     radp_log_info "Upgrading via zypper..."
