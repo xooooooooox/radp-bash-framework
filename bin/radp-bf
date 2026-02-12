@@ -32,14 +32,22 @@ __radp_bf_path_fast() {
     init)     echo "${fw_root}/init.sh" ;;
     launcher) echo "${fw_root}/launcher.sh" ;;
     root)     echo "${fw_root}" ;;
+    resolve)
+      local script="${2:-}"
+      if [[ -z "$script" ]]; then
+        echo "radp-bf path resolve: script_path required" >&2
+        return 1
+      fi
+      __radp_bf_resolve_root "$script"
+      ;;
     "")
       echo "radp-bf path: name required" >&2
-      echo "Available: init, launcher, root" >&2
+      echo "Available: init, launcher, root, resolve" >&2
       return 1
       ;;
     *)
       echo "radp-bf path: unknown name '$name'" >&2
-      echo "Available: init, launcher, root" >&2
+      echo "Available: init, launcher, root, resolve" >&2
       return 1
       ;;
   esac
@@ -51,15 +59,7 @@ case "${1:-}" in
     if [[ "${2:-}" == "--help" || "${2:-}" == "-h" || -z ${2:-} ]]; then
       : # Fall through to framework for help
     else
-      __radp_bf_path_fast "${2:-}"
-      exit $?
-    fi
-    ;;
-  resolve-root)
-    if [[ "${2:-}" == "--help" || "${2:-}" == "-h" || -z "${2:-}" ]]; then
-      : # Fall through to framework for help
-    else
-      __radp_bf_resolve_root "$2"
+      __radp_bf_path_fast "${2:-}" "${3:-}"
       exit $?
     fi
     ;;

@@ -104,7 +104,7 @@ fi
 
 # 设置应用名称和根目录
 export RADP_APP_NAME="$project_name"
-export RADP_APP_ROOT="\$(radp-bf resolve-root "\${BASH_SOURCE[0]}")"
+export RADP_APP_ROOT="\$(radp-bf path resolve "\${BASH_SOURCE[0]}")"
 # shellcheck source=/dev/null
 source "\$(radp-bf path launcher)" "\$@"
 ENTRY_SCRIPT

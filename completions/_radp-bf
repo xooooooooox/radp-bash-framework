@@ -12,13 +12,7 @@ _radp_bf_completion() {
 _radp_bf_path() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[Show help]' \
-        '1:name:(init launcher root)'
-}
-
-_radp_bf_resolve_root() {
-    _arguments -s \
-        '(-h --help)'{-h,--help}'[Show help]' \
-        '1:script_path:_files'
+        '1:name:(init launcher root resolve)'
 }
 
 _radp_bf_scaffold() {
@@ -119,8 +113,7 @@ _radp_bf() {
         command)
             local commands=(
                 'completion:Generate shell completion script for radp-bf'
-                'path:Print framework path (init|launcher|root)'
-                'resolve-root:Resolve project root from entry script path'
+                'path:Print framework path (init|launcher|root|resolve)'
                 'scaffold:Manage scaffold'
                 'upgrade:Upgrade radp-bf to the latest version'
                 'version:Show radp-bash-framework version'

@@ -1662,7 +1662,7 @@ if ! command -v radp-bf &>/dev/null; then
   exit 1
 fi
 
-export RADP_APP_ROOT="$(radp-bf resolve-root "${BASH_SOURCE[0]}")"
+export RADP_APP_ROOT="$(radp-bf path resolve "${BASH_SOURCE[0]}")"
 source "$(radp-bf path launcher)" "$@"
 ```
 
