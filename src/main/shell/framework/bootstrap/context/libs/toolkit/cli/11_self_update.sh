@@ -141,6 +141,14 @@ radp_cli_version_lt() {
   local v1="${1#v}"
   local v2="${2#v}"
 
+  # Unknown version is always considered older
+  if [[ "$v1" == "unknown" && "$v2" != "unknown" ]]; then
+    return 0
+  fi
+  if [[ "$v1" == "unknown" || "$v2" == "unknown" ]]; then
+    return 1
+  fi
+
   # Use sort -V for version comparison
   if [[ "$(printf '%s\n%s' "$v1" "$v2" | sort -V | head -n1)" == "$v1" ]] && [[ "$v1" != "$v2" ]]; then
     return 0

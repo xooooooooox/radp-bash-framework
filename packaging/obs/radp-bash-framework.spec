@@ -58,6 +58,7 @@ cp -a completions/_radp-bf %{buildroot}%{_datadir}/zsh/site-functions/_radp-bf
 %post
 echo "xooooooooox/radp-bash-framework" > %{_libdir}/radp-bash-framework/.install-repo
 echo "rpm" > %{_libdir}/radp-bash-framework/.install-method
+echo "v%{version}" > %{_libdir}/radp-bash-framework/.install-version
 
 %files
 %license LICENSE

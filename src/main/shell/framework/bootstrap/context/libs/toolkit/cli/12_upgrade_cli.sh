@@ -111,13 +111,27 @@ radp_cli_get_current_version() {
     return 0
   fi
 
-  # 2. Check gr_app_version (set by app's version.sh)
+  # 2. Check gr_app_version (set by app's version.sh when version command runs)
   if [[ -n "${gr_app_version:-}" ]]; then
     echo "$gr_app_version"
     return 0
   fi
 
-  # 3. Portable version
+  # 3. Extract gr_app_version from commands/version.sh file directly
+  #    (same pattern used by banner.sh and 07_app.sh)
+  if [[ -n "$app_root" ]]; then
+    local version_sh="$app_root/src/main/shell/commands/version.sh"
+    if [[ -f "$version_sh" ]]; then
+      local extracted
+      extracted="$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)".*/\1/p' "$version_sh" 2>/dev/null | head -n 1)"
+      if [[ -n "$extracted" ]]; then
+        echo "$extracted"
+        return 0
+      fi
+    fi
+  fi
+
+  # 4. Portable version
   if radp_cli_is_portable_mode; then
     echo "${RADP_BF_PORTABLE_VERSION:-unknown}"
     return 0
@@ -257,33 +271,30 @@ radp_cli_upgrade_self() {
   # Get current version
   local current_version
   current_version="$(radp_cli_get_current_version)"
-  radp_log_info "Current version: $current_version"
-  radp_log_info "Install method:  $install_method"
+  echo "Current version: $current_version"
+  echo "Install method:  $install_method"
 
   # Get latest version
-  radp_log_info "Checking for updates..."
+  echo "Checking for updates..."
   local latest_version
   if ! latest_version="$(radp_cli_get_latest_release_version "$repo" "$target_version")"; then
     return 1
   fi
-  radp_log_info "Latest version:  $latest_version"
+  echo "Latest version:  $latest_version"
 
   # Check if update is needed
   if ! radp_cli_version_lt "$current_version" "$latest_version"; then
     if [[ "$force" != "true" ]]; then
-      radp_log_info "Already up to date"
+      echo "Already up to date."
       return 0
     fi
-    radp_log_info "Forcing upgrade to $latest_version"
+    echo "Forcing upgrade to $latest_version"
   else
-    radp_log_info "Update available: $current_version -> $latest_version"
+    echo "Update available: $current_version -> $latest_version"
   fi
 
   # If check only, we're done
   if [[ "$check_only" == "true" ]]; then
-    if radp_cli_version_lt "$current_version" "$latest_version"; then
-      echo "Update available: $latest_version"
-    fi
     return 0
   fi
 

@@ -3,5 +3,7 @@ set -e
 
 echo "xooooooooox/radp-bash-framework" > /usr/lib/radp-bash-framework/.install-repo
 echo "apt" > /usr/lib/radp-bash-framework/.install-method
+pkg_version=$(dpkg-query -W -f='${Version}' radp-bash-framework 2>/dev/null || true)
+[ -n "$pkg_version" ] && echo "v${pkg_version}" > /usr/lib/radp-bash-framework/.install-version
 
 #DEBHELPER#
