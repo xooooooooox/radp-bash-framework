@@ -206,22 +206,17 @@ Add to `~/.bashrc` for automatic loading on shell startup.
 
 ## Upgrade
 
-### Portable Binary (self-update)
-
-The portable version supports self-update:
+### Portable Binary
 
 ```shell
 # Check for updates
-radp-bf self-update --check
+radp-bf upgrade --check
 
 # Update to latest version
-radp-bf self-update
+radp-bf upgrade
 
 # Force update (even if already at latest)
-radp-bf self-update --force
-
-# Update to full version (with bundled dependencies)
-radp-bf self-update --full
+radp-bf upgrade --force
 ```
 
 ### Homebrew

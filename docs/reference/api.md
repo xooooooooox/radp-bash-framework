@@ -2472,35 +2472,6 @@ radp_cli_upgrade . workflows packaging # Upgrade specific components
 radp_cli_upgrade --force               # Overwrite modified files
 ```
 
-### Self-Update
-
-#### radp_cli_self_update
-
-Update the radp-bf portable binary to the latest version.
-
-```bash
-radp_cli_self_update ([--check] [--force] [--full])
-```
-
-**Options:**
-
-- `--check` — Only check for updates, don't download
-- `--force` — Force update even if already at latest version
-- `--full` — Download full version with bundled dependencies
-
-**Returns:** `0` on success, `1` on failure or no update available
-
-**Note:** Only available for portable installations. For package manager installations, use your package manager to
-update (e.g., `brew upgrade radp-bash-framework`).
-
-**Example:**
-
-```bash
-radp_cli_self_update             # Update to latest version
-radp_cli_self_update --check     # Check for available updates
-radp_cli_self_update --full      # Update to full version with bundled deps
-```
-
 ---
 
 ## IDE Integration (`radp_ide_*`)

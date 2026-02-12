@@ -276,7 +276,7 @@ radp-bf new <name >[dir] # Create new CLI project
 radp-bf upgrade [dir] [opts] # Upgrade existing project scaffold
 radp-bf path <name> # Print framework paths (init|launcher|root)
 radp-bf completion <shell> # Generate shell completion (bash|zsh)
-radp-bf self-update # Update to latest version (portable only)
+radp-bf upgrade # Upgrade to the latest version
 radp-bf version # Show framework version
 ```
 

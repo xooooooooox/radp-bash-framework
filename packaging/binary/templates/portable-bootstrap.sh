@@ -147,21 +147,6 @@ find_bash() {
 }
 
 #######################################
-# Handle self-update command
-#######################################
-handle_self_update() {
-  case "${1:-}" in
-  self-update)
-    # Pass to radp-bf which has the self-update implementation
-    return 1
-    ;;
-  *)
-    return 1
-    ;;
-  esac
-}
-
-#######################################
 # Main entry point
 #######################################
 main() {

@@ -272,7 +272,7 @@ radp-bf new <name >[dir] # 创建新 CLI 项目
 radp-bf upgrade [dir] [opts] # 升级现有项目脚手架
 radp-bf path <name> # 打印框架路径（init|launcher|root）
 radp-bf completion <shell> # 生成 Shell 补全（bash|zsh）
-radp-bf self-update # 更新至最新版本（仅便携版）
+radp-bf upgrade # 升级至最新版本
 radp-bf version # 显示框架版本
 ```
 

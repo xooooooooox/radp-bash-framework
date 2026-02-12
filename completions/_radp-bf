@@ -66,16 +66,6 @@ _radp_bf_scaffold_upgrade() {
         '*:components:(entry ide gitignore version workflows packaging globals all)'
 }
 
-_radp_bf_self_update() {
-    _arguments -s \
-        '(-h --help)'{-h,--help}'[Show help]' \
-        '--check[Only check for updates]' \
-        '--force[Force upgrade even if at latest]' \
-        '(-y --yes)'{-y,--yes}'[Skip confirmation prompt]' \
-        '--version[Target specific version]:version:' \
-        '*:file:_files'
-}
-
 _radp_bf_upgrade() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[Show help]' \
@@ -132,7 +122,6 @@ _radp_bf() {
                 'path:Print framework path (init|launcher|root)'
                 'resolve-root:Resolve project root from entry script path'
                 'scaffold:Manage scaffold'
-                'self-update:[DEPRECATED] Use '\''upgrade'\'' instead'
                 'upgrade:Upgrade radp-bf to the latest version'
                 'version:Show radp-bash-framework version'
             )

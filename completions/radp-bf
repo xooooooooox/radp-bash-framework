@@ -18,7 +18,7 @@ _radp_bf() {
     local i cmd_path=""
 
     # Known command paths (generated)
-    local _all_cmds=" completion path resolve-root scaffold scaffold_new scaffold_upgrade self-update upgrade version  "
+    local _all_cmds=" completion path resolve-root scaffold scaffold_new scaffold_upgrade upgrade version  "
 
     # Build cmd_path: skip global option values, validate against known commands
     for ((i = 1; i < cword; i++)); do
@@ -41,7 +41,7 @@ _radp_bf() {
     # Command completions
     case "$cmd_path" in
         '')
-            COMPREPLY=($(compgen -W "completion path resolve-root scaffold self-update upgrade version  -q --quiet -v --verbose --debug --show-config --all --json  --help --version" -- "$cur"))
+            COMPREPLY=($(compgen -W "completion path resolve-root scaffold upgrade version  -q --quiet -v --verbose --debug --show-config --all --json  --help --version" -- "$cur"))
             ;;
         'completion')
             # 计算参数位置（减去命令路径深度）
@@ -108,9 +108,6 @@ _radp_bf() {
                     ;;
             esac
             COMPREPLY=($(compgen -W "--help  --dry-run --force --diff" -- "$cur"))
-            ;;
-        'self-update')
-            COMPREPLY=($(compgen -W "--help  --check --force -y --yes --version" -- "$cur"))
             ;;
         'upgrade')
             COMPREPLY=($(compgen -W "--help  --check --force -y --yes --version" -- "$cur"))

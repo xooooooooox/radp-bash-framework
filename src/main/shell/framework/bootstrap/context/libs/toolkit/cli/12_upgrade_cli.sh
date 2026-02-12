@@ -5,6 +5,118 @@
 #
 
 #######################################
+# GitHub repository for releases
+#######################################
+declare -gr __RADP_BF_REPO="xooooooooox/radp-bash-framework"
+declare -gr __RADP_BF_API_URL="https://api.github.com/repos/${__RADP_BF_REPO}/releases/latest"
+
+#######################################
+# Check if running in portable mode
+# Returns:
+#   0 - Running in portable mode
+#   1 - Not in portable mode
+#######################################
+radp_cli_is_portable_mode() {
+  [[ "${RADP_BF_PORTABLE:-}" == "1" ]]
+}
+
+#######################################
+# Detect current platform
+# Outputs:
+#   Platform string (e.g., darwin-arm64, linux-amd64)
+#######################################
+radp_cli_detect_platform() {
+  local os
+  local arch
+
+  # Detect OS
+  case "$(uname -s)" in
+    Darwin) os="darwin" ;;
+    Linux) os="linux" ;;
+    *)
+      radp_log_error "Unsupported OS: $(uname -s)"
+      return 1
+      ;;
+  esac
+
+  # Detect architecture
+  case "$(uname -m)" in
+    x86_64|amd64) arch="amd64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *)
+      radp_log_error "Unsupported architecture: $(uname -m)"
+      return 1
+      ;;
+  esac
+
+  echo "${os}-${arch}"
+}
+
+#######################################
+# Get download URL for portable binary
+# Arguments:
+#   1 - version (e.g., v0.6.33)
+#   2 - platform (e.g., darwin-arm64)
+#   3 - full (true/false) - whether to get full version
+# Outputs:
+#   Download URL
+#######################################
+radp_cli_get_download_url() {
+  local version="$1"
+  local platform="$2"
+  local full="${3:-false}"
+
+  local base_url="https://github.com/${__RADP_BF_REPO}/releases/download/${version}"
+  local filename="radp-bf-portable"
+
+  if [[ "$full" == "true" ]]; then
+    filename="radp-bf-portable-full"
+  fi
+
+  filename="${filename}-${platform}"
+
+  echo "${base_url}/${filename}"
+}
+
+#######################################
+# Compare versions
+# Arguments:
+#   1 - version1
+#   2 - version2
+# Returns:
+#   0 - version1 < version2 (update available)
+#   1 - version1 >= version2 (no update needed)
+#######################################
+radp_cli_version_lt() {
+  local v1="${1#v}"
+  local v2="${2#v}"
+
+  # Unknown version is always considered older
+  if [[ "$v1" == "unknown" && "$v2" != "unknown" ]]; then
+    return 0
+  fi
+  if [[ "$v1" == "unknown" || "$v2" == "unknown" ]]; then
+    return 1
+  fi
+
+  # Use sort -V for version comparison
+  if [[ "$(printf '%s\n%s' "$v1" "$v2" | sort -V | head -n1)" == "$v1" ]] && [[ "$v1" != "$v2" ]]; then
+    return 0
+  fi
+  return 1
+}
+
+#######################################
+# Check if bundled deps version is used
+# Returns:
+#   0 - Using bundled deps (full version)
+#   1 - Not using bundled deps (standard version)
+#######################################
+radp_cli_is_full_version() {
+  [[ -n "${RADP_BF_BUNDLED_DEPS:-}" ]]
+}
+
+#######################################
 # Detect installation method
 # Checks portable mode first, then reads .install-method file,
 # falls back to dynamic detection via package manager queries.
