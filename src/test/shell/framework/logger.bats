@@ -2,39 +2,43 @@
 # Test cases for logger.sh
 
 setup() {
-  # 获取项目根目录 - BATS_TEST_FILENAME 是相对于运行目录的路径
-  # 当从项目根目录运行时，BATS_TEST_FILENAME = src/test/shell/logger.bats
-  # 需要获取绝对路径
-  local test_dir
-  test_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
-  PROJECT_ROOT="$(cd "$test_dir/../../.." && pwd)"
-  LOGGER_FILE="$PROJECT_ROOT/src/main/shell/framework/bootstrap/context/libs/logger/logger.sh"
+  load ../helpers/test_helper
+  setup_test_env
 
-  # 创建临时目录
-  TEST_TEMP_DIR=$(mktemp -d)
   TEST_LOG_FILE="$TEST_TEMP_DIR/test.log"
 
-  # 设置必要的全局变量
-  export gr_radp_log_file="$TEST_LOG_FILE"
-  export gr_radp_log_debug="false"
-  export YAML_RADP_LOG_LEVEL="info"
-  export YAML_RADP_LOG_PATTERN_CONSOLE="%d | %p %P | %t | %L:%F#%M | %m"
-  export YAML_RADP_LOG_PATTERN_FILE="%d | %p %P | %t | %L:%F#%M | %m"
+  # Set globals that logger.sh expects (all use gr_radp_fw_log_ prefix)
+  export gr_radp_fw_log_file_name="$TEST_LOG_FILE"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_debug="false"
+  export gr_radp_fw_log_console_enabled="false"
+  export gr_radp_fw_log_file_enabled="true"
+  export gr_radp_fw_log_pattern_console="%d | %p %P | %t | %L:%F#%M | %m"
+  export gr_radp_fw_log_pattern_file="%d | %p %P | %t | %L:%F#%M | %m"
 
-  # 只 source 日志函数部分，不执行 __main
-  # 我们需要手动定义函数(增加行数以包含更多代码)
-  # 文件现在有 731 行，source 到 720 行以包含所有函数定义(不包含 __main 及之后的代码)
-  source <(sed -n '1,720p' "$LOGGER_FILE")
+  # YAML vars used during __main / __fw_logger_setup (not executed, but
+  # load_source_with_main_noop might reference them at file scope)
+  export YAML_RADP_FW_LOG_LEVEL="info"
+  export YAML_RADP_FW_LOG_PATTERN_CONSOLE="%d | %p %P | %t | %L:%F#%M | %m"
+  export YAML_RADP_FW_LOG_PATTERN_FILE="%d | %p %P | %t | %L:%F#%M | %m"
+
+  # Variables declared at file scope (lines 801-803)
+  export gr_log_file_path=""
+  export gr_log_filename=""
+  export gr_log_rolling_path=""
+
+  # Stub radp_log_error used by __fw_logger_rolling on failure
+  radp_log_error() { :; }
+  export -f radp_log_error
+
+  load_source_with_main_noop "$TEST_LOGGER_FILE"
 }
 
 teardown() {
-  # 清理临时目录
-  if [[ -d "$TEST_TEMP_DIR" ]]; then
-    rm -rf "$TEST_TEMP_DIR"
-  fi
+  teardown_test_env
 }
 
-# 辅助函数：在子 shell 中运行日志函数并捕获文件输出
+# Helper: run logger function with fd3 pointing at a file and fd4 to /dev/null
 run_logger_to_file() {
   local log_file="$1"
   shift
@@ -80,67 +84,67 @@ run_logger_to_file() {
 }
 
 @test "__fw_get_log_level_color uses custom color for DEBUG" {
-  gr_radp_log_color_debug="35" # 紫色
+  gr_radp_fw_log_color_debug="35"
   result=$(__fw_get_log_level_color "DEBUG")
   [[ "$result" == $'\033[35m' ]]
 }
 
 @test "__fw_get_log_level_color uses custom color for INFO" {
-  gr_radp_log_color_info="34" # 蓝色
+  gr_radp_fw_log_color_info="34"
   result=$(__fw_get_log_level_color "INFO")
   [[ "$result" == $'\033[34m' ]]
 }
 
 @test "__fw_get_log_level_color uses custom color for WARN" {
-  gr_radp_log_color_warn="31" # 红色
+  gr_radp_fw_log_color_warn="31"
   result=$(__fw_get_log_level_color "WARN")
   [[ "$result" == $'\033[31m' ]]
 }
 
 @test "__fw_get_log_level_color uses custom color for ERROR" {
-  gr_radp_log_color_error="35" # 紫色
+  gr_radp_fw_log_color_error="35"
   result=$(__fw_get_log_level_color "ERROR")
   [[ "$result" == $'\033[35m' ]]
 }
 
 @test "__fw_get_log_level_color falls back to default when custom color is empty" {
-  gr_radp_log_color_debug=""
+  gr_radp_fw_log_color_debug=""
   result=$(__fw_get_log_level_color "DEBUG")
   [[ "$result" == $'\033[34m' ]]
 }
 
 @test "__fw_get_log_level_color supports color name 'red' for DEBUG" {
-  gr_radp_log_color_debug="red"
+  gr_radp_fw_log_color_debug="red"
   result=$(__fw_get_log_level_color "DEBUG")
   [[ "$result" == $'\033[31m' ]]
 }
 
 @test "__fw_get_log_level_color supports color name 'faint' for INFO" {
-  gr_radp_log_color_info="faint"
+  gr_radp_fw_log_color_info="faint"
   result=$(__fw_get_log_level_color "INFO")
   [[ "$result" == $'\033[90m' ]]
 }
 
 @test "__fw_get_log_level_color supports color name 'cyan' for WARN" {
-  gr_radp_log_color_warn="cyan"
+  gr_radp_fw_log_color_warn="cyan"
   result=$(__fw_get_log_level_color "WARN")
   [[ "$result" == $'\033[36m' ]]
 }
 
 @test "__fw_get_log_level_color supports color name 'magenta' for ERROR" {
-  gr_radp_log_color_error="magenta"
+  gr_radp_fw_log_color_error="magenta"
   result=$(__fw_get_log_level_color "ERROR")
   [[ "$result" == $'\033[35m' ]]
 }
 
 @test "__fw_get_log_level_color supports mixed case color name" {
-  gr_radp_log_color_debug="RED"
+  gr_radp_fw_log_color_debug="RED"
   result=$(__fw_get_log_level_color "DEBUG")
   [[ "$result" == $'\033[31m' ]]
 }
 
 @test "__fw_parse_clr_syntax uses color name config for level color" {
-  gr_radp_log_color_info="cyan"
+  gr_radp_fw_log_color_info="cyan"
   result=$(__fw_parse_clr_syntax "%clr(hello)" "INFO" "true")
   [[ "$result" == $'\033[36mhello\033[0m' ]]
 }
@@ -201,55 +205,50 @@ run_logger_to_file() {
 #----------------------------------------------------------------------------------------------------------------------#
 
 @test "__fw_logger filters DEBUG when level is INFO" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "DEBUG" "debug message" "test.sh" "test_func" "10"
 
-  # DEBUG 消息不应该被记录
   [[ ! -s "$TEST_LOG_FILE" ]]
 }
 
 @test "__fw_logger allows INFO when level is INFO" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "INFO" "info message" "test.sh" "test_func" "10"
 
-  # INFO 消息应该被记录
   content=$(cat "$TEST_LOG_FILE")
   [[ "$content" == *"info message"* ]]
 }
 
 @test "__fw_logger allows ERROR when level is INFO" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "ERROR" "error message" "test.sh" "test_func" "10"
 
-  # ERROR 消息应该被记录
   content=$(cat "$TEST_LOG_FILE")
   [[ "$content" == *"error message"* ]]
 }
 
-@test "__fw_logger allows DEBUG when gr_radp_log_debug is true" {
-  export gr_radp_log_level="error"
-  export gr_radp_log_debug="true"
+@test "__fw_logger allows DEBUG when gr_radp_fw_log_debug is true" {
+  export gr_radp_fw_log_level="error"
+  export gr_radp_fw_log_debug="true"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "DEBUG" "debug message" "test.sh" "test_func" "10"
 
-  # DEBUG 消息应该被记录(因为 debug 模式开启)
   content=$(cat "$TEST_LOG_FILE")
   [[ "$content" == *"debug message"* ]]
 }
 
 @test "__fw_logger filters INFO when level is WARN" {
-  export gr_radp_log_level="warn"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="warn"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "INFO" "info message" "test.sh" "test_func" "10"
 
-  # INFO 消息不应该被记录
   [[ ! -s "$TEST_LOG_FILE" ]]
 }
 
@@ -258,9 +257,9 @@ run_logger_to_file() {
 #----------------------------------------------------------------------------------------------------------------------#
 
 @test "__fw_logger uses custom console pattern" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_pattern_file="[%p] %m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_pattern_file="[%p] %m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "INFO" "custom pattern test" "test.sh" "test_func" "10"
 
@@ -269,9 +268,9 @@ run_logger_to_file() {
 }
 
 @test "__fw_logger uses simple pattern with only message" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_pattern_file="%m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_pattern_file="%m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" __fw_logger "INFO" "simple message" "test.sh" "test_func" "10"
 
@@ -284,9 +283,9 @@ run_logger_to_file() {
 #----------------------------------------------------------------------------------------------------------------------#
 
 @test "radp_log_info logs message correctly" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_pattern_file="%p: %m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_pattern_file="%p: %m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" radp_log_info "test info message"
 
@@ -295,9 +294,9 @@ run_logger_to_file() {
 }
 
 @test "radp_log_error logs message correctly" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_pattern_file="%p: %m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_pattern_file="%p: %m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" radp_log_error "test error message"
 
@@ -306,9 +305,9 @@ run_logger_to_file() {
 }
 
 @test "radp_log_warn logs message correctly" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_pattern_file="%p: %m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_pattern_file="%p: %m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" radp_log_warn "test warn message"
 
@@ -317,20 +316,19 @@ run_logger_to_file() {
 }
 
 @test "radp_log_debug is filtered when level is INFO" {
-  export gr_radp_log_level="info"
-  export gr_radp_log_pattern_file="%p: %m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="info"
+  export gr_radp_fw_log_pattern_file="%p: %m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" radp_log_debug "test debug message"
 
-  # DEBUG 消息不应该被记录
   [[ ! -s "$TEST_LOG_FILE" ]]
 }
 
 @test "radp_log_debug logs when level is DEBUG" {
-  export gr_radp_log_level="debug"
-  export gr_radp_log_pattern_file="%p: %m"
-  export gr_radp_log_debug="false"
+  export gr_radp_fw_log_level="debug"
+  export gr_radp_fw_log_pattern_file="%p: %m"
+  export gr_radp_fw_log_debug="false"
 
   run_logger_to_file "$TEST_LOG_FILE" radp_log_debug "test debug message"
 
@@ -403,14 +401,11 @@ run_logger_to_file() {
 }
 
 @test "__fw_format_log_message handles %clr syntax with colorize true" {
-  export gr_radp_log_level="info"
   result=$(__fw_format_log_message "%clr(%p){green}: %m" "INFO" "test message" "test.sh" "test_func" "10" "true")
-  # 应该包含绿色的 INFO 和普通的消息
   [[ "$result" == *$'\033[32m'*"INFO"*$'\033[0m'*": test message" ]]
 }
 
 @test "__fw_format_log_message strips %clr syntax with colorize false" {
-  export gr_radp_log_level="info"
   result=$(__fw_format_log_message "%clr(%p){green}: %m" "INFO" "test message" "test.sh" "test_func" "10" "false")
   [[ "$result" == "INFO : test message" ]]
 }
@@ -469,8 +464,8 @@ run_logger_to_file() {
 #----------------------------------------------------------------------------------------------------------------------#
 
 @test "__fw_logger_rolling does nothing when disabled" {
-  export gr_radp_log_rolling_policy_enabled="false"
-  export gr_radp_log_file="$TEST_LOG_FILE"
+  export gr_radp_fw_log_rolling_policy_enabled="false"
+  export gr_radp_fw_log_file_name="$TEST_LOG_FILE"
   export gr_log_file_path="$TEST_TEMP_DIR"
   export gr_log_filename="test.log"
 
@@ -478,62 +473,55 @@ run_logger_to_file() {
 
   __fw_logger_rolling
 
-  # 日志文件应该保持不变
   [[ -f "$TEST_LOG_FILE" ]]
   content=$(cat "$TEST_LOG_FILE")
   [[ "$content" == "test log content" ]]
 }
 
 @test "__fw_logger_rolling does nothing when log file does not exist" {
-  export gr_radp_log_rolling_policy_enabled="true"
-  export gr_radp_log_file="$TEST_TEMP_DIR/nonexistent.log"
+  export gr_radp_fw_log_rolling_policy_enabled="true"
+  export gr_radp_fw_log_file_name="$TEST_TEMP_DIR/nonexistent.log"
   export gr_log_file_path="$TEST_TEMP_DIR"
   export gr_log_filename="nonexistent.log"
 
-  # 不应该报错
   __fw_logger_rolling
 }
 
 @test "__fw_logger_rolling rotates file when size exceeds max" {
-  export gr_radp_log_rolling_policy_enabled="true"
-  export gr_radp_log_file="$TEST_LOG_FILE"
+  export gr_radp_fw_log_rolling_policy_enabled="true"
+  export gr_radp_fw_log_file_name="$TEST_LOG_FILE"
   export gr_log_file_path="$TEST_TEMP_DIR"
   export gr_log_filename="test.log"
   export gr_log_rolling_path="$TEST_TEMP_DIR/archived"
-  export gr_radp_log_rolling_policy_max_file_size="100B"
-  export gr_radp_log_rolling_policy_max_history="7"
-  export gr_radp_log_rolling_policy_total_size_cap="5GB"
+  export gr_radp_fw_log_rolling_policy_max_file_size="100B"
+  export gr_radp_fw_log_rolling_policy_max_history="7"
+  export gr_radp_fw_log_rolling_policy_total_size_cap="5GB"
 
-  # 创建一个超过 100 字节的日志文件
   dd if=/dev/zero bs=150 count=1 2>/dev/null | tr '\0' 'x' >"$TEST_LOG_FILE"
 
   __fw_logger_rolling
 
-  # 日志文件应该被清空
   file_size=$(wc -c <"$TEST_LOG_FILE" | tr -d ' ')
   [[ "$file_size" == "0" ]]
 
-  # 应该创建归档目录和文件
   local current_date
   current_date=$(date '+%Y%m%d')
   [[ -d "$TEST_TEMP_DIR/archived/$current_date" ]]
 
-  # 应该有一个 .gz 归档文件
   archive_count=$(find "$TEST_TEMP_DIR/archived/$current_date" -name "*.gz" | wc -l | tr -d ' ')
   [[ "$archive_count" == "1" ]]
 }
 
 @test "__fw_logger_rolling creates correct archive filename format" {
-  export gr_radp_log_rolling_policy_enabled="true"
-  export gr_radp_log_file="$TEST_LOG_FILE"
+  export gr_radp_fw_log_rolling_policy_enabled="true"
+  export gr_radp_fw_log_file_name="$TEST_LOG_FILE"
   export gr_log_file_path="$TEST_TEMP_DIR"
   export gr_log_filename="test.log"
   export gr_log_rolling_path="$TEST_TEMP_DIR/archived"
-  export gr_radp_log_rolling_policy_max_file_size="50B"
-  export gr_radp_log_rolling_policy_max_history="7"
-  export gr_radp_log_rolling_policy_total_size_cap="5GB"
+  export gr_radp_fw_log_rolling_policy_max_file_size="50B"
+  export gr_radp_fw_log_rolling_policy_max_history="7"
+  export gr_radp_fw_log_rolling_policy_total_size_cap="5GB"
 
-  # 创建一个超过 50 字节的日志文件
   dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'x' >"$TEST_LOG_FILE"
 
   __fw_logger_rolling
@@ -541,37 +529,32 @@ run_logger_to_file() {
   local current_date
   current_date=$(date '+%Y%m%d')
 
-  # 检查归档文件名格式: test.yyyyMMdd.1.log.gz
   archive_file=$(find "$TEST_TEMP_DIR/archived/$current_date" -name "test.${current_date}.1.log.gz" -type f)
   [[ -n "$archive_file" ]]
 }
 
 @test "__fw_logger_rolling increments sequence number for multiple rotations" {
-  export gr_radp_log_rolling_policy_enabled="true"
-  export gr_radp_log_file="$TEST_LOG_FILE"
+  export gr_radp_fw_log_rolling_policy_enabled="true"
+  export gr_radp_fw_log_file_name="$TEST_LOG_FILE"
   export gr_log_file_path="$TEST_TEMP_DIR"
   export gr_log_filename="test.log"
   export gr_log_rolling_path="$TEST_TEMP_DIR/archived"
-  export gr_radp_log_rolling_policy_max_file_size="50B"
-  export gr_radp_log_rolling_policy_max_history="7"
-  export gr_radp_log_rolling_policy_total_size_cap="5GB"
+  export gr_radp_fw_log_rolling_policy_max_file_size="50B"
+  export gr_radp_fw_log_rolling_policy_max_history="7"
+  export gr_radp_fw_log_rolling_policy_total_size_cap="5GB"
 
   local current_date
   current_date=$(date '+%Y%m%d')
 
-  # 第一次归档
   dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'a' >"$TEST_LOG_FILE"
   __fw_logger_rolling
 
-  # 第二次归档
   dd if=/dev/zero bs=100 count=1 2>/dev/null | tr '\0' 'b' >"$TEST_LOG_FILE"
   __fw_logger_rolling
 
-  # 应该有两个归档文件
   archive_count=$(find "$TEST_TEMP_DIR/archived/$current_date" -name "*.gz" | wc -l | tr -d ' ')
   [[ "$archive_count" == "2" ]]
 
-  # 检查序号
   [[ -f "$TEST_TEMP_DIR/archived/$current_date/test.${current_date}.1.log.gz" ]]
   [[ -f "$TEST_TEMP_DIR/archived/$current_date/test.${current_date}.2.log.gz" ]]
 }
@@ -582,16 +565,13 @@ run_logger_to_file() {
 
 @test "__fw_cleanup_old_archives does nothing when directory does not exist" {
   __fw_cleanup_old_archives "$TEST_TEMP_DIR/nonexistent" 7
-  # 不应该报错
 }
 
 @test "__fw_cleanup_old_archives removes old date directories" {
   local rolling_path="$TEST_TEMP_DIR/archived"
   mkdir -p "$rolling_path"
 
-  # 创建一些日期目录
   local old_date new_date
-  # 使用 macOS 兼容的日期计算
   old_date=$(date -v-10d '+%Y%m%d' 2>/dev/null || date -d "-10 days" '+%Y%m%d')
   new_date=$(date '+%Y%m%d')
 
@@ -600,12 +580,9 @@ run_logger_to_file() {
   touch "$rolling_path/$old_date/test.log.gz"
   touch "$rolling_path/$new_date/test.log.gz"
 
-  # 清理超过 7 天的归档
   __fw_cleanup_old_archives "$rolling_path" 7
 
-  # 旧目录应该被删除
   [[ ! -d "$rolling_path/$old_date" ]]
-  # 新目录应该保留
   [[ -d "$rolling_path/$new_date" ]]
 }
 
@@ -613,7 +590,6 @@ run_logger_to_file() {
   local rolling_path="$TEST_TEMP_DIR/archived"
   mkdir -p "$rolling_path"
 
-  # 创建一个 3 天前的目录(在 7 天保留期内)
   local recent_date
   recent_date=$(date -v-3d '+%Y%m%d' 2>/dev/null || date -d "-3 days" '+%Y%m%d')
 
@@ -622,7 +598,6 @@ run_logger_to_file() {
 
   __fw_cleanup_old_archives "$rolling_path" 7
 
-  # 目录应该保留
   [[ -d "$rolling_path/$recent_date" ]]
 }
 
@@ -632,7 +607,6 @@ run_logger_to_file() {
 
 @test "__fw_cleanup_by_size_cap does nothing when directory does not exist" {
   __fw_cleanup_by_size_cap "$TEST_TEMP_DIR/nonexistent" "5GB"
-  # 不应该报错
 }
 
 @test "__fw_cleanup_by_size_cap does nothing when under size cap" {
@@ -641,12 +615,10 @@ run_logger_to_file() {
   current_date=$(date '+%Y%m%d')
   mkdir -p "$rolling_path/$current_date"
 
-  # 创建一个小文件
   echo "small content" | gzip >"$rolling_path/$current_date/test.log.gz"
 
   __fw_cleanup_by_size_cap "$rolling_path" "1MB"
 
-  # 文件应该保留
   [[ -f "$rolling_path/$current_date/test.log.gz" ]]
 }
 
@@ -656,18 +628,14 @@ run_logger_to_file() {
   current_date=$(date '+%Y%m%d')
   mkdir -p "$rolling_path/$current_date"
 
-  # 创建多个较大的文件(使用随机数据避免 gzip 压缩太多)
-  # 每个文件约 1KB
   dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test1.log.gz"
-  sleep 1 # 确保文件有不同的修改时间
+  sleep 1
   dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test2.log.gz"
   sleep 1
   dd if=/dev/urandom bs=1024 count=1 2>/dev/null >"$rolling_path/$current_date/test3.log.gz"
 
-  # 设置一个较小的大小上限 (1.5KB，应该只能保留 1-2 个文件)
   __fw_cleanup_by_size_cap "$rolling_path" "1536B"
 
-  # 应该删除一些文件(总大小约 3KB，上限 1.5KB，应该删除至少 1 个)
   remaining_count=$(find "$rolling_path" -name "*.gz" -type f | wc -l | tr -d ' ')
   [[ "$remaining_count" -lt "3" ]]
 }

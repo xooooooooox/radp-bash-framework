@@ -9,8 +9,12 @@
 # =============================================================================
 
 setup() {
-  load helpers/test_helper
+  load ../../helpers/test_helper
   setup_test_env
+
+  # Stub cross-module dependencies before loading CLI modules
+  stub_logger
+  stub_ide
 
   # Load CLI modules (order matters)
   load_toolkit cli/01_meta cli/02_discover cli/07_app
