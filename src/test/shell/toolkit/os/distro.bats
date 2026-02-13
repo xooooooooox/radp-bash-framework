@@ -11,7 +11,7 @@
 # =============================================================================
 
 setup() {
-  load helpers/test_helper
+  load ../../helpers/test_helper
   setup_test_env
 
   # Load internal helpers first (defines __fw_os_get_distro_info)
