@@ -33,6 +33,10 @@ export TEST_FRAMEWORK_ROOT="${TEST_PROJECT_ROOT}/src/main/shell/framework"
 export TEST_TOOLKIT_DIR="${TEST_FRAMEWORK_ROOT}/bootstrap/context/libs/toolkit"
 export TEST_VARS_DIR="${TEST_FRAMEWORK_ROOT}/bootstrap/context/vars"
 
+# Source file paths for modules with __main()
+export TEST_LOGGER_FILE="${TEST_FRAMEWORK_ROOT}/bootstrap/context/libs/logger/logger.sh"
+export TEST_AUTOCONFIGURE_FILE="${TEST_VARS_DIR}/configurable/autoconfigure.sh"
+
 # =============================================================================
 # Setup / Teardown
 # =============================================================================
@@ -154,4 +158,81 @@ assert_array_equals() {
       return 1
     fi
   done
+}
+
+# Assert $output contains a substring (use after `run`)
+# Usage: assert_output_contains "expected substring"
+assert_output_contains() {
+  local expected="$1"
+  if [[ "$output" != *"$expected"* ]]; then
+    echo "Expected output to contain: $expected" >&2
+    echo "  Actual output: $output" >&2
+    return 1
+  fi
+}
+
+# Assert $status equals expected value (use after `run`)
+# Usage: assert_status 0
+assert_status() {
+  local expected="$1"
+  if [[ "$status" -ne "$expected" ]]; then
+    echo "Expected status $expected, got $status" >&2
+    return 1
+  fi
+}
+
+# =============================================================================
+# Source Loading (for modules with __main)
+# =============================================================================
+
+# Source a file that has a __main() entry point. Strips the bare __main
+# invocation at the end of the file so all function definitions load but
+# the entry-point side effects are skipped.
+#
+# Usage:
+#   load_source_with_main_noop "/path/to/logger.sh"
+#
+load_source_with_main_noop() {
+  local file="${1:?'Missing file path argument'}"
+
+  if [[ ! -f "$file" ]]; then
+    echo "Error: Source file not found: $file" >&2
+    return 1
+  fi
+
+  # Temporarily disable errexit since module-level code may reference
+  # undefined globals that would cause immediate failure
+  local old_opts
+  old_opts=$(set +o)
+  set +e
+
+  # Source the file with the standalone __main call removed.
+  # This keeps the __main() function definition but prevents it from running.
+  # The pattern matches a line that is exactly "__main" (with optional
+  # whitespace) — the convention used to invoke the entry point at file end.
+  # shellcheck source=/dev/null
+  source <(sed '/^[[:space:]]*__main[[:space:]]*$/d' "$file")
+
+  # Restore shell options
+  eval "$old_opts"
+}
+
+# =============================================================================
+# Stubs for Cross-Module Dependencies
+# =============================================================================
+
+# No-op logger stubs. Use when loading modules that call radp_log_* functions.
+stub_logger() {
+  radp_log_debug() { :; }
+  radp_log_info()  { :; }
+  radp_log_warn()  { :; }
+  radp_log_error() { :; }
+  export -f radp_log_debug radp_log_info radp_log_warn radp_log_error
+}
+
+# No-op IDE stubs. Use when loading CLI modules that call radp_ide_* functions.
+stub_ide() {
+  radp_ide_add_commands_dir() { :; }
+  radp_ide_init() { :; }
+  export -f radp_ide_add_commands_dir radp_ide_init
 }

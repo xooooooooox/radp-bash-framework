@@ -9,7 +9,7 @@
 # =============================================================================
 
 setup() {
-  load helpers/test_helper
+  load ../../helpers/test_helper
   setup_test_env
 
   # Load the modules being tested
