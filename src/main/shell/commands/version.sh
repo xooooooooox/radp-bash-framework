@@ -4,7 +4,7 @@
 # @example version
 
 # Application version - same as framework version
-declare -gr gr_app_version="v0.7.26"
+declare -gr gr_app_version="v0.7.27"
 
 cmd_version() {
   radp_get_fw_install_version
