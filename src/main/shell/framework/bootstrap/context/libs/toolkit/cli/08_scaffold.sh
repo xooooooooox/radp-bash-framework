@@ -123,6 +123,153 @@ __radp_cli_scaffold_bin() {
 }
 
 #######################################
+# 生成 version.sh 内容
+# Arguments:
+#   1 - project_name: 项目名称
+#   2 - version: 版本号（默认 v0.0.1）
+# Outputs:
+#   version.sh 内容（写入 stdout）
+#######################################
+radp_cli_version_cmd_content() {
+  local project_name="$1"
+  local version="${2:-v0.0.1}"
+  cat <<VERSION_CMD
+#!/usr/bin/env bash
+# @cmd
+# @desc Show version information
+
+# Application version
+# Update this value when releasing a new version
+declare -gr gr_app_version="${version}"
+
+cmd_version() {
+    echo "${project_name} \$(radp_get_install_version "\${gr_app_version}")"
+}
+VERSION_CMD
+}
+
+#######################################
+# 生成 completion.sh 内容
+# Arguments:
+#   1 - project_name: 项目名称
+# Outputs:
+#   completion.sh 内容（写入 stdout）
+#######################################
+radp_cli_completion_cmd_content() {
+  local project_name="$1"
+  cat <<COMPLETION_CMD
+#!/usr/bin/env bash
+# @cmd
+# @desc Generate shell completion script
+# @arg shell! Shell type (bash or zsh)
+# @arg-values shell bash zsh
+# @example completion bash > ~/.local/share/bash-completion/completions/${project_name}
+# @example completion zsh > ~/.zfunc/_${project_name}
+
+cmd_completion() {
+    local shell="\${1:-}"
+
+    if [[ -z "\$shell" ]]; then
+        radp_log_error "Shell type required (bash or zsh)"
+        return 1
+    fi
+
+    radp_cli_completion_generate "\$shell"
+}
+COMPLETION_CMD
+}
+
+#######################################
+# 生成 upgrade.sh 内容
+# Arguments:
+#   1 - project_name: 项目名称
+# Outputs:
+#   upgrade.sh 内容（写入 stdout）
+#######################################
+radp_cli_upgrade_cmd_content() {
+  local project_name="$1"
+  cat <<UPGRADE_CMD
+#!/usr/bin/env bash
+# @cmd
+# @desc Upgrade ${project_name} to the latest version
+# @meta passthrough
+# @flag --check Only check for updates
+# @flag --force Force upgrade even if at latest
+# @flag -y, --yes Skip confirmation prompt
+# @option --version <version> Target specific version
+
+cmd_upgrade() {
+  radp_cli_upgrade_self "\$@"
+}
+UPGRADE_CMD
+}
+
+#######################################
+# 生成 config.yaml 内容
+# Arguments:
+#   1 - project_name: 项目名称
+#   2 - project_var: 项目变量名（连字符替换为下划线）
+# Outputs:
+#   config.yaml 内容（写入 stdout）
+#######################################
+radp_cli_config_yaml_content() {
+  local project_name="$1"
+  local project_var="$2"
+  cat <<YAML_CONFIG
+# $project_name configuration
+# This file follows radp-bash-framework's configuration structure
+# Priority: Environment variables (GX_*) > YAML values > defaults
+
+radp:
+  env: default
+
+  # Framework settings override (optional)
+  fw:
+    banner-mode: off
+    log:
+      debug: false
+      level: info
+      console:
+        enabled: false
+      file:
+        enabled: false
+
+  # Application-specific extensions
+  # Variables defined here will be available as gr_radp_extend_* in shell
+  extend:
+    ${project_var}:
+      # Add your application-specific configuration here
+      # Example: api_url: https://api.example.com
+YAML_CONFIG
+}
+
+#######################################
+# 生成 config-dev.yaml 内容
+# Arguments:
+#   1 - project_name: 项目名称
+#   2 - project_var: 项目变量名（连字符替换为下划线）
+# Outputs:
+#   config-dev.yaml 内容（写入 stdout）
+#######################################
+radp_cli_config_dev_yaml_content() {
+  local project_name="$1"
+  local project_var="$2"
+  cat <<YAML_DEV
+# Development environment overrides for $project_name
+
+radp:
+  fw:
+    log:
+      debug: true
+      level: debug
+
+  extend:
+    ${project_var}:
+      # Development-specific overrides
+YAML_DEV
+}
+
+#######################################
 # 生成示例命令
 #######################################
 __radp_cli_scaffold_commands() {
@@ -130,45 +277,10 @@ __radp_cli_scaffold_commands() {
   local target_dir="$2"
 
   # version 命令
-  cat >"$target_dir/src/main/shell/commands/version.sh" <<'VERSION_CMD'
-#!/usr/bin/env bash
-# @cmd
-# @desc Show version information
-
-# Application version
-# Update this value when releasing a new version
-declare -gr gr_app_version="v0.0.1"
-
-cmd_version() {
-    echo "__PROJECT_NAME__ $(radp_get_install_version "${gr_app_version}")"
-}
-VERSION_CMD
-  sed -i.bak "s/__PROJECT_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/version.sh"
-  rm -f "$target_dir/src/main/shell/commands/version.sh.bak"
+  radp_cli_version_cmd_content "$project_name" >"$target_dir/src/main/shell/commands/version.sh"
 
   # completion 命令
-  cat >"$target_dir/src/main/shell/commands/completion.sh" <<'COMPLETION_CMD'
-#!/usr/bin/env bash
-# @cmd
-# @desc Generate shell completion script
-# @arg shell! Shell type (bash or zsh)
-# @arg-values shell bash zsh
-# @example completion bash > ~/.local/share/bash-completion/completions/__APP_NAME__
-# @example completion zsh > ~/.zfunc/___APP_NAME__
-
-cmd_completion() {
-    local shell="${1:-}"
-
-    if [[ -z "$shell" ]]; then
-        radp_log_error "Shell type required (bash or zsh)"
-        return 1
-    fi
-
-    radp_cli_completion_generate "$shell"
-}
-COMPLETION_CMD
-  sed -i.bak "s/__APP_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/completion.sh"
-  rm -f "$target_dir/src/main/shell/commands/completion.sh.bak"
+  radp_cli_completion_cmd_content "$project_name" >"$target_dir/src/main/shell/commands/completion.sh"
 
   # hello 示例命令
   cat >"$target_dir/src/main/shell/commands/hello.sh" <<'HELLO_CMD'
@@ -213,22 +325,7 @@ HELLO_CMD
 GLOBALS_CMD
 
   # upgrade 命令
-  cat >"$target_dir/src/main/shell/commands/upgrade.sh" <<'UPGRADE_CMD'
-#!/usr/bin/env bash
-# @cmd
-# @desc Upgrade __PROJECT_NAME__ to the latest version
-# @meta passthrough
-# @flag --check Only check for updates
-# @flag --force Force upgrade even if at latest
-# @flag -y, --yes Skip confirmation prompt
-# @option --version <version> Target specific version
-
-cmd_upgrade() {
-  radp_cli_upgrade_self "$@"
-}
-UPGRADE_CMD
-  sed -i.bak "s/__PROJECT_NAME__/$project_name/g" "$target_dir/src/main/shell/commands/upgrade.sh"
-  rm -f "$target_dir/src/main/shell/commands/upgrade.sh.bak"
+  radp_cli_upgrade_cmd_content "$project_name" >"$target_dir/src/main/shell/commands/upgrade.sh"
 }
 
 #######################################
@@ -241,47 +338,10 @@ __radp_cli_scaffold_config() {
   local project_var="${project_name//-/_}"
 
   # 生成 config.yaml（遵循 radp-bash-framework 的配置结构）
-  cat >"$target_dir/src/main/shell/config/config.yaml" <<YAML_CONFIG
-# $project_name configuration
-# This file follows radp-bash-framework's configuration structure
-# Priority: Environment variables (GX_*) > YAML values > defaults
-
-radp:
-  env: default
-
-  # Framework settings override (optional)
-  fw:
-    banner-mode: off
-    log:
-      debug: false
-      level: info
-      console:
-        enabled: false
-      file:
-        enabled: false
-
-  # Application-specific extensions
-  # Variables defined here will be available as gr_radp_extend_* in shell
-  extend:
-    ${project_var}:
-      # Add your application-specific configuration here
-      # Example: api_url: https://api.example.com
-YAML_CONFIG
+  radp_cli_config_yaml_content "$project_name" "$project_var" >"$target_dir/src/main/shell/config/config.yaml"
 
   # 生成环境特定配置示例
-  cat >"$target_dir/src/main/shell/config/config-dev.yaml" <<YAML_DEV
-# Development environment overrides for $project_name
-
-radp:
-  fw:
-    log:
-      debug: true
-      level: debug
-
-  extend:
-    ${project_var}:
-      # Development-specific overrides
-YAML_DEV
+  radp_cli_config_dev_yaml_content "$project_name" "$project_var" >"$target_dir/src/main/shell/config/config-dev.yaml"
 
   # 生成 IDE code completion 支持文件
   cat >"$target_dir/src/main/shell/config/_ide.sh" <<'IDE_HINTS'

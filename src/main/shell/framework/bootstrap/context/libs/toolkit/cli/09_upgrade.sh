@@ -3,7 +3,7 @@
 # CLI 项目升级：升级基于 radp-bash-framework 创建的 CLI 项目
 
 # 可升级的组件列表
-declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging globals upgrade_cmd)
+declare -ga __radp_upgrade_components=(entry ide gitignore version workflows packaging globals upgrade_cmd completion_cmd config)
 
 #######################################
 # 升级 CLI 项目
@@ -264,6 +264,12 @@ __radp_upgrade_component() {
   upgrade_cmd)
     __radp_upgrade_upgrade_cmd "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
     ;;
+  completion_cmd)
+    __radp_upgrade_completion_cmd "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
+    ;;
+  config)
+    __radp_upgrade_config "$target_dir" "$project_name" "$dry_run" "$force" "$show_diff"
+    ;;
   *)
     return 1
     ;;
@@ -283,17 +289,7 @@ __radp_upgrade_upgrade_cmd() {
   local upgrade_file="$target_dir/src/main/shell/commands/upgrade.sh"
 
   local new_content
-  new_content=$(cat <<UPGRADE_CMD
-#!/usr/bin/env bash
-# @cmd
-# @desc Upgrade ${project_name} to the latest version
-# @meta passthrough
-
-cmd_upgrade() {
-  radp_cli_upgrade_self "\$@"
-}
-UPGRADE_CMD
-)
+  new_content=$(radp_cli_upgrade_cmd_content "$project_name")
 
   if [[ ! -f "$upgrade_file" ]]; then
     if [[ "$dry_run" == "true" ]]; then
@@ -322,6 +318,53 @@ UPGRADE_CMD
   else
     echo "$new_content" >"$upgrade_file"
     echo "  [UPDATE] src/main/shell/commands/upgrade.sh"
+  fi
+
+  return 0
+}
+
+#######################################
+# 升级 completion 命令（如果不存在则创建）
+#######################################
+__radp_upgrade_completion_cmd() {
+  local target_dir="$1"
+  local project_name="$2"
+  local dry_run="$3"
+  local force="$4"
+  local show_diff="$5"
+
+  local completion_file="$target_dir/src/main/shell/commands/completion.sh"
+
+  local new_content
+  new_content=$(radp_cli_completion_cmd_content "$project_name")
+
+  if [[ ! -f "$completion_file" ]]; then
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] src/main/shell/commands/completion.sh"
+    else
+      mkdir -p "$(dirname "$completion_file")"
+      echo "$new_content" >"$completion_file"
+      echo "  [CREATE] src/main/shell/commands/completion.sh"
+    fi
+    return 0
+  fi
+
+  local current_content
+  current_content=$(cat "$completion_file")
+
+  if [[ "$current_content" == "$new_content" ]]; then
+    echo "  [OK]   src/main/shell/commands/completion.sh (up to date)"
+    return 1
+  fi
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "  [UPDATE] src/main/shell/commands/completion.sh"
+    if [[ "$show_diff" == "true" ]]; then
+      diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
+    fi
+  else
+    echo "$new_content" >"$completion_file"
+    echo "  [UPDATE] src/main/shell/commands/completion.sh"
   fi
 
   return 0
@@ -571,6 +614,58 @@ GLOBALS_CMD
 }
 
 #######################################
+# 升级 config 文件（仅在文件不存在时创建）
+# 不修改已有配置文件（用户拥有的内容）
+#######################################
+__radp_upgrade_config() {
+  local target_dir="$1"
+  local project_name="$2"
+  local dry_run="$3"
+  local force="$4"
+  local show_diff="$5"
+
+  local config_dir="$target_dir/src/main/shell/config"
+  local project_var="${project_name//-/_}"
+  local has_changes=false
+
+  # config.yaml
+  local config_file="$config_dir/config.yaml"
+  if [[ -f "$config_file" ]]; then
+    echo "  [OK]   config/config.yaml (already exists)"
+  else
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] config/config.yaml"
+    else
+      mkdir -p "$config_dir"
+      radp_cli_config_yaml_content "$project_name" "$project_var" >"$config_file"
+      echo "  [CREATE] config/config.yaml"
+    fi
+    has_changes=true
+  fi
+
+  # config-dev.yaml
+  local config_dev_file="$config_dir/config-dev.yaml"
+  if [[ -f "$config_dev_file" ]]; then
+    echo "  [OK]   config/config-dev.yaml (already exists)"
+  else
+    if [[ "$dry_run" == "true" ]]; then
+      echo "  [CREATE] config/config-dev.yaml"
+    else
+      mkdir -p "$config_dir"
+      radp_cli_config_dev_yaml_content "$project_name" "$project_var" >"$config_dev_file"
+      echo "  [CREATE] config/config-dev.yaml"
+    fi
+    has_changes=true
+  fi
+
+  if [[ "$has_changes" == "true" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+#######################################
 # 更新元数据
 #######################################
 __radp_upgrade_update_metadata() {
@@ -618,7 +713,10 @@ radp_cli_init_metadata() {
 }
 
 #######################################
-# 升级 version.sh（从 config.yaml 迁移到 gr_app_version）
+# 升级 version.sh（迁移 + 模板刷新）
+# 支持两种格式：
+#   - 旧格式：gr_radp_extend_<project_var>_version（从 config.yaml 迁移）
+#   - 新格式：gr_app_version（模板刷新）
 #######################################
 __radp_upgrade_version() {
   local target_dir="$1"
@@ -639,54 +737,43 @@ __radp_upgrade_version() {
   local current_content
   current_content=$(cat "$version_file")
 
-  # 检查是否已经使用新格式
-  if grep -q 'declare -gr gr_app_version=' "$version_file" 2>/dev/null; then
-    echo "  [OK]   commands/version.sh (already using new format)"
-    return 1
-  fi
-
-  # 检查是否使用旧格式（从 config.yaml 读取版本）
-  if ! grep -qE "gr_radp_extend_${project_var}_version" "$version_file" 2>/dev/null; then
-    echo "  [SKIP] commands/version.sh (unknown format)"
-    return 1
-  fi
-
-  # 尝试从 config.yaml 读取当前版本
+  # 提取用户当前版本号（支持新旧两种格式）
   local current_version="v0.0.1"
-  if [[ -f "$config_file" ]] && command -v yq &>/dev/null; then
-    local yaml_version
-    yaml_version=$(yq ".radp.extend.${project_var}.version // \"\"" "$config_file" 2>/dev/null || true)
-    if [[ -n "$yaml_version" && "$yaml_version" != "null" ]]; then
-      current_version="$yaml_version"
+  local version_extracted
+
+  # 新格式：declare -gr gr_app_version="v1.2.3"
+  version_extracted=$(sed -n 's/^declare -gr gr_app_version="\([^"]*\)"/\1/p' "$version_file" 2>/dev/null || true)
+  if [[ -n "$version_extracted" ]]; then
+    current_version="$version_extracted"
+  else
+    # 旧格式：从 config.yaml 读取版本
+    if [[ -f "$config_file" ]] && command -v yq &>/dev/null; then
+      local yaml_version
+      yaml_version=$(yq ".radp.extend.${project_var}.version // \"\"" "$config_file" 2>/dev/null || true)
+      if [[ -n "$yaml_version" && "$yaml_version" != "null" ]]; then
+        current_version="$yaml_version"
+      fi
     fi
   fi
 
-  # 生成新的 version.sh 内容
+  # 生成期望的模板内容（保留用户的版本号）
   local new_content
-  new_content=$(cat <<VERSION_SH
-#!/usr/bin/env bash
-# @cmd
-# @desc Show version information
+  new_content=$(radp_cli_version_cmd_content "$project_name" "$current_version")
 
-# Application version
-# Update this value when releasing a new version
-declare -gr gr_app_version="${current_version}"
-
-cmd_version() {
-    echo "${project_name} \$(radp_get_install_version "\${gr_app_version}")"
-}
-VERSION_SH
-)
+  if [[ "$current_content" == "$new_content" ]]; then
+    echo "  [OK]   commands/version.sh (up to date)"
+    return 1
+  fi
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "  [UPDATE] commands/version.sh (migrate to gr_app_version)"
+    echo "  [UPDATE] commands/version.sh"
     echo "           Version: ${current_version}"
     if [[ "$show_diff" == "true" ]]; then
       diff -u <(echo "$current_content") <(echo "$new_content") | sed 's/^/    /' || true
     fi
   else
     echo "$new_content" >"$version_file"
-    echo "  [UPDATE] commands/version.sh (migrated to gr_app_version)"
+    echo "  [UPDATE] commands/version.sh"
     echo "           Version: ${current_version}"
   fi
 
