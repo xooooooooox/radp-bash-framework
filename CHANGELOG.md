@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.7.28
+
+### fix
+
+- fix radp_exec_sudo and radp_exec not write log to file
+
 ## v0.7.27
 
 ### refactor
