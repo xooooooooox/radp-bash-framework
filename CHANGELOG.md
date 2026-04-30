@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.7.29
+
+### fix
+
+- fix radp_exec_sudo and radp_exec log
+
 ## v0.7.28
 
 ### fix
