@@ -63,7 +63,7 @@ radp_exec() {
     return 0
   fi
 
-  "$@" 2>&1 | tee /dev/fd/3
+  "$@" 2>&1 | tee -a /dev/fd/3
   return "${PIPESTATUS[0]}"
 }
 
@@ -92,7 +92,7 @@ radp_exec_sudo() {
     return 0
   fi
 
-  ${gr_sudo:-} "$@" 2>&1 | tee /dev/fd/3
+  ${gr_sudo:-} "$@" 2>&1 | tee -a /dev/fd/3
   return "${PIPESTATUS[0]}"
 }
 
